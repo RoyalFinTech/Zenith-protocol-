@@ -1,11 +1,11 @@
 # Production notes
 
-The uploaded UI currently declares itself frontend-only and shows wallet providers as visual options only. It also states that balances, hashes, participants and timestamps are frontend records. The new backend does not preserve those simulated values.
+The frontend is served as a Vite production build from `frontend/dist` and the backend is a separate Node/Express service.
 
-Reown AppKit is the current WalletConnect-compatible integration path for the frontend. The project ID belongs in an environment variable and the client can use EVM connectors for BNB Smart Chain.
+Wallet authentication uses a short-lived backend nonce and EVM wallet signature verification. Reown AppKit supplies the client wallet connection. The backend issues a JWT-backed server session and persists the session in PostgreSQL.
 
-Supabase production hardening requires RLS on exposed tables and keeping secret/service-role keys out of frontend code. The included Supabase migration demonstrates that pattern for profile/preferences/wallet tables.
+Do not put private keys, seed phrases, JWT secrets, database passwords or Supabase secret/service-role keys in the frontend. Only public client configuration belongs in Vercel.
 
-Before real-value production operations are enabled, separately define and test: the actual ZENIT smart-contract addresses/ABIs, program placement rules, payout economics, withdrawal approval/AML rules where applicable, chain confirmations, transaction indexer/webhook source, admin authorization model, rate limits, monitoring, backups, and an independent security review.
+The backend-backed application does not fabricate balances or blockchain transaction hashes. In particular, a withdrawal request is recorded as `pending` for review; the API does not represent that request as a completed on-chain transfer.
 
-The current placement endpoint records membership and an audit event only. It intentionally does not create a completed ledger entry or claim that any asset transfer has occurred.
+Before enabling real-value settlement, define and independently review smart-contract addresses/ABIs, placement and payout economics, withdrawal approval/AML requirements where applicable, transaction signing/custody boundaries, chain confirmation/indexing, admin authorization, monitoring, backups and incident procedures.

@@ -4,7 +4,7 @@ import { env } from './config.js';
 const { Pool } = pg;
 export const pool = new Pool({ connectionString: env.databaseUrl, max: 10, idleTimeoutMillis: 30_000, ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: false } : undefined });
 
-export async function query<T = unknown>(text: string, params: unknown[] = []): Promise<pg.QueryResult<T>> {
+export async function query<T extends pg.QueryResultRow = pg.QueryResultRow>(text: string, params: unknown[] = []): Promise<pg.QueryResult<T>> {
   return pool.query<T>(text, params);
 }
 

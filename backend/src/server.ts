@@ -16,6 +16,7 @@ import { HttpError } from './utils/http.js';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const app=express();
+app.set('trust proxy', 1);
 const authRateLimiter = new RateLimiterMemory({ points: 10, duration: 60 });
 const verifyRateLimiter = new RateLimiterMemory({ points: 5, duration: 60 });
 const limitAuth = (limiter: RateLimiterMemory) => async (req: express.Request, _res: express.Response, next: express.NextFunction) => {
@@ -24,17 +25,18 @@ const limitAuth = (limiter: RateLimiterMemory) => async (req: express.Request, _
 };
 app.disable('x-powered-by');
 app.use(helmet({crossOriginResourcePolicy:{policy:'cross-origin'}}));
-app.use(cors({origin:(origin,cb)=>{if(!origin||env.corsOrigins.includes(origin))return cb(null,true);return cb(new Error('CORS origin denied'));},credentials:false}));
+app.use(cors({origin:(origin,cb)=>{if(!origin||env.corsOrigins.includes(origin))return cb(null,true);return cb(new Error('CORS origin denied'));},credentials:false,methods:['GET','POST','PATCH','DELETE','OPTIONS'],allowedHeaders:['Content-Type','Authorization']}));
 app.use(express.json({limit:'1mb'}));
+app.use((req,_res,next)=>{ if(req.path.startsWith('/api/auth/')) { const body=req.body ?? {}; if(typeof body==='object') { if(typeof body.signature==='string' && body.signature.length>500) return next(new HttpError(400,'Invalid signature')); if(typeof body.address==='string' && body.address.length>64) return next(new HttpError(400,'Invalid address')); } } next(); });
 app.get('/health',async(_req,res,next)=>{try{res.json({ok:await healthcheck(),service:'zenit-api',timestamp:new Date().toISOString()})}catch(e){next(e)}});
 app.get('/config/public',(req,res)=>res.json({chainId:env.chainId,chainName:env.chainName,primaryAsset:env.primaryAsset,appOrigin:env.appOrigin,walletConnectProjectId:env.walletConnectProjectId,metadata:{name:env.walletConnectMetadataName,description:env.walletConnectMetadataDescription,url:env.walletConnectMetadataUrl,icons:env.walletConnectMetadataIcon?[env.walletConnectMetadataIcon]:[]}}));
 app.use('/api/auth/nonce', limitAuth(authRateLimiter));
 app.use('/api/auth/verify', limitAuth(verifyRateLimiter));
 app.use('/api/auth',authRoutes); app.use('/api/me',meRoutes); app.use('/api/dashboard',dashboardRoutes); app.use('/api/wallets',walletRoutes); app.use('/api/transactions',transactionRoutes); app.use('/api/admin',adminRoutes); app.use('/api',mutationRoutes);
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
-const frontend=path.resolve(__dirname,'../../frontend');
-app.use(express.static(frontend));
-app.get('/',(_req,res)=>res.sendFile(path.join(frontend,'zenit-protocol.html')));
+const frontend=path.resolve(__dirname,'../../frontend/dist');
+app.use(express.static(frontend,{index:'index.html',fallthrough:true}));
+app.get(/.*/,(_req,res,next)=>{ const index=path.join(frontend,'index.html'); res.sendFile(index,err=>err?next(new HttpError(404,'Frontend build not found; run npm run build in frontend')):undefined); });
 app.use((_req,_res,next)=>next(new HttpError(404,'Route not found')));
 app.use((err:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{const status=err instanceof HttpError?err.status:500;res.status(status).json({error:status===500?'Internal server error':(err as Error).message, ...(err instanceof HttpError&&err.details?{details:err.details}: {})})});
 app.listen(env.port,()=>console.log(`Zenit API listening on ${env.port}`));

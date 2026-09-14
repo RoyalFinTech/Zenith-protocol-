@@ -16,7 +16,7 @@ router.post('/referral/regenerate', async (req,res,next)=>{
       if(!exists){code=candidate;break;}
     }
     if(!code) throw new HttpError(503,'Unable to allocate a unique referral code');
-    const row=(await (await import('../db.js')).query(`update app_users set referral_code=$1,updated_at=now() where id=$2 returning referral_code`,[code,req.auth!.userId])).rows[0];
+    const row=(await (await import('../db.js')).query<{referral_code:string}>(`update app_users set referral_code=$1,updated_at=now() where id=$2 returning referral_code`,[code,req.auth!.userId])).rows[0];
     await (await import('../db.js')).query(`insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'referral_code_regenerated','app_user',$1,$2)`,[req.auth!.userId,JSON.stringify({referralCode:code})]);
     res.json({referralCode:row?.referral_code});
   }catch(e){next(e)}
