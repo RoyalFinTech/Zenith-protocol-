@@ -35,6 +35,6 @@ app.use('/api/auth',authRoutes); app.use('/api/me',meRoutes); app.use('/api/dash
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const frontend=path.resolve(__dirname,'../../frontend/dist');
 app.use(express.static(frontend));
-app.get('*',(_req,res,next)=>{if(_req.path.startsWith('/api/')||_req.path==='/health'||_req.path==='/config/public')return next(new HttpError(404,'Route not found'));res.sendFile(path.join(frontend,'index.html'));});
+app.use((req,res,next)=>{if(req.path.startsWith('/api/')||req.path==='/health'||req.path==='/config/public')return next(new HttpError(404,'Route not found'));res.sendFile(path.join(frontend,'index.html'));});
 app.use((err:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{const status=err instanceof HttpError?err.status:500;res.status(status).json({error:status===500?'Internal server error':(err as Error).message, ...(err instanceof HttpError&&err.details?{details:err.details}: {})})});
 app.listen(env.port,()=>console.log(`Zenit API listening on ${env.port}`));
