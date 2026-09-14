@@ -6,6 +6,8 @@ const required = (name: string, fallback?: string) => {
   return value;
 };
 
+const optional = (name: string, fallback?: string) => process.env[name] ?? fallback ?? '';
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 8787),
@@ -17,7 +19,7 @@ export const env = {
   chainName: process.env.CHAIN_NAME ?? 'BNB Smart Chain',
   nativeCurrency: process.env.NATIVE_CURRENCY ?? 'BNB',
   primaryAsset: process.env.PRIMARY_ASSET ?? 'USDT',
-  walletConnectProjectId: required('WALLETCONNECT_PROJECT_ID', ''),
+  walletConnectProjectId: optional('WALLETCONNECT_PROJECT_ID'),
   walletConnectMetadataName: process.env.WALLETCONNECT_METADATA_NAME ?? 'Zenit Protocol',
   walletConnectMetadataDescription: process.env.WALLETCONNECT_METADATA_DESCRIPTION ?? 'Decentralized Wealth Network',
   walletConnectMetadataUrl: process.env.WALLETCONNECT_METADATA_URL ?? 'http://localhost:5173',
