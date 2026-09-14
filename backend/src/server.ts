@@ -23,18 +23,18 @@ const limitAuth = (limiter: RateLimiterMemory) => async (req: express.Request, _
   catch { next(new HttpError(429, 'Too many authentication attempts; please try again shortly')); }
 };
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 app.use(helmet({crossOriginResourcePolicy:{policy:'cross-origin'}}));
-app.use(cors({origin:(origin,cb)=>{if(!origin||env.corsOrigins.includes(origin))return cb(null,true);return cb(new Error('CORS origin denied'));},credentials:false}));
+app.use(cors({origin:(origin,cb)=>{if(!origin||env.corsOrigins.includes(origin))return cb(null,true);return cb(new Error('CORS origin denied'));},credentials:false,methods:['GET','POST','PUT','PATCH','DELETE','OPTIONS'],allowedHeaders:['Content-Type','Authorization']}));
 app.use(express.json({limit:'1mb'}));
 app.get('/health',async(_req,res,next)=>{try{res.json({ok:await healthcheck(),service:'zenit-api',timestamp:new Date().toISOString()})}catch(e){next(e)}});
-app.get('/config/public',(req,res)=>res.json({chainId:env.chainId,chainName:env.chainName,primaryAsset:env.primaryAsset,appOrigin:env.appOrigin,walletConnectProjectId:env.walletConnectProjectId,metadata:{name:env.walletConnectMetadataName,description:env.walletConnectMetadataDescription,url:env.walletConnectMetadataUrl,icons:env.walletConnectMetadataIcon?[env.walletConnectMetadataIcon]:[]}}));
+app.get('/config/public',(_req,res)=>res.json({chainId:env.chainId,chainName:env.chainName,primaryAsset:env.primaryAsset,appOrigin:env.appOrigin,walletConnectProjectId:env.walletConnectProjectId,metadata:{name:env.walletConnectMetadataName,description:env.walletConnectMetadataDescription,url:env.walletConnectMetadataUrl,icons:env.walletConnectMetadataIcon?[env.walletConnectMetadataIcon]:[]}}));
 app.use('/api/auth/nonce', limitAuth(authRateLimiter));
 app.use('/api/auth/verify', limitAuth(verifyRateLimiter));
 app.use('/api/auth',authRoutes); app.use('/api/me',meRoutes); app.use('/api/dashboard',dashboardRoutes); app.use('/api/wallets',walletRoutes); app.use('/api/transactions',transactionRoutes); app.use('/api/admin',adminRoutes); app.use('/api',mutationRoutes);
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
-const frontend=path.resolve(__dirname,'../../frontend');
+const frontend=path.resolve(__dirname,'../../frontend/dist');
 app.use(express.static(frontend));
-app.get('/',(_req,res)=>res.sendFile(path.join(frontend,'zenit-protocol.html')));
-app.use((_req,_res,next)=>next(new HttpError(404,'Route not found')));
+app.get('*',(_req,res,next)=>{if(_req.path.startsWith('/api/')||_req.path==='/health'||_req.path==='/config/public')return next(new HttpError(404,'Route not found'));res.sendFile(path.join(frontend,'index.html'));});
 app.use((err:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{const status=err instanceof HttpError?err.status:500;res.status(status).json({error:status===500?'Internal server error':(err as Error).message, ...(err instanceof HttpError&&err.details?{details:err.details}: {})})});
 app.listen(env.port,()=>console.log(`Zenit API listening on ${env.port}`));
