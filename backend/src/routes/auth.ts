@@ -40,7 +40,8 @@ router.post('/verify', async (req, res, next) => {
     const nonceResult = await client.query<{ id: string; message: string; expires_at: Date; used_at: Date | null }>(`select id,message,expires_at,used_at from auth_nonces where nonce=$1 and address=$2 for update`, [nonce,address]);
     const record = nonceResult.rows[0];
     if (!record) throw new HttpError(400, 'Nonce not found');
-    if (record.used_at || new Date(record.expires_at).getTime() < Date.now()) throw new HttpError(400, 'Nonce expired or already used');
+    if (record.used_at) throw new HttpError(409, 'Nonce already used');
+    if (new Date(record.expires_at).getTime() < Date.now()) throw new HttpError(400, 'Nonce expired');
     const valid = await verifyMessage({ address, message: record.message, signature: signature as `0x${string}` });
     if (!valid) throw new HttpError(401, 'Wallet signature verification failed');
 
