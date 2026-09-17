@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,8 +25,23 @@ if (!existsSync(path.join(frontendDir, 'package.json'))) {
 run(npm, ['install', '--no-package-lock', '--no-audit', '--no-fund'], frontendDir);
 run(npm, ['run', 'build'], frontendDir);
 
-if (!existsSync(path.join(frontendDist, 'index.html'))) {
+const builtIndex = path.join(frontendDist, 'index.html');
+if (!existsSync(builtIndex)) {
   throw new Error('Frontend build did not produce frontend/dist/index.html');
+}
+
+// The production frontend keeps the matrix UI in the existing index.html.
+// Preserve that UI, but correct the backend-node mapping before the bundled
+// artifact is served. Without a per-node index, only the first node of each
+// level receives SVG coordinates and the later nodes cause drawMatrix() to
+// abort before svg.innerHTML is assigned, leaving the matrix blank.
+const indexHtml = readFileSync(builtIndex, 'utf8');
+const brokenNodeMapping = 'index:0,parentId:n.level>1?';
+const fixedNodeMapping = 'index:n.position-(2**(n.level-1)),parentId:n.level>1?';
+if (indexHtml.includes(brokenNodeMapping)) {
+  const patchedIndex = indexHtml.replaceAll(brokenNodeMapping, fixedNodeMapping);
+  writeFileSync(builtIndex, patchedIndex, 'utf8');
+  console.log('Patched matrix node indices in frontend/dist/index.html');
 }
 
 rmSync(bundledFrontendDir, { recursive: true, force: true });
