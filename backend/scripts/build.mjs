@@ -31,24 +31,44 @@ if (!existsSync(builtIndex)) {
 }
 
 // The production frontend keeps the matrix UI in the existing index.html.
-// Preserve that UI, but correct the backend-node mapping before the bundled
-// artifact is served. Matrix positions are global descendant positions:
-// level 1 starts at position 1, level 2 at 3, level 3 at 7, etc.
-// Therefore the zero-based index within a level is position - (2^level - 1).
+// Preserve that UI, but correct the binary-tree indexing before the bundled
+// artifact is served. The root "YOU" is outside the numbered matrix nodes:
+// positions 1-2 are level 1, 3-6 level 2, 7-14 level 3, etc.
 const indexHtml = readFileSync(builtIndex, 'utf8');
-const brokenNodeMapping = 'index:0,parentId:n.level>1?';
-const legacyFixedNodeMapping = 'index:n.position-(2**(n.level-1)),parentId:n.level>1?';
-const fixedNodeMapping = 'index:n.position-(2**n.level-1),parentId:n.level>1?';
 let patchedIndex = indexHtml;
-if (patchedIndex.includes(brokenNodeMapping)) {
-  patchedIndex = patchedIndex.replaceAll(brokenNodeMapping, fixedNodeMapping);
-}
-if (patchedIndex.includes(legacyFixedNodeMapping)) {
-  patchedIndex = patchedIndex.replaceAll(legacyFixedNodeMapping, fixedNodeMapping);
-}
+
+// Backend rows must use the zero-based index within their binary level.
+const legacyFixedNodeMapping = 'index:n.position-(2**(n.level-1)),parentId:n.level>1?';
+const brokenNodeMapping = 'index:0,parentId:n.level>1?';
+const fixedNodeMapping = 'index:n.position-(2**n.level-1),parentId:n.level>1?';
+patchedIndex = patchedIndex.replaceAll(legacyFixedNodeMapping, fixedNodeMapping);
+patchedIndex = patchedIndex.replaceAll(brokenNodeMapping, fixedNodeMapping);
+
+// The frontend's structural fallback must match the same 2xN numbering:
+// position 1/2 are level 1 and parented to YOU; every later node has parent
+// floor((position - 1) / 2). This also prevents a final partial level from
+// being omitted or producing an undefined SVG coordinate.
+patchedIndex = patchedIndex.replaceAll(
+  'const level=Math.floor(Math.log2(position))+1;const firstAtLevel=(2**(level-1));',
+  'const level=Math.floor(Math.log2(position+1));const firstAtLevel=(2**level-1);'
+);
+patchedIndex = patchedIndex.replaceAll(
+  'parentId:level===1?null:Math.floor(index/2)+firstAtLevel/2',
+  'parentId:level===1?null:Math.floor((position-1)/2)'
+);
+
+// Matrix rendering must include the actual deepest node level. Program metadata
+// (2x4/2x6) describes the named program, while capacity determines the number
+// of descendant positions. For 30 and 126 positions this produces 4 and 6
+// numbered levels respectively.
+patchedIndex = patchedIndex.replaceAll(
+  'const levels=p.levels, maxCount=2**levels;',
+  'const levels=Math.max(p.levels, nodes.reduce((max,n)=>Math.max(max,n.level),0)), maxCount=2**levels;'
+);
+
 if (patchedIndex !== indexHtml) {
   writeFileSync(builtIndex, patchedIndex, 'utf8');
-  console.log('Patched matrix node indices in frontend/dist/index.html');
+  console.log('Patched binary matrix structure in frontend/dist/index.html');
 }
 
 rmSync(bundledFrontendDir, { recursive: true, force: true });
