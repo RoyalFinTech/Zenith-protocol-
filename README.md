@@ -13,7 +13,7 @@ The frontend only stores the public API base URL and Reown project ID. JWT, data
 
 ## Database
 
-Run the canonical migration `20260913000000_zenit_production.sql`; it establishes the backend's wallet-auth/session model, including nonce and session tables.
+Run the canonical migration `20260913000000_zenit_production.sql`; it establishes the backend's wallet-auth/session model, including nonce and session tables. Do not run superseded `20260912` ZENIT migrations from older revisions of this repository.
 
 ## Important production boundary
 
