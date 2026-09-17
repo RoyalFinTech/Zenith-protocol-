@@ -22,7 +22,12 @@ alter table public.program_packages enable row level security;
 revoke all on table public.program_packages from anon, authenticated;
 
 insert into public.program_packages (program_id, code, name, tier, description, sort_order)
-select p.id, x.code, x.name, x.tier, x.description, x.sort_order
+select p.id,
+       concat(p.code, '-', x.tier),
+       x.name,
+       x.tier,
+       x.description,
+       x.sort_order
 from public.programs p
 cross join (
   values
