@@ -24,7 +24,17 @@ const limitAuth = (limiter: RateLimiterMemory) => async (req: express.Request, _
   catch { next(new HttpError(429, 'Too many authentication attempts; please try again shortly')); }
 };
 app.disable('x-powered-by');
-app.use(helmet({crossOriginResourcePolicy:{policy:'cross-origin'}}));
+app.use(helmet({
+  crossOriginResourcePolicy:{policy:'cross-origin'},
+  contentSecurityPolicy:{
+    directives:{
+      scriptSrc:["'self'", "'unsafe-inline'"],
+      imgSrc:["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc:["'self'", 'https:', 'wss:'],
+      frameSrc:["'self'", 'https:']
+    }
+  }
+}));
 app.use(cors({origin:(origin,cb)=>{if(!origin||env.corsOrigins.includes(origin))return cb(null,true);return cb(new Error('CORS origin denied'));},credentials:false,methods:['GET','POST','PATCH','DELETE','OPTIONS'],allowedHeaders:['Content-Type','Authorization']}));
 app.use(express.json({limit:'1mb'}));
 app.use((req,_res,next)=>{ if(req.path.startsWith('/api/auth/')) { const body=req.body ?? {}; if(typeof body==='object') { if(typeof body.signature==='string' && body.signature.length>500) return next(new HttpError(400,'Invalid signature')); if(typeof body.address==='string' && body.address.length>64) return next(new HttpError(400,'Invalid address')); } } next(); });
