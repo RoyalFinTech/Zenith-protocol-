@@ -6,7 +6,19 @@ const router=Router(); router.use(requireAuth);
 router.get('/summary', async(req,res,next)=>{
   try{
     const [programs,earnings,txs,activity,notifications] = await Promise.all([
-      query(`select id,code,name,levels,capacity,description,active from programs where active=true order by sort_order`),
+      query(`select id,code,name,levels,capacity,description,active,
+        coalesce((select json_agg(json_build_object(
+          'id',pp.id,
+          'code',pp.code,
+          'name',pp.name,
+          'tier',pp.tier,
+          'description',pp.description,
+          'price',pp.price,
+          'asset',pp.asset,
+          'active',pp.active,
+          'sortOrder',pp.sort_order
+        ) order by pp.sort_order) from program_packages pp where pp.program_id=p.id and pp.active=true),'[]'::json) as packages
+        from programs p where p.active=true order by p.sort_order`),
       query(`select coalesce(sum(case when type='earned' and status='completed' then amount else 0 end),0) total,coalesce(sum(case when status='pending' then amount else 0 end),0) pending,coalesce(sum(case when type='withdrawal' and status='completed' then amount else 0 end),0) withdrawn from ledger_transactions where user_id=$1`,[req.auth!.userId]),
       query(`select occurred_at,type,program_code,amount,asset,status,reference from ledger_transactions where user_id=$1 order by occurred_at desc limit 50`,[req.auth!.userId]),
       query(`select icon,title,description,occurred_at,status from activity_events where user_id=$1 order by occurred_at desc limit 10`,[req.auth!.userId]),
