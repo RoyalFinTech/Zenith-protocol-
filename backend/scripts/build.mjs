@@ -32,14 +32,21 @@ if (!existsSync(builtIndex)) {
 
 // The production frontend keeps the matrix UI in the existing index.html.
 // Preserve that UI, but correct the backend-node mapping before the bundled
-// artifact is served. Without a per-node index, only the first node of each
-// level receives SVG coordinates and the later nodes cause drawMatrix() to
-// abort before svg.innerHTML is assigned, leaving the matrix blank.
+// artifact is served. Matrix positions are global descendant positions:
+// level 1 starts at position 1, level 2 at 3, level 3 at 7, etc.
+// Therefore the zero-based index within a level is position - (2^level - 1).
 const indexHtml = readFileSync(builtIndex, 'utf8');
 const brokenNodeMapping = 'index:0,parentId:n.level>1?';
-const fixedNodeMapping = 'index:n.position-(2**(n.level-1)),parentId:n.level>1?';
-if (indexHtml.includes(brokenNodeMapping)) {
-  const patchedIndex = indexHtml.replaceAll(brokenNodeMapping, fixedNodeMapping);
+const legacyFixedNodeMapping = 'index:n.position-(2**(n.level-1)),parentId:n.level>1?';
+const fixedNodeMapping = 'index:n.position-(2**n.level-1),parentId:n.level>1?';
+let patchedIndex = indexHtml;
+if (patchedIndex.includes(brokenNodeMapping)) {
+  patchedIndex = patchedIndex.replaceAll(brokenNodeMapping, fixedNodeMapping);
+}
+if (patchedIndex.includes(legacyFixedNodeMapping)) {
+  patchedIndex = patchedIndex.replaceAll(legacyFixedNodeMapping, fixedNodeMapping);
+}
+if (patchedIndex !== indexHtml) {
   writeFileSync(builtIndex, patchedIndex, 'utf8');
   console.log('Patched matrix node indices in frontend/dist/index.html');
 }
