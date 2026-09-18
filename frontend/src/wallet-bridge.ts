@@ -11,8 +11,10 @@ let appKit: ReturnType<typeof createAppKit> | null = null;
 let adapter: WagmiAdapter | null = null;
 let authToken = localStorage.getItem('zenitToken') || '';
 let stopWatching: (() => void) | null = null;
+let stopAppKitAccount: (() => void) | null = null;
 let initPromise: Promise<void> | null = null;
 let lastAddress = '';
+let authInFlightAddress = '';
 
 async function loadPublicConfig() {
   const base = API || window.location.origin;
@@ -51,6 +53,54 @@ async function init() {
       metadata,
       features: { analytics: false, email: false, socials: false }
     } as any);
+
+    // AppKit is the authoritative source for wallet connection state.
+    // This is important on mobile because WalletConnect can finish the
+    // connection after the browser returns from the wallet app.
+    stopAppKitAccount = appKit.subscribeAccount((state: any) => {
+      const address = state?.address as string | undefined;
+      const chainId = state?.chainId == null ? undefined : Number(state.chainId);
+
+      if (!state?.isConnected || !address) {
+        if (authToken || lastAddress) clearLocalSession();
+        (window as any).zenitSetWallet?.(false, 'Not connected');
+        return;
+      }
+
+      if (chainId && chainId !== BSC_CHAIN_ID) {
+        (window as any).zenitSetWallet?.(false, 'Wrong network');
+        (window as any).zenitToast?.(
+          'Wrong network',
+          'Please switch your wallet to BNB Smart Chain (BSC) before authenticating.',
+          'warning'
+        );
+        return;
+      }
+
+      if (address.toLowerCase() === lastAddress.toLowerCase() && authToken) {
+        (window as any).zenitSetWallet?.(true, address);
+        return;
+      }
+
+      if (authInFlightAddress.toLowerCase() === address.toLowerCase()) return;
+      authInFlightAddress = address;
+      void (async () => {
+        try {
+          const typedAddress = address as `0x${string}`;
+          if (await restoreSession(typedAddress)) return;
+          await authenticate(typedAddress);
+        } catch (error) {
+          (window as any).zenitSetWallet?.(false, 'Not connected');
+          (window as any).zenitToast?.(
+            'Wallet authentication failed',
+            error instanceof Error ? error.message : String(error),
+            'error'
+          );
+        } finally {
+          authInFlightAddress = '';
+        }
+      })();
+    });
 
     window.addEventListener('zenit:wallet-select', () => appKit?.open());
   })();
@@ -251,6 +301,7 @@ async function disconnect() {
   }
 
   clearLocalSession();
+  authInFlightAddress = '';
   (window as any).zenitSetWallet?.(false, 'Not connected');
   (window as any).zenitLoadBackend?.('').catch?.(() => undefined);
 }
