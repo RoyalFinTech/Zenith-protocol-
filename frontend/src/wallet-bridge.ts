@@ -1,7 +1,7 @@
 import { createAppKit } from '@reown/appkit';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { bsc } from '@reown/appkit/networks';
-import { getAccount, signMessage, watchAccount, disconnect as wagmiDisconnect, writeContract, waitForTransactionReceipt } from '@wagmi/core';
+import { getAccount, reconnect, signMessage, watchAccount, disconnect as wagmiDisconnect, writeContract, waitForTransactionReceipt } from '@wagmi/core';
 import { erc20Abi, parseUnits } from 'viem';
 
 const API = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
@@ -44,7 +44,7 @@ async function init() {
       icons: []
     };
 
-    adapter = new WagmiAdapter({ projectId, networks: [bsc] });
+    adapter = new WagmiAdapter({ projectId, networks: [bsc], enableReconnect: true } as any);
     appKit = createAppKit({
       adapters: [adapter],
       projectId,
@@ -197,6 +197,10 @@ async function authenticate(address: `0x${string}`) {
 async function syncCurrentAccount() {
   if (!adapter) return;
 
+  // Rehydrate the Wagmi/AppKit provider before reading account state. This is
+  // essential when the page is reopened or resumed after MetaMask/mobile wallet
+  // has kept the connection alive outside the browser tab.
+  await reconnect(adapter.wagmiConfig).catch(() => undefined);
   const account = getAccount(adapter.wagmiConfig);
   if (!account.isConnected || !account.address) {
     if (authToken || lastAddress) clearLocalSession();
