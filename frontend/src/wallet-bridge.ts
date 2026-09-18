@@ -84,32 +84,7 @@ async function init() {
       // completing. Reflect it immediately so the UI never falls back to
       // "Connect wallet" merely because the API is slow or temporarily busy.
       (window as any).zenitSetWallet?.(true, address);
-
-      if (address.toLowerCase() === lastAddress.toLowerCase() && authToken) {
-        return;
-      }
-
-      if (Date.now() < authRetryAt) return;
-      if (authInFlightAddress.toLowerCase() === address.toLowerCase()) return;
-      authInFlightAddress = address;
-      void (async () => {
-        try {
-          const typedAddress = address as `0x${string}`;
-          if (await restoreSession(typedAddress)) return;
-          await authenticate(typedAddress);
-        } catch (error) {
-          // The provider is connected; authentication can be retried without
-          // incorrectly flipping the wallet UI back to "Connect wallet".
-          (window as any).zenitSetWallet?.(true, address);
-          (window as any).zenitToast?.(
-            'Wallet authentication pending',
-            error instanceof Error ? error.message : String(error),
-            'warning'
-          );
-        } finally {
-          authInFlightAddress = '';
-        }
-      })();
+      syncCurrentAccount().catch(() => undefined);
     });
 
     window.addEventListener('zenit:wallet-select', () => appKit?.open());
