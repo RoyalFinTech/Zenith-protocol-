@@ -22,6 +22,10 @@ export const env = {
   walletConnectMetadataDescription: process.env.WALLETCONNECT_METADATA_DESCRIPTION ?? 'Decentralized Wealth Network',
   walletConnectMetadataUrl: process.env.WALLETCONNECT_METADATA_URL ?? 'http://localhost:5173',
   walletConnectMetadataIcon: process.env.WALLETCONNECT_METADATA_ICON ?? '',
+  bscRpcUrl: process.env.BSC_RPC_URL ?? 'https://bsc-dataseed.bnbchain.org',
+  usdtContractAddress: process.env.USDT_CONTRACT_ADDRESS ?? '0x55d398326f99059ff775485246999027b3197955',
+  paymentReceiverAddress: process.env.PAYMENT_RECEIVER_ADDRESS ?? '',
+  paymentConfirmations: Number(process.env.PAYMENT_CONFIRMATIONS ?? 2),
   sessionTtlMinutes: Number(process.env.SESSION_TTL_MINUTES ?? 10080),
   nonceTtlMinutes: Number(process.env.NONCE_TTL_MINUTES ?? 10),
   corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map(v => v.trim()).filter(Boolean)
