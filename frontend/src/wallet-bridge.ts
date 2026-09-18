@@ -1,7 +1,8 @@
 import { createAppKit } from '@reown/appkit';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { bsc } from '@reown/appkit/networks';
-import { getAccount, signMessage, watchAccount, disconnect as wagmiDisconnect } from '@wagmi/core';
+import { getAccount, signMessage, watchAccount, disconnect as wagmiDisconnect, writeContract, waitForTransactionReceipt } from '@wagmi/core';
+import { erc20Abi, parseUnits } from 'viem';
 
 const API = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const PROJECT_ID = import.meta.env.VITE_REOWN_PROJECT_ID || '';
@@ -14,6 +15,7 @@ let stopWatching: (() => void) | null = null;
 let initPromise: Promise<void> | null = null;
 let lastAddress = '';
 let authInFlightAddress = '';
+let purchaseInFlight = false;
 
 async function loadPublicConfig() {
   const base = API || window.location.origin;
@@ -304,6 +306,71 @@ async function disconnect() {
   (window as any).zenitSetWallet?.(false, 'Not connected');
   (window as any).zenitLoadBackend?.('').catch?.(() => undefined);
 }
+
+
+async function buyPackage(packageCode: string, referralCode = '') {
+  if (purchaseInFlight) throw new Error('A package payment is already in progress');
+  purchaseInFlight = true;
+  try {
+    await init();
+    setupWatchers();
+    if (!adapter) throw new Error('Wallet adapter unavailable');
+
+    let account = getAccount(adapter.wagmiConfig);
+    if (!account.isConnected || !account.address) {
+      await openWallet();
+      account = getAccount(adapter.wagmiConfig);
+    }
+    if (!account.isConnected || !account.address) throw new Error('Connect your wallet before purchasing a package');
+    if (!account.chainId || Number(account.chainId) !== BSC_CHAIN_ID) throw new Error('Switch your wallet to BNB Smart Chain');
+
+    if (!authToken) await authenticate(account.address);
+    if (!authToken) throw new Error('Wallet authentication is required');
+
+    const base = API || window.location.origin;
+    const quoteR = await fetch(`${base}/api/packages/purchases`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ packageCode, referralCode: referralCode || undefined })
+    });
+    const quoteData = await quoteR.json().catch(() => ({})) as {
+      purchase?: { id:string; amount:string; token:`0x${string}`; receiver:`0x${string}`; decimals:number };
+      error?: string;
+    };
+    if (!quoteR.ok || !quoteData.purchase) throw new Error(quoteData.error || 'Unable to prepare package payment');
+
+    const purchase = quoteData.purchase;
+    (window as any).zenitToast?.('Payment ready', `Confirm ${purchase.amount} USDT in your wallet.`, 'info');
+
+    const hash = await writeContract(adapter.wagmiConfig, {
+      account: account.address,
+      address: purchase.token,
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [purchase.receiver, parseUnits(purchase.amount, purchase.decimals)],
+      chainId: BSC_CHAIN_ID
+    });
+
+    (window as any).zenitToast?.('Payment submitted', 'Waiting for BNB Smart Chain confirmation.', 'info');
+    await waitForTransactionReceipt(adapter.wagmiConfig, { hash, chainId: BSC_CHAIN_ID, confirmations: 2 });
+
+    const confirmR = await fetch(`${base}/api/packages/purchases/${purchase.id}/confirm`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ txHash: hash })
+    });
+    const confirmData = await confirmR.json().catch(() => ({})) as { status?:string; purchase?:unknown; error?:string };
+    if (!confirmR.ok) throw new Error(confirmData.error || 'Payment was not accepted by the settlement verifier');
+
+    await (window as any).zenitLoadBackend?.(authToken);
+    (window as any).zenitToast?.('Package activated', 'Payment verified and your matrix position is now active.', 'success');
+    return confirmData;
+  } finally {
+    purchaseInFlight = false;
+  }
+}
+
+(window as any).zenitBuyPackage = (packageCode: string, referralCode = '') => buyPackage(packageCode, referralCode);
 
 (window as any).zenitOpenWallet = () => openWallet();
 (window as any).zenitDisconnectWallet = () => disconnect();
