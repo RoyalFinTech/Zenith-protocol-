@@ -25,19 +25,25 @@ router.post('/referral/regenerate', async (req,res,next)=>{
 router.post('/programs/:programCode/place', async(req,res,next)=>{
   const client=await pool.connect();
   try{
+    const purchaseId=String(req.body?.purchaseId??'').trim();
+    if(!purchaseId) throw new HttpError(400,'Confirmed purchaseId is required');
     await client.query('begin');
     const program=(await client.query<{id:string;levels:number;capacity:number}>(`select id,levels,capacity from programs where code=$1 and active=true for update`,[req.params.programCode])).rows[0];
     if(!program) throw new HttpError(404,'Program not found');
+    const purchase=(await client.query(`
+      select pp.id,pp.referrer_user_id from package_purchases pp
+      join program_packages ppk on ppk.id=pp.package_id
+      where pp.id=$1 and pp.user_id=$2 and pp.status='confirmed' and ppk.program_id=$3
+      limit 1
+    `,[purchaseId,req.auth!.userId,program.id])).rows[0];
+    if(!purchase) throw new HttpError(409,'A confirmed package purchase for this program is required');
     const already=(await client.query(`select id from matrix_memberships where program_id=$1 and user_id=$2`,[program.id,req.auth!.userId])).rows[0];
     if(already) throw new HttpError(409,'You already have a position in this program');
     const node=(await client.query<{id:string;position:number;level:number}>(`select id,position,level from matrix_nodes where program_id=$1 and status='available' order by position asc for update skip locked limit 1`,[program.id])).rows[0];
     if(!node) throw new HttpError(409,'No available position remains in this program');
-    const referrerCode=String(req.body?.referralCode??'').trim().toUpperCase();
-    let referrerId:string|null=null;
-    if(referrerCode){referrerId=(await client.query<{id:string}>(`select id from app_users where referral_code=$1`,[referrerCode])).rows[0]?.id ?? null;}
-    await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`,[req.auth!.userId,referrerId,node.id]);
-    const membership=(await client.query(`insert into matrix_memberships(user_id,program_id,node_id,referrer_user_id,level,position,status) values($1,$2,$3,$4,$5,$6,'active') returning id,program_id,node_id,level,position,status,created_at`,[req.auth!.userId,program.id,node.id,referrerId,node.level,node.position])).rows[0];
-    await client.query(`insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'matrix_position_activated','matrix_membership',$2,$3)`,[req.auth!.userId,membership.id,JSON.stringify({programCode:req.params.programCode,position:node.position,level:node.level,referrerId})]);
+    await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`,[req.auth!.userId,purchase.referrer_user_id,node.id]);
+    const membership=(await client.query(`insert into matrix_memberships(user_id,program_id,node_id,referrer_user_id,level,position,status) values($1,$2,$3,$4,$5,$6,'active') returning id,program_id,node_id,level,position,status,created_at`,[req.auth!.userId,program.id,node.id,purchase.referrer_user_id,node.level,node.position])).rows[0];
+    await client.query(`insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'matrix_position_activated','matrix_membership',$2,$3)`,[req.auth!.userId,membership.id,JSON.stringify({programCode:req.params.programCode,position:node.position,level:node.level,purchaseId})]);
     await client.query('commit');
     res.status(201).json({membership});
   }catch(e){await client.query('rollback').catch(()=>{});next(e)} finally{client.release();}
