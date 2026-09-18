@@ -88,6 +88,7 @@ router.post('/purchases', async (req, res, next) => {
       insert into package_purchases(user_id,package_id,referral_code,referrer_user_id,amount,asset,status)
       values($1,$2,$3,$4,$5,$6,'pending') returning id,created_at
     `, [req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset])).rows[0];
+    if (!purchase) throw new HttpError(500, 'Unable to create package purchase');
 
     res.status(pending ? 200 : 201).json({
       purchase: {
@@ -125,6 +126,8 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
 
     const receiver = receiverAddress();
     const { token, decimals } = await tokenMetadata();
+    const duplicateTx = (await query(`select id from package_purchases where payment_tx_hash=$1 limit 1`, [txHash])).rows[0];
+    if (duplicateTx && duplicateTx.id !== purchaseId) throw new HttpError(409, 'This transaction hash has already been used for another package purchase');
     const expectedAmount = parseUnits(String(purchase.amount), decimals);
 
     const tx = await publicClient.getTransaction({ hash: txHash }).catch(() => null);
