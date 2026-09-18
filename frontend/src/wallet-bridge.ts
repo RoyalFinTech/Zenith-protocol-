@@ -16,7 +16,7 @@ let lastAddress = '';
 
 async function loadPublicConfig() {
   const base = API || window.location.origin;
-  const response = await fetch(`\${base}/config/public`, { headers: { accept: 'application/json' } });
+  const response = await fetch(`${base}/config/public`, { headers: { accept: 'application/json' } });
   if (!response.ok) throw new Error('Unable to load wallet configuration');
   return response.json() as Promise<{
     chainId: number;
@@ -69,13 +69,13 @@ function clearLocalSession() {
   localStorage.removeItem('zenitToken');
 }
 
-async function restoreSession(address: \`0x\${string}\`) {
+async function restoreSession(address: `0x${string}`) {
   if (!authToken) return false;
 
   const base = API || window.location.origin;
   try {
-    const response = await fetch(`\${base}/api/me`, {
-      headers: { Authorization: \`Bearer \${authToken}\`, accept: 'application/json' }
+    const response = await fetch(`${base}/api/me`, {
+      headers: { Authorization: `Bearer ${authToken}`, accept: 'application/json' }
     });
     if (!response.ok) {
       clearLocalSession();
@@ -97,9 +97,9 @@ async function restoreSession(address: \`0x\${string}\`) {
   }
 }
 
-async function authenticate(address: \`0x\${string}\`) {
+async function authenticate(address: `0x${string}`) {
   const base = API || window.location.origin;
-  const nonceR = await fetch(`\${base}/api/auth/nonce`, {
+  const nonceR = await fetch(`${base}/api/auth/nonce`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({ address })
@@ -111,7 +111,7 @@ async function authenticate(address: \`0x\${string}\`) {
 
   const signature = await signMessage(adapter.wagmiConfig, { message });
 
-  const verifyR = await fetch(`\${base}/api/auth/verify`, {
+  const verifyR = await fetch(`${base}/api/auth/verify`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({ address, nonce, signature })
@@ -122,12 +122,12 @@ async function authenticate(address: \`0x\${string}\`) {
   authToken = data.token;
   localStorage.setItem('zenitToken', authToken);
 
-  const bindR = await fetch(`\${base}/api/wallets/bind`, {
+  const bindR = await fetch(`${base}/api/wallets/bind`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       accept: 'application/json',
-      Authorization: \`Bearer \${authToken}\`
+      Authorization: `Bearer ${authToken}`
     },
     body: JSON.stringify({ address })
   });
@@ -227,9 +227,9 @@ async function disconnect() {
   const base = API || window.location.origin;
 
   if (authToken) {
-    await fetch(`\${base}/api/auth/logout`, {
+    await fetch(`${base}/api/auth/logout`, {
       method: 'POST',
-      headers: { Authorization: \`Bearer \${authToken}\` }
+      headers: { Authorization: `Bearer ${authToken}` }
     }).catch(() => undefined);
   }
 
@@ -246,7 +246,7 @@ async function disconnect() {
     ...init,
     headers: {
       ...(init.headers || {}),
-      ...(authToken ? { Authorization: \`Bearer \${authToken}\` } : {})
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
     }
   });
 
