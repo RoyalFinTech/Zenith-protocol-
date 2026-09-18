@@ -221,6 +221,16 @@ async function openWallet() {
   await init();
   setupWatchers();
   appKit?.open();
+
+  // Mobile wallets often return to the browser after the AppKit connection
+  // is completed. Poll briefly here as a fallback to the wagmi watcher so
+  // the ZENIT UI is updated even when the provider emits its event late.
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await syncCurrentAccount();
+    const account = adapter ? getAccount(adapter.wagmiConfig) : null;
+    if (account?.isConnected && account.address && authToken) break;
+  }
 }
 
 async function disconnect() {
@@ -233,13 +243,20 @@ async function disconnect() {
     }).catch(() => undefined);
   }
 
+  if (appKit && typeof (appKit as any).disconnect === 'function') {
+    await (appKit as any).disconnect().catch(() => undefined);
+  }
   if (adapter) {
     await wagmiDisconnect(adapter.wagmiConfig).catch(() => undefined);
   }
 
   clearLocalSession();
   (window as any).zenitSetWallet?.(false, 'Not connected');
+  (window as any).zenitLoadBackend?.('').catch?.(() => undefined);
 }
+
+(window as any).zenitOpenWallet = () => openWallet();
+(window as any).zenitDisconnectWallet = () => disconnect();
 
 (window as any).zenitAuthFetch = (input: string, init: RequestInit = {}) =>
   fetch(input, {
@@ -249,6 +266,16 @@ async function disconnect() {
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
     }
   });
+
+window.addEventListener('focus', () => {
+  if (adapter) syncCurrentAccount().catch(() => undefined);
+});
+window.addEventListener('pageshow', () => {
+  if (adapter) syncCurrentAccount().catch(() => undefined);
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && adapter) syncCurrentAccount().catch(() => undefined);
+});
 
 window.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (event) => {
