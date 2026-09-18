@@ -11,7 +11,6 @@ let appKit: ReturnType<typeof createAppKit> | null = null;
 let adapter: WagmiAdapter | null = null;
 let authToken = localStorage.getItem('zenitToken') || '';
 let stopWatching: (() => void) | null = null;
-let stopAppKitAccount: (() => void) | null = null;
 let initPromise: Promise<void> | null = null;
 let lastAddress = '';
 let authInFlightAddress = '';
@@ -57,7 +56,7 @@ async function init() {
     // AppKit is the authoritative source for wallet connection state.
     // This is important on mobile because WalletConnect can finish the
     // connection after the browser returns from the wallet app.
-    stopAppKitAccount = appKit.subscribeAccount((state: any) => {
+    appKit.subscribeAccount((state: any) => {
       const address = state?.address as string | undefined;
       const chainId = state?.chainId == null ? undefined : Number(state.chainId);
 
