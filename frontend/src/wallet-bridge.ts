@@ -1,7 +1,7 @@
 import { createAppKit } from '@reown/appkit';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { bsc } from '@reown/appkit/networks';
-import { getAccount, reconnect, signMessage, watchAccount, disconnect as wagmiDisconnect, writeContract, waitForTransactionReceipt } from '@wagmi/core';
+import { getAccount, signMessage, watchAccount, writeContract, waitForTransactionReceipt } from '@wagmi/core';
 import { erc20Abi, parseUnits } from 'viem';
 
 const API = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
@@ -16,6 +16,8 @@ let initPromise: Promise<void> | null = null;
 let lastAddress = '';
 let authInFlightAddress = '';
 let purchaseInFlight = false;
+let syncInFlight: Promise<void> | null = null;
+let authRetryAt = 0;
 
 async function loadPublicConfig() {
   const base = API || window.location.origin;
@@ -91,9 +93,11 @@ async function init() {
           if (await restoreSession(typedAddress)) return;
           await authenticate(typedAddress);
         } catch (error) {
-          (window as any).zenitSetWallet?.(false, 'Not connected');
+          // The provider is connected; authentication can be retried without
+          // incorrectly flipping the wallet UI back to "Connect wallet".
+          (window as any).zenitSetWallet?.(true, address);
           (window as any).zenitToast?.(
-            'Wallet authentication failed',
+            'Wallet authentication pending',
             error instanceof Error ? error.message : String(error),
             'error'
           );
@@ -196,12 +200,13 @@ async function authenticate(address: `0x${string}`) {
 
 async function syncCurrentAccount() {
   if (!adapter) return;
+  if (syncInFlight) return syncInFlight;
 
-  // Rehydrate the Wagmi/AppKit provider before reading account state. This is
-  // essential when the page is reopened or resumed after MetaMask/mobile wallet
-  // has kept the connection alive outside the browser tab.
-  await reconnect(adapter.wagmiConfig).catch(() => undefined);
-  const account = getAccount(adapter.wagmiConfig);
+  syncInFlight = (async () => {
+    // AppKit restores its persisted connection independently. Do not call
+    // wagmi reconnect() here: AppKit-managed connectors may not expose the
+    // wagmi connector methods that reconnect() expects on mobile.
+    const account = getAccount(adapter!.wagmiConfig);
   if (!account.isConnected || !account.address) {
     if (authToken || lastAddress) clearLocalSession();
     (window as any).zenitSetWallet?.(false, 'Not connected');
@@ -228,12 +233,21 @@ async function syncCurrentAccount() {
   try {
     await authenticate(account.address);
   } catch (error) {
-    (window as any).zenitToast?.(
-      'Wallet authentication failed',
-      error instanceof Error ? error.message : String(error),
-      'error'
-    );
+    const now = Date.now();
+    if (now >= authRetryAt) {
+      authRetryAt = now + 5000;
+      (window as any).zenitToast?.(
+        'Wallet authentication pending',
+        error instanceof Error ? error.message : String(error),
+        'warning'
+      );
+    }
+    // The wallet itself is connected even if backend authentication is
+    // temporarily unavailable. Keep the connection state visible.
+    (window as any).zenitSetWallet?.(true, account.address);
   }
+  })().finally(() => { syncInFlight = null; });
+  return syncInFlight;
 }
 
 function setupWatchers() {
@@ -300,9 +314,6 @@ async function disconnect() {
 
   if (appKit && typeof (appKit as any).disconnect === 'function') {
     await (appKit as any).disconnect().catch(() => undefined);
-  }
-  if (adapter) {
-    await wagmiDisconnect(adapter.wagmiConfig).catch(() => undefined);
   }
 
   clearLocalSession();
