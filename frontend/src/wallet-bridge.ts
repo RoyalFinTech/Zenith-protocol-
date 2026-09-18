@@ -303,22 +303,48 @@ async function openWallet() {
 
 async function disconnect() {
   const base = API || window.location.origin;
+  const token = authToken;
 
-  if (authToken) {
-    await fetch(`${base}/api/auth/logout`, {
+  // Reset ZENIT immediately. A mobile wallet/relay disconnect call can hang
+  // when there is no active WalletConnect session. The UI must never wait for it.
+  clearLocalSession();
+  authInFlightAddress = '';
+  authRetryAt = 0;
+  (window as any).zenitSetWallet?.(false, 'Not connected');
+  (window as any).zenitLoadBackend?.('').catch?.(() => undefined);
+
+  // Best-effort backend logout; never block the wallet UI on the API.
+  if (token) {
+    void fetch(`${base}/api/auth/logout`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${authToken}` }
+      headers: { Authorization: `Bearer ${token}` }
     }).catch(() => undefined);
   }
 
+  // Best-effort AppKit disconnect. If there is no WalletConnect session,
+  // AppKit has nothing to terminate; ZENIT is already safely disconnected.
   if (appKit && typeof (appKit as any).disconnect === 'function') {
-    await (appKit as any).disconnect().catch(() => undefined);
+    const disconnectPromise = Promise.resolve()
+      .then(() => (appKit as any).disconnect())
+      .catch(() => undefined);
+
+    await Promise.race([
+      disconnectPromise,
+      new Promise(resolve => setTimeout(resolve, 2500))
+    ]);
   }
 
-  clearLocalSession();
-  authInFlightAddress = '';
-  (window as any).zenitSetWallet?.(false, 'Not connected');
-  (window as any).zenitLoadBackend?.('').catch?.(() => undefined);
+  try {
+    (appKit as any)?.close?.();
+  } catch {
+    // Modal cleanup must not affect the disconnected application state.
+  }
+
+  (window as any).zenitToast?.(
+    'Wallet disconnected',
+    'ZENIT wallet state has been cleared.',
+    'info'
+  );
 }
 
 
