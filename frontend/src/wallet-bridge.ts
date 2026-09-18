@@ -80,11 +80,16 @@ async function init() {
         return;
       }
 
+      // The provider connection is real even while backend authentication is
+      // completing. Reflect it immediately so the UI never falls back to
+      // "Connect wallet" merely because the API is slow or temporarily busy.
+      (window as any).zenitSetWallet?.(true, address);
+
       if (address.toLowerCase() === lastAddress.toLowerCase() && authToken) {
-        (window as any).zenitSetWallet?.(true, address);
         return;
       }
 
+      if (Date.now() < authRetryAt) return;
       if (authInFlightAddress.toLowerCase() === address.toLowerCase()) return;
       authInFlightAddress = address;
       void (async () => {
@@ -99,7 +104,7 @@ async function init() {
           (window as any).zenitToast?.(
             'Wallet authentication pending',
             error instanceof Error ? error.message : String(error),
-            'error'
+            'warning'
           );
         } finally {
           authInFlightAddress = '';
@@ -223,15 +228,19 @@ async function syncCurrentAccount() {
     return;
   }
 
-  if (account.address === lastAddress && authToken) {
-    (window as any).zenitSetWallet?.(true, account.address);
+  (window as any).zenitSetWallet?.(true, account.address);
+
+  if (account.address === lastAddress && authToken) return;
+  if (Date.now() < authRetryAt) return;
+
+  if (await restoreSession(account.address)) {
+    authRetryAt = 0;
     return;
   }
 
-  if (await restoreSession(account.address)) return;
-
   try {
     await authenticate(account.address);
+    authRetryAt = 0;
   } catch (error) {
     const now = Date.now();
     if (now >= authRetryAt) {
