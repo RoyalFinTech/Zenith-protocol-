@@ -1,7 +1,7 @@
 import { createAppKit } from '@reown/appkit';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { bsc } from '@reown/appkit/networks';
-import { getAccount, signMessage, watchAccount, writeContract, waitForTransactionReceipt } from '@wagmi/core';
+import { getAccount, signMessage, writeContract, waitForTransactionReceipt } from '@wagmi/core';
 import { erc20Abi, parseUnits } from 'viem';
 
 const API = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
@@ -11,7 +11,6 @@ const BSC_CHAIN_ID = 56;
 let appKit: ReturnType<typeof createAppKit> | null = null;
 let adapter: WagmiAdapter | null = null;
 let authToken = localStorage.getItem('zenitToken') || '';
-let stopWatching: (() => void) | null = null;
 let initPromise: Promise<void> | null = null;
 let lastAddress = '';
 let authInFlightAddress = '';
@@ -98,6 +97,29 @@ async function init() {
   }
 }
 
+function connectorIsReady(account: ReturnType<typeof getAccount>) {
+  const connector = (account as any)?.connector;
+  return Boolean(account?.isConnected && account?.address && connector && typeof connector.getChainId === 'function');
+}
+
+async function waitForConnectorReady(address: string, timeoutMs = 6000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (!adapter) return false;
+    const account = getAccount(adapter.wagmiConfig);
+    if (
+      account.isConnected &&
+      account.address &&
+      account.address.toLowerCase() === address.toLowerCase() &&
+      connectorIsReady(account)
+    ) {
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  return false;
+}
+
 function clearLocalSession() {
   authToken = '';
   lastAddress = '';
@@ -143,6 +165,8 @@ async function authenticate(address: `0x${string}`) {
 
   const { nonce, message } = await nonceR.json() as { nonce: string; message: string };
   if (!adapter) throw new Error('Wallet adapter unavailable');
+  const connectorReady = await waitForConnectorReady(address);
+  if (!connectorReady) throw new Error('Wallet provider is still initializing; please try again');
 
   const signature = await signMessage(adapter.wagmiConfig, { message });
 
@@ -183,90 +207,81 @@ async function syncCurrentAccount() {
   if (syncInFlight) return syncInFlight;
 
   syncInFlight = (async () => {
-    // AppKit restores its persisted connection independently. Do not call
-    // wagmi reconnect() here: AppKit-managed connectors may not expose the
-    // wagmi connector methods that reconnect() expects on mobile.
     const account = getAccount(adapter!.wagmiConfig);
-  if (!account.isConnected || !account.address) {
-    if (authToken || lastAddress) clearLocalSession();
-    (window as any).zenitSetWallet?.(false, 'Not connected');
-    return;
-  }
 
-  if (account.chainId && Number(account.chainId) !== BSC_CHAIN_ID) {
-    (window as any).zenitSetWallet?.(false, 'Wrong network');
-    (window as any).zenitToast?.(
-      'Wrong network',
-      'Please switch your wallet to BNB Smart Chain (BSC) before authenticating.',
-      'warning'
-    );
-    return;
-  }
+    if (!account.isConnected || !account.address) {
+      if (authToken || lastAddress) clearLocalSession();
+      (window as any).zenitSetWallet?.(false, 'Not connected');
+      return;
+    }
 
-  (window as any).zenitSetWallet?.(true, account.address);
+    if (account.chainId && Number(account.chainId) !== BSC_CHAIN_ID) {
+      (window as any).zenitSetWallet?.(false, 'Wrong network');
+      return;
+    }
 
-  if (account.address === lastAddress && authToken) return;
-  if (Date.now() < authRetryAt) return;
+    // AppKit may report the address a moment before Wagmi has a usable
+    // connector object, especially when returning from MetaMask mobile.
+    // Never call signMessage/writeContract during that gap: Wagmi will throw
+    // "connector.getChainId is not a function".
+    (window as any).zenitSetWallet?.(true, account.address);
+    const ready = await waitForConnectorReady(account.address);
+    if (!ready) {
+      (window as any).zenitToast?.(
+        'Wallet connection is syncing',
+        'The wallet is connected, but its provider is still initializing. Please wait a moment.',
+        'info'
+      );
+      return;
+    }
 
-  if (await restoreSession(account.address)) {
-    authRetryAt = 0;
-    return;
-  }
+    const readyAccount = getAccount(adapter!.wagmiConfig);
+    if (!readyAccount.isConnected || !readyAccount.address) {
+      (window as any).zenitSetWallet?.(false, 'Not connected');
+      return;
+    }
+    if (readyAccount.chainId && Number(readyAccount.chainId) !== BSC_CHAIN_ID) {
+      (window as any).zenitSetWallet?.(false, 'Wrong network');
+      return;
+    }
 
-  try {
-    await authenticate(account.address);
-    authRetryAt = 0;
-  } catch (error) {
-    const now = Date.now();
-    if (now >= authRetryAt) {
-      authRetryAt = now + 5000;
+    (window as any).zenitSetWallet?.(true, readyAccount.address);
+
+    if (readyAccount.address === lastAddress && authToken) return;
+    if (Date.now() < authRetryAt) return;
+
+    if (await restoreSession(readyAccount.address)) {
+      authRetryAt = 0;
+      return;
+    }
+
+    try {
+      await authenticate(readyAccount.address);
+      authRetryAt = 0;
+    } catch (error) {
+      // Do not turn a real provider connection into a fake "disconnected"
+      // state when backend authentication is temporarily unavailable.
+      const now = Date.now();
+      authRetryAt = Math.min(
+        Math.max(authRetryAt || now, now) + 15000,
+        now + 60000
+      );
       (window as any).zenitToast?.(
         'Wallet authentication pending',
         error instanceof Error ? error.message : String(error),
         'warning'
       );
+      (window as any).zenitSetWallet?.(true, readyAccount.address);
     }
-    // The wallet itself is connected even if backend authentication is
-    // temporarily unavailable. Keep the connection state visible.
-    (window as any).zenitSetWallet?.(true, account.address);
-  }
   })().finally(() => { syncInFlight = null; });
+
   return syncInFlight;
 }
 
 function setupWatchers() {
-  if (!adapter || stopWatching) return;
-
-  stopWatching = watchAccount(adapter.wagmiConfig, {
-    onChange: (account) => {
-      if (account.isConnected && account.address) {
-        if (account.chainId && Number(account.chainId) !== BSC_CHAIN_ID) {
-          (window as any).zenitSetWallet?.(false, 'Wrong network');
-          (window as any).zenitToast?.(
-            'Wrong network',
-            'Please switch your wallet to BNB Smart Chain (BSC).',
-            'warning'
-          );
-          return;
-        }
-        if (account.address !== lastAddress || !authToken) {
-          syncCurrentAccount().catch((error) =>
-            (window as any).zenitToast?.(
-              'Wallet sync failed',
-              error instanceof Error ? error.message : String(error),
-              'error'
-            )
-          );
-        } else {
-          (window as any).zenitSetWallet?.(true, account.address);
-        }
-      } else {
-        clearLocalSession();
-        (window as any).zenitSetWallet?.(false, 'Not connected');
-      }
-    }
-  });
-
+  // AppKit's account subscription is the single wallet-state authority.
+  // A second wagmi watchAccount listener caused duplicate mobile sync/auth
+  // attempts and could race AppKit while its connector was still initializing.
   void syncCurrentAccount();
 }
 
@@ -322,6 +337,7 @@ async function buyPackage(packageCode: string, referralCode = '') {
     }
     if (!account.isConnected || !account.address) throw new Error('Connect your wallet before purchasing a package');
     if (!account.chainId || Number(account.chainId) !== BSC_CHAIN_ID) throw new Error('Switch your wallet to BNB Smart Chain');
+    if (!(await waitForConnectorReady(account.address))) throw new Error('Wallet provider is still initializing; please try again');
 
     if (!authToken) await authenticate(account.address);
     if (!authToken) throw new Error('Wallet authentication is required');
