@@ -8,7 +8,7 @@ router.use(requireAuth);
 
 router.get('/', async (req,res,next)=>{
   try {
-    const user = (await query(`select id,wallet_address,display_name,role,referral_code,avatar_url,created_at from app_users where id=$1`, [req.auth!.userId])).rows[0];
+    const user = (await query(`select id,wallet_address,username,email,display_name,role,referral_code,avatar_url,created_at from app_users where id=$1`, [req.auth!.userId])).rows[0];
     if (!user) throw new HttpError(404,'User not found');
     const preference = (await query(`select theme,compact_density,activity_notifications,reduced_motion from user_preferences where user_id=$1`, [req.auth!.userId])).rows[0];
     res.json({ user, preference });
@@ -18,9 +18,19 @@ router.get('/', async (req,res,next)=>{
 router.patch('/profile', async (req,res,next)=>{
   try {
     const displayName = String(req.body?.displayName ?? '').trim();
+    const username = String(req.body?.username ?? '').trim().toLowerCase();
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400,'Username must be 3–24 characters using lowercase letters, numbers or underscores');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400,'Valid email address required');
     const avatarUrl = req.body?.avatarUrl == null ? null : String(req.body.avatarUrl);
     if (displayName.length < 2 || displayName.length > 80) throw new HttpError(400,'Display name must be 2–80 characters');
-    const user = (await query(`update app_users set display_name=$1,avatar_url=coalesce($2,avatar_url),updated_at=now() where id=$3 returning id,wallet_address,display_name,role,referral_code,avatar_url,created_at`, [displayName,avatarUrl,req.auth!.userId])).rows[0];
+    let user;
+    try {
+      user = (await query(`update app_users set username=$1,email=nullif($2,''),display_name=$3,avatar_url=coalesce($4,avatar_url),updated_at=now() where id=$5 returning id,wallet_address,username,email,display_name,role,referral_code,avatar_url,created_at`, [username,email,displayName,avatarUrl,req.auth!.userId])).rows[0];
+    } catch (error:any) {
+      if (error?.code === '23505') throw new HttpError(409,'That username is already in use');
+      throw error;
+    }
     res.json({user});
   } catch(e){ next(e); }
 });
