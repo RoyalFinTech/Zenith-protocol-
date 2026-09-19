@@ -52,8 +52,9 @@ async function init() {
       networks: [bsc],
       defaultNetwork: bsc,
       themeMode: 'dark',
+      enableWalletGuide: false,
       metadata,
-      features: { analytics: false, email: false, socials: false }
+      features: { analytics: false, email: false, socials: false, connectMethodsOrder: ['wallet'] }
     } as any);
 
     // AppKit is the authoritative source for wallet connection state.
@@ -288,7 +289,7 @@ function setupWatchers() {
 async function openWallet() {
   await init();
   setupWatchers();
-  appKit?.open();
+  appKit?.open({ view: 'Connect' } as any);
 
   // Mobile wallets often return to the browser after the AppKit connection
   // is completed. Poll briefly here as a fallback to the wagmi watcher so
