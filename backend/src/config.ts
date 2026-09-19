@@ -28,5 +28,7 @@ export const env = {
   paymentConfirmations: Number(process.env.PAYMENT_CONFIRMATIONS ?? 2),
   sessionTtlMinutes: Number(process.env.SESSION_TTL_MINUTES ?? 10080),
   nonceTtlMinutes: Number(process.env.NONCE_TTL_MINUTES ?? 10),
-  corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map(v => v.trim()).filter(Boolean)
+  corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map(v => v.trim()).filter(Boolean),
+  resendApiKey: process.env.RESEND_API_KEY ?? '',
+  resendFrom: process.env.RESEND_FROM ?? 'ZENIT Protocol <onboarding@resend.dev>'
 };
