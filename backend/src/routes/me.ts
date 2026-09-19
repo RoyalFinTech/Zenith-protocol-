@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../utils/http.js';
+import { sendWelcomeEmail } from '../services/email.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,12 +25,18 @@ router.patch('/profile', async (req,res,next)=>{
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400,'Valid email address required');
     const avatarUrl = req.body?.avatarUrl == null ? null : String(req.body.avatarUrl);
     if (displayName.length < 2 || displayName.length > 80) throw new HttpError(400,'Display name must be 2–80 characters');
+    const existing = (await query<{email:string|null}>(`select email from app_users where id=$1`, [req.auth!.userId])).rows[0];
     let user;
     try {
       user = (await query(`update app_users set username=$1,email=nullif($2,''),display_name=$3,avatar_url=coalesce($4,avatar_url),updated_at=now() where id=$5 returning id,wallet_address,username,email,display_name,role,referral_code,avatar_url,created_at`, [username,email,displayName,avatarUrl,req.auth!.userId])).rows[0];
     } catch (error:any) {
       if (error?.code === '23505') throw new HttpError(409,'That username is already in use');
       throw error;
+    }
+    if (email && email !== (existing?.email ?? null)) {
+      void sendWelcomeEmail({ to: email, username, appOrigin: new URL(req.protocol + '://' + req.get('host')).origin }).catch(error => {
+        console.error('ZENIT welcome email failed', error);
+      });
     }
     res.json({user});
   } catch(e){ next(e); }
