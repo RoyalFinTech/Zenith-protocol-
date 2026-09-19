@@ -50,4 +50,7 @@ app.use(express.static(frontend,{index:'index.html',fallthrough:true}));
 app.use((req,res,next)=>{if(req.path.startsWith('/api/')||req.path==='/health'||req.path==='/config/public')return next(new HttpError(404,'Route not found'));const index=path.join(frontend,'index.html');res.sendFile(index,err=>err?next(new HttpError(404,'Frontend build not found; run npm run build')):undefined);});
 app.use((_req,_res,next)=>next(new HttpError(404,'Route not found')));
 app.use((err:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{const status=err instanceof HttpError?err.status:500;res.status(status).json({error:status===500?'Internal server error':(err as Error).message, ...(err instanceof HttpError&&err.details?{details:err.details}: {})})});
-app.listen(env.port,()=>console.log(`Zenit API listening on ${env.port}`));
+
+// Render requires the public HTTP server to listen on 0.0.0.0 and the injected PORT.
+// Keeping the host explicit also makes local/container behavior deterministic.
+app.listen(env.port, '0.0.0.0',()=>console.log(`Zenit API listening on 0.0.0.0:${env.port}`));
