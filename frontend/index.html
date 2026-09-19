@@ -422,6 +422,12 @@
       .matrix-note { font-size:9px; }
     }
 
+    @media (max-width: 820px) {
+      .onboard-art { display:flex !important; min-height:330px; padding:18px; }
+      .onboarding { grid-template-rows:auto 1fr; overflow-y:auto; }
+      .onboard-human-scene { width:100%; min-height:300px; }
+      .onboard-copy { padding:30px 8vw 42px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
       .splash-logo { animation-name: splash-text-in; transform: none !important; }
@@ -626,7 +632,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     async function loadBackendState(token){
       try {
         const headers={Authorization:`Bearer ${token}`};
-        const [meR,summaryR,teamR,refR,txR,m24R,m26R]=await Promise.all([
+        const [meR,summaryR,teamR,refR,txR,leaderboardR,m24R,m26R]=await Promise.all([
           backendFetch('/api/me',{headers}), backendFetch('/api/dashboard/summary',{headers}), backendFetch('/api/dashboard/team',{headers}),
           backendFetch('/api/dashboard/referrals',{headers}), backendFetch('/api/transactions',{headers}), backendFetch('/api/dashboard/leaderboard',{headers}), backendFetch('/api/dashboard/matrix/2x4',{headers}), backendFetch('/api/dashboard/matrix/2x6',{headers})
         ]);
