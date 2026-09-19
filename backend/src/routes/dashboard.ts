@@ -29,5 +29,18 @@ router.get('/summary', async(req,res,next)=>{
 });
 router.get('/team', async(req,res,next)=>{ try { const r=await query(`select u.id,u.display_name,u.wallet_address,m.program_code,m.level,m.position,m.status from matrix_memberships m join app_users u on u.id=m.user_id where m.referrer_user_id=$1 order by m.level,m.position`,[req.auth!.userId]); res.json({team:r.rows}); }catch(e){next(e)} });
 router.get('/matrix/:programCode', async(req,res,next)=>{ try { const r=await query(`select n.id,n.program_id,p.code as program_code,n.level,n.position,n.status,n.user_id,n.referrer_user_id from matrix_nodes n join programs p on p.id=n.program_id where p.code=$1 order by n.level,n.position`,[req.params.programCode]); res.json({nodes:r.rows}); }catch(e){next(e)} });
+router.get('/leaderboard', async(req,res,next)=>{ try {
+  const r=await query(`
+    select u.id,u.username,u.display_name,
+      coalesce((select count(*) from matrix_memberships m where m.referrer_user_id=u.id),0)::int as direct_members,
+      coalesce((select count(*) from matrix_memberships m where m.user_id=u.id and m.status='active'),0)::int as active_positions
+    from app_users u
+    where u.role <> 'Admin'
+    order by direct_members desc, active_positions desc, u.created_at asc
+    limit 10
+  `);
+  res.json({leaderboard:r.rows});
+} catch(e){next(e)} });
+
 router.get('/referrals', async(req,res,next)=>{ try { const r=await query(`select id,display_name,referral_code from app_users where id=$1`,[req.auth!.userId]); const members=await query(`select u.id,u.display_name,u.wallet_address,m.created_at from matrix_memberships m join app_users u on u.id=m.user_id where m.referrer_user_id=$1 order by m.created_at desc`,[req.auth!.userId]); res.json({referral:r.rows[0],members:members.rows}); }catch(e){next(e)} });
 export default router;

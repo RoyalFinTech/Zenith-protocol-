@@ -47,14 +47,14 @@ router.post('/verify', async (req, res, next) => {
 
     let user = (await client.query<{ id:string; role:string }>(`select id,role from app_users where wallet_address=$1`, [address])).rows[0];
     if (!user) {
-      user = (await client.query<{ id:string; role:string }>(`insert into app_users (wallet_address,display_name,role,referral_code) values ($1,$2,'Member',$3) returning id,role`, [address, `Member ${address.slice(0,6)}…${address.slice(-4)}`, randomReferralCode()])).rows[0]!;
+      user = (await client.query<{ id:string; role:string }>(`insert into app_users (wallet_address,username,display_name,role,referral_code) values ($1,$2,$3,'Member',$4) returning id,role,username,email,display_name`, [address, `zenit_${address.slice(2,10).toLowerCase()}`, `Member ${address.slice(0,6)}…${address.slice(-4)}`, randomReferralCode()])).rows[0]!;
     }
     const sessionId = uuid();
     await client.query(`update auth_nonces set used_at=now() where id=$1`, [record.id]);
     await client.query(`insert into user_sessions (id,user_id,wallet_address,expires_at,ip_address,user_agent) values ($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`, [sessionId,user.id,address,env.sessionTtlMinutes,req.ip,req.get('user-agent') ?? null]);
     await client.query('commit');
     const token = await issueSession({userId:user.id,walletAddress:address,role:user.role,sessionId});
-    res.json({ token, user: { id:user.id, role:user.role, walletAddress:address } });
+    res.json({ token, user: { id:user.id, role:user.role, username:(user as any).username||'', email:(user as any).email||null, displayName:(user as any).display_name||'', walletAddress:address } });
   } catch (e) { await client.query('rollback').catch(()=>{}); next(e); } finally { client.release(); }
 });
 
