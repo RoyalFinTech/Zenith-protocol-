@@ -18,6 +18,7 @@ export async function sendWelcomeEmail({ to, username, appOrigin }: WelcomeEmail
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:32px;color:#111827">
       <div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:36px;box-shadow:0 8px 30px rgba(15,23,42,.08)">
+        <img src="${logoUrl}" alt="ZENIT Protocol" width="220" style="display:block;width:220px;max-width:100%;height:auto;margin:0 0 18px;border:0" />
         <div style="font-size:24px;font-weight:800;letter-spacing:.08em">ZENIT <span style="font-weight:500">PROTOCOL</span></div>
         <p style="color:#64748b;margin-top:6px">Decentralized Wealth Network</p>
         <h1 style="font-size:28px;margin-top:34px">Welcome, @${safeUsername}</h1>
