@@ -29,7 +29,7 @@ router.get('/register/check', async (req, res, next) => {
         exists(select 1 from app_users where lower(display_name)=nullif($3,'')) as display_name_taken`,
       [username,email,displayName]
     );
-    const row=result.rows[0];
+    const row=result.rows[0] ?? { username_taken: false, email_taken: false, display_name_taken: false };
     res.json({
       username: username ? {available: !row.username_taken} : {available:false},
       email: email ? {available: !row.email_taken} : {available:false},
