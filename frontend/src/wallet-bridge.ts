@@ -170,11 +170,12 @@ async function authenticate(address: `0x${string}`) {
   if (!connectorReady) throw new Error('Wallet provider is still initializing; please try again');
 
   const signature = await signMessage(adapter.wagmiConfig, { message });
+  const registrationId = localStorage.getItem('zenitRegistrationId') || '';
 
   const verifyR = await fetch(`${base}/api/auth/verify`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ address, nonce, signature })
+    body: JSON.stringify({ address, nonce, signature, registrationId: registrationId || undefined })
   });
   const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string };
   if (!verifyR.ok || !data.token) throw new Error(data.error || 'Wallet authentication failed');
@@ -205,6 +206,7 @@ async function authenticate(address: `0x${string}`) {
 
 async function syncCurrentAccount() {
   if (!adapter) return;
+  if (!localStorage.getItem('zenitRegistrationVerified') || !localStorage.getItem('zenitRegistrationId')) return;
   if (syncInFlight) return syncInFlight;
 
   syncInFlight = (async () => {
