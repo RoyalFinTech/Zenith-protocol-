@@ -17,6 +17,27 @@ function buildMessage(address: string, nonce: string, issuedAt: Date, expiresAt:
   return `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Zenit Protocol.\n\nURI: ${env.appOrigin}\nVersion: 1\nChain ID: ${env.chainId}\nNonce: ${nonce}\nIssued At: ${issuedAt.toISOString()}\nExpiration Time: ${expiresAt.toISOString()}`;
 }
 
+router.get('/register/check', async (req, res, next) => {
+  try {
+    const username = String(req.query?.username ?? '').trim().toLowerCase();
+    const email = String(req.query?.email ?? '').trim().toLowerCase();
+    const displayName = String(req.query?.displayName ?? '').trim().toLowerCase();
+    const result = await query<{username_taken:boolean; email_taken:boolean; display_name_taken:boolean}>(
+      `select
+        exists(select 1 from app_users where lower(username)=nullif($1,'')) as username_taken,
+        exists(select 1 from app_users where lower(email)=nullif($2,'')) as email_taken,
+        exists(select 1 from app_users where lower(display_name)=nullif($3,'')) as display_name_taken`,
+      [username,email,displayName]
+    );
+    const row=result.rows[0];
+    res.json({
+      username: username ? {available: !row.username_taken} : {available:false},
+      email: email ? {available: !row.email_taken} : {available:false},
+      displayName: displayName ? {available: !row.display_name_taken} : {available:false}
+    });
+  } catch (e) { next(e); }
+});
+
 router.post('/register/request', async (req, res, next) => {
   try {
     const username = String(req.body?.username ?? '').trim().toLowerCase();
