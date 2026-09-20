@@ -19,3 +19,11 @@ create index if not exists idx_pending_registrations_lookup
 
 create unique index if not exists idx_app_users_email_lower_unique
   on app_users(lower(email)) where email is not null;
+
+create unique index if not exists idx_app_users_display_name_lower_unique
+  on public.app_users(lower(display_name))
+  where display_name is not null and trim(display_name) <> '';
+
+create unique index if not exists idx_pending_registrations_display_name_lower_active
+  on public.pending_registrations(lower(display_name))
+  where verified_at is null and expires_at > now();
