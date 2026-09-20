@@ -919,7 +919,6 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       $(".registration-progress")?.querySelectorAll("span").forEach((x,i)=>x.classList.toggle("active",i>=1));
     }
     function startApp(){ if(!localStorage.getItem("zenitRegistrationVerified")){showRegistration();return;} $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render(); }
-{$("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render();}
     const SPLASH_DURATION = 15000;
     const loaderStages = [[0,"INITIALIZING CORE"],[18,"LOADING MODULES"],[36,"BUILDING NETWORK"],[56,"SYNCING MATRIX STRUCTURE"],[74,"PREPARING WORKSPACE"],[90,"FINALIZING INTERFACE"],[100,"READY TO EXPLORE"]];
     const loaderStart = performance.now();
@@ -931,7 +930,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       if(pct) pct.textContent=`${Math.round(progress)}%`;
       const stage=[...loaderStages].reverse().find(x=>progress>=x[0]); if(status&&stage) status.textContent=stage[1];
       if(elapsed<SPLASH_DURATION) requestAnimationFrame(updateSplashLoader);
-      else { $("#splash").classList.add("done"); $("#onboarding").classList.remove("hidden-screen"); }
+      else { if(new URLSearchParams(location.search).get("email_verified")==="1"){ showRegistration(); } else { $("#splash").classList.add("done"); $("#onboarding").classList.remove("hidden-screen"); } }
     }
     requestAnimationFrame(updateSplashLoader);
   </script>
