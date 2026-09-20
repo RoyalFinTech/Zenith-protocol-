@@ -51,12 +51,14 @@ export async function sendWelcomeEmail({ to, username, appOrigin }: WelcomeEmail
 }
 
 
-type VerificationEmailInput = { to: string; username: string; verifyUrl: string };
+type VerificationEmailInput = { to: string; username: string; verifyUrl: string; registrationId: string; appOrigin: string };
 
-export async function sendVerificationEmail({ to, username, verifyUrl }: VerificationEmailInput) {
+export async function sendVerificationEmail({ to, username, verifyUrl, registrationId, appOrigin }: VerificationEmailInput) {
   if (!env.resendApiKey || !to) return { sent: false, skipped: true };
   const safeUsername = escapeHtml(username);
   const safeUrl = escapeHtml(verifyUrl);
+  const safeAppOrigin = escapeHtml(appOrigin);
+  const logoUrl = `${safeAppOrigin}/zenit-logo.svg`;
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:28px;color:#111827">
       <div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:34px;box-shadow:0 8px 30px rgba(15,23,42,.08)">
@@ -71,7 +73,7 @@ export async function sendVerificationEmail({ to, username, verifyUrl }: Verific
     </div>`;
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${env.resendApiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `zenit-email-verification#${to.toLowerCase()}` },
+    headers: { Authorization: `Bearer ${env.resendApiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `zenit-email-verification#${registrationId}` },
     body: JSON.stringify({ from: env.resendFrom, to: [to], subject: 'Verify your email for ZENIT Protocol', html })
   });
   if (!response.ok) { const body = await response.text().catch(() => ''); throw new Error(`Resend verification email failed (${response.status}): ${body.slice(0,300)}`); }
