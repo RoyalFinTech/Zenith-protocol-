@@ -20,6 +20,8 @@ const app=express();
 app.set('trust proxy', 1);
 const authRateLimiter = new RateLimiterMemory({ points: 10, duration: 60 });
 const verifyRateLimiter = new RateLimiterMemory({ points: 5, duration: 60 });
+const registrationRateLimiter = new RateLimiterMemory({ points: 6, duration: 60 });
+const availabilityRateLimiter = new RateLimiterMemory({ points: 30, duration: 60 });
 const limitAuth = (limiter: RateLimiterMemory) => async (req: express.Request, _res: express.Response, next: express.NextFunction) => {
   try { await limiter.consume(req.ip ?? 'unknown'); next(); }
   catch { next(new HttpError(429, 'Too many authentication attempts; please try again shortly')); }
@@ -41,6 +43,8 @@ app.use(express.json({limit:'1mb'}));
 app.use((req,_res,next)=>{ if(req.path.startsWith('/api/auth/')) { const body=req.body ?? {}; if(typeof body==='object') { if(typeof body.signature==='string' && body.signature.length>500) return next(new HttpError(400,'Invalid signature')); if(typeof body.address==='string' && body.address.length>64) return next(new HttpError(400,'Invalid address')); } } next(); });
 app.get('/health',async(_req,res,next)=>{try{res.json({ok:await healthcheck(),service:'zenit-api',timestamp:new Date().toISOString()})}catch(e){next(e)}});
 app.get('/config/public',(req,res)=>res.json({chainId:env.chainId,chainName:env.chainName,primaryAsset:env.primaryAsset,appOrigin:env.appOrigin,walletConnectProjectId:env.walletConnectProjectId,usdtContractAddress:env.usdtContractAddress,paymentReceiverAddress:env.paymentReceiverAddress || null,metadata:{name:env.walletConnectMetadataName,description:env.walletConnectMetadataDescription,url:env.walletConnectMetadataUrl,icons:env.walletConnectMetadataIcon?[env.walletConnectMetadataIcon]:[]}}));
+app.use('/api/auth/register/request', limitAuth(registrationRateLimiter));
+app.use('/api/auth/register/check', limitAuth(availabilityRateLimiter));
 app.use('/api/auth/nonce', limitAuth(authRateLimiter));
 app.use('/api/auth/verify', limitAuth(verifyRateLimiter));
 app.use('/api/auth',authRoutes); app.use('/api/me',meRoutes); app.use('/api/dashboard',dashboardRoutes); app.use('/api/wallets',walletRoutes); app.use('/api/transactions',transactionRoutes); app.use('/api/admin',adminRoutes); app.use('/api/packages',packageRoutes); app.use('/api',mutationRoutes);
