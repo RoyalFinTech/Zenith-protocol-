@@ -53,15 +53,19 @@ router.post('/register/request', async (req, res, next) => {
       throw new HttpError(409, 'That email address is already registered');
     }
 
-    const pendingConflict = await query<{id:string}>(`select id from pending_registrations where (lower(username)=lower($1) or lower(email)=lower($2)) and verified_at is null and expires_at > now() limit 1`, [username,email]);
-    if (pendingConflict.rows[0]) throw new HttpError(409, 'A verification email is already pending for this username or email');
+    await query(`delete from pending_registrations where verified_at is null and (lower(username)=lower($1) or lower(email)=lower($2))`, [username,email]);
 
     const token = randomNonce() + randomNonce();
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const id = uuid();
     await query(`insert into pending_registrations (id,username,email,display_name,token_hash,expires_at) values ($1,$2,$3,$4,$5,now()+interval '30 minutes')`, [id,username,email,displayName,tokenHash]);
     const verifyUrl = `${env.apiPublicUrl}/api/auth/register/verify?token=${encodeURIComponent(token)}`;
-    await sendVerificationEmail({to:email,username,verifyUrl});
+    try {
+      await sendVerificationEmail({to:email,username,verifyUrl,registrationId:id,appOrigin:env.appOrigin});
+    } catch (error) {
+      await query(`delete from pending_registrations where id=$1`, [id]);
+      throw error;
+    }
     res.status(202).json({registrationId:id,email});
   } catch (e) { next(e); }
 });
