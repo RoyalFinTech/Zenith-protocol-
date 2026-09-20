@@ -54,7 +54,8 @@ export async function sendWelcomeEmail({ to, username, appOrigin }: WelcomeEmail
 type VerificationEmailInput = { to: string; username: string; verifyUrl: string; registrationId: string; appOrigin: string };
 
 export async function sendVerificationEmail({ to, username, verifyUrl, registrationId, appOrigin }: VerificationEmailInput) {
-  if (!env.resendApiKey || !to) return { sent: false, skipped: true };
+  if (!to) throw new Error('Verification recipient is missing');
+  if (!env.resendApiKey) throw new Error('RESEND_API_KEY is not configured on the backend');
   const safeUsername = escapeHtml(username);
   const safeUrl = escapeHtml(verifyUrl);
   const logoOrigin = new URL(verifyUrl).origin;
