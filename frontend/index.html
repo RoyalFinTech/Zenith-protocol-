@@ -894,7 +894,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       const email=($("#registrationEmail")?.value||"").trim().toLowerCase();
       const displayName=($("#registrationDisplayName")?.value||"").trim();
       if(!/^[a-z0-9_]{3,24}$/.test(username)){toast("Username required","Use 3–24 lowercase letters, numbers or underscores.","warning");return;}
-      if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){toast("Email required","Enter a valid email address.","warning");return;}
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast("Email required","Enter a valid email address.","warning");return;}
       if(displayName.length<2||displayName.length>80){toast("Name required","Use 2–80 characters.","warning");return;}
       const base=window.location.origin;
       const button=$("#registrationSubmit"); button.disabled=true; button.innerHTML="SENDING VERIFICATION…";
