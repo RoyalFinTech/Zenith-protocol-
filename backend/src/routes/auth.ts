@@ -35,7 +35,7 @@ router.get('/register/check', async (req, res, next) => {
       email: email ? {available: !row.email_taken} : {available:false},
       displayName: displayName ? {available: !row.display_name_taken} : {available:false}
     });
-  } catch (e) { next(e); }
+  } catch (e) { console.error('ZENIT registration availability failed', e instanceof Error ? e.message : String(e)); next(e); }
 });
 
 router.post('/register/request', async (req, res, next) => {
@@ -63,11 +63,12 @@ router.post('/register/request', async (req, res, next) => {
     try {
       await sendVerificationEmail({to:email,username,verifyUrl,registrationId:id,appOrigin:env.appOrigin});
     } catch (error) {
+      console.error('ZENIT verification email send failed', error instanceof Error ? error.message : String(error));
       await query(`delete from pending_registrations where id=$1`, [id]);
-      throw error;
+      throw new HttpError(502, 'Verification email service is temporarily unavailable');
     }
     res.status(202).json({registrationId:id,email});
-  } catch (e) { next(e); }
+  } catch (e) { console.error('ZENIT registration request failed', e instanceof Error ? e.message : String(e)); next(e); }
 });
 
 router.get('/register/verify', async (req, res, next) => {
