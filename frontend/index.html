@@ -237,6 +237,12 @@
     .registration-progress{display:flex;gap:6px;margin-top:28px}.registration-progress span{height:3px;flex:1;background:#34383d;border-radius:99px}.registration-progress span.active{background:var(--gold-bright)}
     @media(max-width:800px){.registration-screen{grid-template-columns:1fr}.registration-art{min-height:300px;max-height:42vh}.registration-art-copy{bottom:22px}.registration-art-copy h2{font-size:32px}.registration-card-wrap{min-height:58vh;padding:24px}.registration-card{padding:25px}}
 
+    .identity-field .field{transition:border-color .2s ease,box-shadow .2s ease}
+    .identity-field.valid .field{border-color:#43d17b;box-shadow:0 0 0 1px rgba(67,209,123,.18),0 0 18px rgba(67,209,123,.06)}
+    .identity-field.invalid .field{border-color:#e45f69;box-shadow:0 0 0 1px rgba(228,95,105,.14)}
+    .field-status{float:right;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+    .field-status.ok{color:#43d17b}.field-status.bad{color:#e45f69}.field-status.checking{color:#caa652}
+
     /* Shared controls */
     .btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--text); font-size: 12px; font-weight: 700; transition: .2s ease; }
     .btn:hover { border-color: #59616b; background: #22272c; transform: translateY(-1px); }
@@ -566,9 +572,9 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         <h1 id="registrationTitle">Create your member identity</h1>
         <p id="registrationText">Choose your unique username and enter the email address you want ZENIT to use for verification.</p>
         <div id="registrationForm">
-          <div class="form-field"><label for="registrationUsername">Username</label><input class="field" id="registrationUsername" autocomplete="username" maxlength="24" placeholder="yourname"></div>
-          <div class="form-field" style="margin-top:13px"><label for="registrationEmail">Email address</label><input class="field" id="registrationEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
-          <div class="form-field" style="margin-top:13px"><label for="registrationDisplayName">Display name</label><input class="field" id="registrationDisplayName" autocomplete="name" maxlength="80" placeholder="Your name"></div>
+          <div class="form-field identity-field"><label for="registrationUsername">Username <span class="field-status" id="usernameStatus" aria-live="polite"></span></label><input class="field" id="registrationUsername" autocomplete="username" maxlength="24" placeholder="yourname"></div>
+          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationEmail">Email address <span class="field-status" id="emailStatus" aria-live="polite"></span></label><input class="field" id="registrationEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationDisplayName">Display name <span class="field-status" id="displayNameStatus" aria-live="polite"></span></label><input class="field" id="registrationDisplayName" autocomplete="name" maxlength="80" placeholder="Your name"></div>
           <button class="btn primary registration-submit" id="registrationSubmit">SEND VERIFICATION EMAIL <span>→</span></button>
         </div>
         <div id="registrationStatus" class="registration-status hidden-screen" aria-live="polite"></div>
@@ -889,24 +895,68 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       const verified=new URLSearchParams(location.search).get("email_verified")==="1";
       if(verified){showWalletGate();} else {setTimeout(()=>$("#registrationUsername")?.focus(),80);}
     }
+    const registrationChecks={username:false,email:false,displayName:false};
+    let registrationCheckTimer=0;
+    function setFieldStatus(id,state,text){
+      const input=$(id); const wrap=input?.closest(".identity-field"); const status=$(id==="registrationUsername"?"#usernameStatus":id==="registrationEmail"?"#emailStatus":"#displayNameStatus");
+      if(!wrap||!status)return;
+      wrap.classList.toggle("valid",state==="ok");wrap.classList.toggle("invalid",state==="bad");
+      status.className="field-status "+state;status.textContent=text||"";
+    }
+    async function checkRegistrationAvailability(){
+      const username=($("#registrationUsername")?.value||"").trim().toLowerCase();
+      const email=($("#registrationEmail")?.value||"").trim().toLowerCase();
+      const displayName=($("#registrationDisplayName")?.value||"").trim();
+      registrationChecks.username=false;registrationChecks.email=false;registrationChecks.displayName=false;
+      const usernameValid=/^[a-z0-9_]{3,24}$/.test(username);
+      const emailValid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      const nameValid=displayName.length>=2&&displayName.length<=80;
+      if(username){setFieldStatus("#registrationUsername",usernameValid?"checking":"bad",usernameValid?"CHECKING…":"INVALID");}
+      if(email){setFieldStatus("#registrationEmail",emailValid?"checking":"bad",emailValid?"CHECKING…":"INVALID");}
+      if(displayName){setFieldStatus("#registrationDisplayName",nameValid?"checking":"bad",nameValid?"CHECKING…":"INVALID");}
+      if(!usernameValid||!emailValid||!nameValid)return;
+      try{
+        const response=await fetch(`${window.location.origin}/api/auth/register/check?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&displayName=${encodeURIComponent(displayName)}`);
+        const data=await response.json();
+        registrationChecks.username=!!data.username?.available;
+        registrationChecks.email=!!data.email?.available;
+        registrationChecks.displayName=!!data.displayName?.available;
+        setFieldStatus("#registrationUsername",registrationChecks.username?"ok":"bad",registrationChecks.username?"✓ AVAILABLE":"TAKEN");
+        setFieldStatus("#registrationEmail",registrationChecks.email?"ok":"bad",registrationChecks.email?"✓ AVAILABLE":"REGISTERED");
+        setFieldStatus("#registrationDisplayName",registrationChecks.displayName?"ok":"bad",registrationChecks.displayName?"✓ AVAILABLE":"ALREADY USED");
+      }catch{
+        setFieldStatus("#registrationUsername","bad","CHECK FAILED");
+        setFieldStatus("#registrationEmail","bad","CHECK FAILED");
+        setFieldStatus("#registrationDisplayName","bad","CHECK FAILED");
+      }
+    }
+    function scheduleRegistrationCheck(){clearTimeout(registrationCheckTimer);registrationCheckTimer=setTimeout(checkRegistrationAvailability,350);}
+    ["#registrationUsername","#registrationEmail","#registrationDisplayName"].forEach(sel=>$(sel)?.addEventListener("input",scheduleRegistrationCheck));
+
     async function requestRegistration(){
+      await checkRegistrationAvailability();
       const username=($("#registrationUsername")?.value||"").trim().toLowerCase();
       const email=($("#registrationEmail")?.value||"").trim().toLowerCase();
       const displayName=($("#registrationDisplayName")?.value||"").trim();
       if(!/^[a-z0-9_]{3,24}$/.test(username)){toast("Username required","Use 3–24 lowercase letters, numbers or underscores.","warning");return;}
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast("Email required","Enter a valid email address.","warning");return;}
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast("Email required","Enter a valid email address, for example name@gmail.com.","warning");return;}
       if(displayName.length<2||displayName.length>80){toast("Name required","Use 2–80 characters.","warning");return;}
-      const base=window.location.origin;
-      const button=$("#registrationSubmit"); button.disabled=true; button.innerHTML="SENDING VERIFICATION…";
+      if(!registrationChecks.username||!registrationChecks.email||!registrationChecks.displayName){
+        toast("Identity check required","Username, email and display name must each show a green AVAILABLE check before continuing.","warning");return;
+      }
+      const button=$("#registrationSubmit");button.disabled=true;button.innerHTML="SENDING VERIFICATION…";
       try{
-        const response=await fetch(`${base}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username,email,displayName})});
+        const response=await fetch(`${window.location.origin}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username,email,displayName})});
         const data=await response.json().catch(()=>({}));
-        if(!response.ok) throw new Error(data.error||"Unable to start registration");
+        if(!response.ok)throw new Error(data.error||"Unable to start registration");
         localStorage.setItem("zenitPendingRegistrationEmail",email);
         $("#registrationForm").classList.add("hidden-screen");$("#registrationStatus").classList.remove("hidden-screen");
         $("#registrationStatus").innerHTML=`<strong>Check your email</strong>We sent a verification link to <b>${esc(email)}</b>. Open it to confirm your email. Your wallet will be connected only after verification.`;
         button.innerHTML="VERIFICATION SENT";
-      }catch(error){button.disabled=false;button.innerHTML="SEND VERIFICATION EMAIL <span>→</span>";toast("Registration failed",error?.message||String(error),"error");}
+      }catch(error){
+        button.disabled=false;button.innerHTML="SEND VERIFICATION EMAIL <span>→</span>";
+        toast("Registration failed",error?.message||String(error),"error");
+      }
     }
     function showWalletGate(){
       const registrationId=new URLSearchParams(location.search).get("registration")||"";
