@@ -318,6 +318,10 @@
     .registration-submit{width:100%;margin-top:20px;min-height:46px}
     .registration-status{margin-top:18px;padding:15px;border:1px solid rgba(202,166,82,.2);border-radius:12px;background:rgba(202,166,82,.06);color:#d9dce0;font-size:11px;line-height:1.65}
     .registration-status strong{display:block;color:var(--gold-bright);margin-bottom:5px}
+    .verification-resend{margin-top:13px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .verification-resend button{border:1px solid rgba(202,166,82,.3);background:rgba(202,166,82,.08);color:#e8d7a0;border-radius:10px;padding:9px 12px;font-size:10px;font-weight:800;letter-spacing:.06em}
+    .verification-resend button:disabled{opacity:.55;cursor:not-allowed}
+    .verification-timer{color:#8f969f;font-size:10px}
     .registration-progress{display:flex;gap:6px;margin-top:28px}.registration-progress span{height:3px;flex:1;background:#34383d;border-radius:99px}.registration-progress span.active{background:var(--gold-bright)}
     @media(max-width:800px){.registration-screen{grid-template-columns:1fr}.registration-art{min-height:300px;max-height:42vh}.registration-art-copy{bottom:22px}.registration-art-copy h2{font-size:32px}.registration-card-wrap{min-height:58vh;padding:24px}.registration-card{padding:25px}}
 
@@ -955,7 +959,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     $("#modalBackdrop").addEventListener("click",e=>{if(e.target.id==="modalBackdrop")closeModal();});
     $("#onboardNext").addEventListener("click",()=>{onboardingStep++; if(onboardingStep>=4)showRegistration(); else updateOnboarding();});
     $("#onboardSkip").addEventListener("click",()=>{onboardingStep=3;updateOnboarding();});
-    $("#registrationSubmit").addEventListener("click",requestRegistration);
+    $("#registrationSubmit").addEventListener("click",()=>requestRegistration());
     window.addEventListener("zenit:authenticated",()=>{ localStorage.setItem("zenitRegistrationVerified","1"); startApp(); });
     let onboardingStep=0;
     const onboardingData=[
@@ -1017,28 +1021,60 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     function scheduleRegistrationCheck(){clearTimeout(registrationCheckTimer);registrationCheckTimer=setTimeout(checkRegistrationAvailability,350);}
     ["#registrationUsername","#registrationEmail","#registrationDisplayName"].forEach(sel=>$(sel)?.addEventListener("input",scheduleRegistrationCheck));
 
-    async function requestRegistration(){
-      await checkRegistrationAvailability();
-      const username=($("#registrationUsername")?.value||"").trim().toLowerCase();
-      const email=($("#registrationEmail")?.value||"").trim().toLowerCase();
-      const displayName=($("#registrationDisplayName")?.value||"").trim();
+    let verificationCooldownTimer=0;
+    function startVerificationCooldown(seconds=30){
+      clearInterval(verificationCooldownTimer);
+      let remaining=seconds;
+      const btn=$("#resendVerificationButton"), timer=$("#verificationTimer");
+      if(btn) btn.disabled=true;
+      const tick=()=>{
+        if(timer) timer.textContent=remaining>0?`Resend available in ${remaining}s`:"You can resend now";
+        if(remaining<=0){clearInterval(verificationCooldownTimer);if(btn)btn.disabled=false;return;}
+        remaining-=1;
+      };
+      tick();
+      verificationCooldownTimer=setInterval(tick,1000);
+    }
+
+    async function requestRegistration({resend=false}={}){
+      let username=($("#registrationUsername")?.value||"").trim().toLowerCase();
+      let email=($("#registrationEmail")?.value||"").trim().toLowerCase();
+      let displayName=($("#registrationDisplayName")?.value||"").trim();
+      if(resend){
+        try{
+          const saved=JSON.parse(localStorage.getItem("zenitPendingRegistrationDraft")||"null");
+          if(saved){username=saved.username||username;email=saved.email||email;displayName=saved.displayName||displayName;}
+        }catch(e){}
+      }
       if(!/^[a-z0-9_]{3,24}$/.test(username)){toast("Username required","Use 3–24 lowercase letters, numbers or underscores.","warning");return;}
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast("Email required","Enter a valid email address, for example name@gmail.com.","warning");return;}
       if(displayName.length<2||displayName.length>80){toast("Name required","Use 2–80 characters.","warning");return;}
-      if(!registrationChecks.username||!registrationChecks.email||!registrationChecks.displayName){
-        toast("Identity check required","Username, email and display name must each show a green AVAILABLE check before continuing.","warning");return;
+
+      if(!resend){
+        await checkRegistrationAvailability();
+        if(!registrationChecks.username||!registrationChecks.email||!registrationChecks.displayName){
+          toast("Identity check required","Username, email and display name must each show a green AVAILABLE check before continuing.","warning");return;
+        }
       }
-      const button=$("#registrationSubmit");button.disabled=true;button.innerHTML="SENDING VERIFICATION…";
+
+      const button=$("#registrationSubmit");
+      if(!resend){button.disabled=true;button.innerHTML="SENDING VERIFICATION…";}
+
       try{
         const response=await fetch(`${window.location.origin}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username,email,displayName})});
         const data=await response.json().catch(()=>({}));
-        if(!response.ok)throw new Error(data.error||"Unable to start registration");
+        if(!response.ok)throw new Error(data.error||"Unable to send verification email");
         localStorage.setItem("zenitPendingRegistrationEmail",email);
-        $("#registrationForm").classList.add("hidden-screen");$("#registrationStatus").classList.remove("hidden-screen");
-        $("#registrationStatus").innerHTML=`<strong>Check your email</strong>We sent a verification link to <b>${esc(email)}</b>. Open it to confirm your email. Your wallet will be connected only after verification.`;
-        button.innerHTML="VERIFICATION SENT";
+        localStorage.setItem("zenitPendingRegistrationDraft",JSON.stringify({username,email,displayName}));
+        $("#registrationForm").classList.add("hidden-screen");
+        $("#registrationStatus").classList.remove("hidden-screen");
+        $("#registrationStatus").innerHTML=`<strong>Check your email</strong>We sent a verification link to <b>${esc(email)}</b>.<div class="verification-resend"><button id="resendVerificationButton" type="button" disabled>RESEND VERIFICATION</button><span class="verification-timer" id="verificationTimer">Resend available in 30s</span></div>`;
+        $("#resendVerificationButton")?.addEventListener("click",()=>requestRegistration({resend:true}));
+        startVerificationCooldown(30);
+        if(button) button.innerHTML="VERIFICATION SENT";
+        if(resend) toast("Verification resent","A new confirmation link was requested.","success");
       }catch(error){
-        button.disabled=false;button.innerHTML="SEND VERIFICATION EMAIL <span>→</span>";
+        if(!resend){button.disabled=false;button.innerHTML="SEND VERIFICATION EMAIL <span>→</span>";}
         toast("Registration failed",error?.message||String(error),"error");
       }
     }
