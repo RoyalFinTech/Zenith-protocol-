@@ -866,6 +866,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     $("#onboardNext").addEventListener("click",()=>{onboardingStep++; if(onboardingStep>=4)showRegistration(); else updateOnboarding();});
     $("#onboardSkip").addEventListener("click",()=>{onboardingStep=3;updateOnboarding();});
     $("#registrationSubmit").addEventListener("click",requestRegistration);
+    window.addEventListener("zenit:authenticated",()=>{ localStorage.setItem("zenitRegistrationVerified","1"); startApp(); });
     let onboardingStep=0;
     const onboardingData=[
       ["01 / 04 · Welcome","A premium digital wealth experience built around people.","Meet a human-first ZENIT workspace designed to make your network, identity and activity easier to understand.",["Human-first member experience","Premium financial workspace","Clear account journey"],"GET STARTED","https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1400&auto=format&fit=crop","YOUR JOURNEY","A human-first financial workspace"],
