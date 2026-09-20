@@ -120,7 +120,7 @@ router.post('/verify', async (req, res, next) => {
     const valid = await verifyMessage({ address, message: record.message, signature: signature as `0x${string}` });
     if (!valid) throw new HttpError(401, 'Wallet signature verification failed');
 
-    let user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string }>(`select id,role,username,email,display_name from app_users where wallet_address=$1`, [address])).rows[0];
+    let user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string }>(`select u.id,u.role,u.username,u.email,u.display_name from app_users u where u.wallet_address=$1 or exists (select 1 from wallet_accounts wa where wa.user_id=u.id and lower(wa.address)=lower($1) and wa.chain_id=$2) limit 1`, [address, env.chainId])).rows[0];
     let registration: { id:string; username:string; email:string; display_name:string } | undefined;
     if (registrationId) {
       registration = (await client.query<{ id:string; username:string; email:string; display_name:string }>(`select id,username,email,display_name from pending_registrations where id=$1 and verified_at is not null and expires_at > now() and consumed_at is null for update`, [registrationId])).rows[0];
