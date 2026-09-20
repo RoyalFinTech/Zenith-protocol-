@@ -59,6 +59,10 @@ async function init() {
         '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0'
       ],
       metadata,
+      allWallets: 'SHOW',
+      enableInjected: true,
+      enableEIP6963: true,
+      debug: true,
       features: { analytics: false, email: false, socials: false, connectMethodsOrder: ['wallet'] }
     } as any);
 
@@ -175,7 +179,8 @@ async function authenticate(address: `0x${string}`) {
   if (!connectorReady) throw new Error('Wallet provider is still initializing; please try again');
 
   const signature = await signMessage(adapter.wagmiConfig, { message });
-  const registrationId = localStorage.getItem('zenitRegistrationId') || '';
+  const authMode = localStorage.getItem('zenitAuthMode') || (localStorage.getItem('zenitRegistrationVerified') === '1' ? 'onboarding' : 'existing');
+  const registrationId = authMode === 'onboarding' ? (localStorage.getItem('zenitRegistrationId') || '') : '';
 
   const verifyR = await fetch(`${base}/api/auth/verify`, {
     method: 'POST',
@@ -187,6 +192,9 @@ async function authenticate(address: `0x${string}`) {
 
   authToken = data.token;
   localStorage.setItem('zenitToken', authToken);
+  localStorage.removeItem('zenitRegistrationId');
+  localStorage.removeItem('zenitRegistrationVerified');
+  localStorage.removeItem('zenitAuthMode');
 
   const bindR = await fetch(`${base}/api/wallets/bind`, {
     method: 'POST',
@@ -211,7 +219,9 @@ async function authenticate(address: `0x${string}`) {
 
 async function syncCurrentAccount() {
   if (!adapter) return;
-  if (!localStorage.getItem('zenitRegistrationVerified') || !localStorage.getItem('zenitRegistrationId')) return;
+  // Wallet authentication is valid for both new verified registrations and
+  // returning members. The auth mode decides whether a registration ID is
+  // attached to the SIWE verification request.
   if (syncInFlight) return syncInFlight;
 
   syncInFlight = (async () => {
