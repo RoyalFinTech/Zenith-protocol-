@@ -15,6 +15,7 @@ export async function sendWelcomeEmail({ to, username, appOrigin }: WelcomeEmail
 
   const safeUsername = escapeHtml(username);
   const safeOrigin = escapeHtml(appOrigin);
+  const logoUrl = `${new URL(appOrigin).origin}/zenit-logo.svg`;
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:32px;color:#111827">
       <div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:36px;box-shadow:0 8px 30px rgba(15,23,42,.08)">
