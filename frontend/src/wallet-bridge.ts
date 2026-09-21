@@ -45,7 +45,15 @@ async function init() {
       icons: []
     };
 
-    adapter = new WagmiAdapter({ projectId, networks: [bsc], enableReconnect: true } as any);
+    adapter = new WagmiAdapter({
+      projectId,
+      networks: [bsc],
+      enableReconnect: true
+    } as any);
+
+    // Mobile browsers should use WalletConnect for external wallets. Injected/EIP-6963
+    // discovery can race provider initialization and leave the AppKit wallet list locked.
+    const isMobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     appKit = createAppKit({
       adapters: [adapter],
       projectId,
@@ -60,8 +68,8 @@ async function init() {
       ],
       metadata,
       allWallets: 'SHOW',
-      enableInjected: true,
-      enableEIP6963: true,
+      enableInjected: !isMobileBrowser,
+      enableEIP6963: !isMobileBrowser,
       debug: true,
       features: { analytics: false, email: false, socials: false, connectMethodsOrder: ['wallet'] }
     } as any);
@@ -96,7 +104,15 @@ async function init() {
       syncCurrentAccount().catch(() => undefined);
     });
 
-    window.addEventListener('zenit:wallet-select', () => appKit?.open());
+    window.addEventListener('zenit:wallet-select', () => {
+      openWallet().catch(error =>
+        (window as any).zenitToast?.(
+          'Wallet unavailable',
+          error instanceof Error ? error.message : String(error),
+          'error'
+        )
+      );
+    });
   })();
 
   try {
@@ -303,22 +319,34 @@ function setupWatchers() {
   void syncCurrentAccount();
 }
 
-async function openWallet() {
-  await init();
-  setupWatchers();
-  // Open exactly one AppKit connect flow. The page-level wallet-option handler dispatches
-  // zenit:wallet-select; intercepting that click here too can open AppKit twice and
-  // leave its mobile modal visually disabled.
-  appKit?.open({ view: 'Connect' } as any);
+let walletOpenInFlight = false;
 
-  // Mobile wallets often return to the browser after the AppKit connection
-  // is completed. Poll briefly here as a fallback to the wagmi watcher so
-  // the ZENIT UI is updated even when the provider emits its event late.
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    await syncCurrentAccount();
-    const account = adapter ? getAccount(adapter.wagmiConfig) : null;
-    if (account?.isConnected && account.address && authToken) break;
+async function openWallet() {
+  if (walletOpenInFlight) return;
+  walletOpenInFlight = true;
+  try {
+    await init();
+    setupWatchers();
+
+    // Reset a stale AppKit connect view before opening a fresh one. This is
+    // especially important after a mobile wallet attempt was interrupted.
+    if (appKit && typeof (appKit as any).close === 'function') {
+      try { (appKit as any).close(); } catch {}
+      await new Promise(resolve => setTimeout(resolve, 120));
+    }
+
+    appKit?.open({ view: 'Connect' } as any);
+
+    // Mobile wallets often return to the browser after AppKit completes.
+    // Poll briefly as a fallback to the account watcher.
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await syncCurrentAccount();
+      const account = adapter ? getAccount(adapter.wagmiConfig) : null;
+      if (account?.isConnected && account.address && authToken) break;
+    }
+  } finally {
+    walletOpenInFlight = false;
   }
 }
 
