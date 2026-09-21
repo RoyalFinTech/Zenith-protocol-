@@ -725,6 +725,50 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     </div>
   </section>
 
+  <script id="zenitOnboardingBootstrap">
+    /* Independent onboarding controls: keeps the four-step flow clickable even if a later app module fails. */
+    (() => {
+      let step = 0;
+      const data = [
+        ["01 / 04 · Welcome","A premium digital wealth experience built around people.","Meet a human-first ZENIT workspace designed to make your network, identity and activity easier to understand.",["Human-first member experience","Premium financial workspace","Clear account journey"],"GET STARTED","https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1400&auto=format&fit=crop","YOUR JOURNEY","A human-first financial workspace"],
+        ["02 / 04 · Wealth","SEE YOUR FUNDS CLEARLY","A visual language inspired by digital assets, USDT and transparent network participation — without clutter.",["USDT-focused workspace","BNB Smart Chain","Clear financial metrics"],"CONTINUE","https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1400&auto=format&fit=crop","DIGITAL WEALTH","USDT · FUNDS · PARTICIPATION"],
+        ["03 / 04 · Network","SEE THE STRUCTURE CLEARLY","Explore your matrix, team, activity and referral identity through a visual network experience.",["Network visualization","Matrix structure","Live activity"],"CONTINUE","https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1400&auto=format&fit=crop","NETWORK VIEW","STRUCTURE · ACTIVITY · GROWTH"],
+        ["04 / 04 · Ready","READY TO CREATE YOUR IDENTITY","First choose your username and email. We verify the email, then you connect your wallet and enter the live metrics workspace.",["Username + email","Email verification","Wallet authentication"],"CREATE IDENTITY","https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=1400&auto=format&fit=crop","NEXT STEP","IDENTITY → EMAIL → WALLET"]
+      ];
+      function paint(){
+        const d=data[step];
+        const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+        set("onboardStep",d[0]); set("onboardTitle",d[1]); set("onboardText",d[2]);
+        const points=document.getElementById("onboardPoints"); if(points)points.innerHTML=d[3].map(x=>'<div class="onboard-point"><span class="check">✓</span>'+x+'</div>').join("");
+        const next=document.getElementById("onboardNext"); if(next)next.innerHTML=d[4]+' <span>→</span>';
+        const img=document.getElementById("onboardHeroImage"); if(img){img.src=d[5];img.alt=d[6];}
+        set("onboardValueTitle",d[7]); set("onboardValueText",d[8]);
+        document.querySelectorAll(".page-dot").forEach((x,i)=>x.classList.toggle("active",i===step));
+      }
+      function showRegistration(){
+        document.getElementById("splash")?.classList.add("done");
+        document.getElementById("onboarding")?.classList.add("hidden-screen");
+        document.getElementById("registrationScreen")?.classList.remove("hidden-screen");
+        document.getElementById("appShell")?.classList.add("hidden");
+      }
+      document.addEventListener("click",e=>{
+        const next=e.target.closest("#onboardNext");
+        const skip=e.target.closest("#onboardSkip");
+        if(next){
+          e.preventDefault(); e.stopImmediatePropagation();
+          step++;
+          if(step>=4){showRegistration();}else{paint();}
+          return;
+        }
+        if(skip){
+          e.preventDefault(); e.stopImmediatePropagation();
+          step=3; paint();
+        }
+      },true);
+      paint();
+    })();
+  </script>
+
   <section class="registration-screen hidden-screen" id="registrationScreen" aria-label="Create your ZENIT identity">
     <div class="registration-art">
       <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1400&auto=format&fit=crop" alt="Digital finance and business workspace">
