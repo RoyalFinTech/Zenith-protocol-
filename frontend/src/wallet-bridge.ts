@@ -306,6 +306,9 @@ function setupWatchers() {
 async function openWallet() {
   await init();
   setupWatchers();
+  // Open exactly one AppKit connect flow. The page-level wallet-option handler dispatches
+  // zenit:wallet-select; intercepting that click here too can open AppKit twice and
+  // leave its mobile modal visually disabled.
   appKit?.open({ view: 'Connect' } as any);
 
   // Mobile wallets often return to the browser after the AppKit connection
@@ -457,7 +460,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (event) => {
     const target = event.target as HTMLElement;
 
-    if (target.closest('[data-action="wallet"]') || target.closest('[data-wallet-select]')) {
+    if (target.closest('[data-action="wallet"]')) {
       event.preventDefault();
       event.stopImmediatePropagation();
       openWallet().catch((error) =>

@@ -59,7 +59,8 @@ export async function sendVerificationEmail({ to, username, verifyUrl, registrat
   if (!env.resendApiKey) throw new Error('RESEND_API_KEY is not configured on the backend');
   const safeUsername = escapeHtml(username);
   const safeUrl = escapeHtml(verifyUrl);
-  const logoMarkup = `<div style="display:flex;align-items:center;gap:12px;margin:0 0 18px"><span style="display:inline-flex;width:46px;height:46px;border-radius:50%;align-items:center;justify-content:center;background:#caa652;color:#111827;font-size:24px;font-weight:900;line-height:46px">Z</span><span style="font-size:24px;font-weight:800;letter-spacing:.12em;color:#111827">ZENIT <span style="font-weight:500;color:#caa652">PROTOCOL</span></span></div>`;
+  const logoUrl = new URL(appOrigin).origin + '/zenit-logo.png';
+  const logoMarkup = '<div style="margin:0 0 18px"><img src="' + escapeHtml(logoUrl) + '" alt="ZENIT Protocol" width="210" style="display:block;width:210px;max-width:100%;height:auto;border:0"></div>';
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:28px;color:#111827">
       <div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:34px;box-shadow:0 8px 30px rgba(15,23,42,.08)">
