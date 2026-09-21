@@ -45,15 +45,10 @@ async function init() {
       icons: []
     };
 
-    adapter = new WagmiAdapter({
-      projectId,
-      networks: [bsc],
-      enableReconnect: true
-    } as any);
-
-    // Mobile browsers should use WalletConnect for external wallets. Injected/EIP-6963
-    // discovery can race provider initialization and leave the AppKit wallet list locked.
-    const isMobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // Keep the AppKit configuration aligned with the last known-good production
+    // wallet build. Do not disable injected/EIP-6963 on mobile: wallet browsers
+    // (MetaMask, Trust Wallet, etc.) rely on those providers for direct connection.
+    adapter = new WagmiAdapter({ projectId, networks: [bsc], enableReconnect: true } as any);
     appKit = createAppKit({
       adapters: [adapter],
       projectId,
@@ -61,16 +56,7 @@ async function init() {
       defaultNetwork: bsc,
       themeMode: 'dark',
       enableWalletGuide: false,
-      enableWalletConnect: true,
-      featuredWalletIds: [
-        'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96',
-        '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0'
-      ],
       metadata,
-      allWallets: 'SHOW',
-      enableInjected: !isMobileBrowser,
-      enableEIP6963: !isMobileBrowser,
-      debug: true,
       features: { analytics: false, email: false, socials: false, connectMethodsOrder: ['wallet'] }
     } as any);
 
@@ -328,17 +314,10 @@ async function openWallet() {
     await init();
     setupWatchers();
 
-    // Reset a stale AppKit connect view before opening a fresh one. This is
-    // especially important after a mobile wallet attempt was interrupted.
-    if (appKit && typeof (appKit as any).close === 'function') {
-      try { (appKit as any).close(); } catch {}
-      await new Promise(resolve => setTimeout(resolve, 120));
-    }
+    // Use AppKit's normal Connect view. The previous production build used
+    // this path successfully on mobile; do not force a provider-specific view.
+    appKit?.open();
 
-    appKit?.open({ view: 'Connect' } as any);
-
-    // Mobile wallets often return to the browser after AppKit completes.
-    // Poll briefly as a fallback to the account watcher.
     for (let attempt = 0; attempt < 20; attempt += 1) {
       await new Promise(resolve => setTimeout(resolve, 500));
       await syncCurrentAccount();
