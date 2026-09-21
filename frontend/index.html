@@ -721,6 +721,10 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       <p id="onboardText">Explore Zenit's transparent network architecture and matrix structure.</p>
       <div class="onboard-points" id="onboardPoints"><div class="onboard-point"><span class="check">✓</span>Structural network visualization</div><div class="onboard-point"><span class="check">✓</span>Institutional-grade production interface</div></div>
       <div class="onboard-actions"><button class="btn primary" id="onboardNext">GET STARTED <span>→</span></button><button class="btn ghost" id="onboardSkip">EXPLORE WORKSPACE</button></div>
+       <div class="onboard-existing" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)">
+         <span>Already have a ZENIT account?</span>
+         <button type="button" class="btn ghost" id="onboardExistingLogin" style="margin-left:8px;padding:8px 11px">CONNECT WALLET / LOGIN</button>
+       </div>
       <div class="onboard-pager" id="onboardPager" aria-label="Onboarding steps"><button class="page-dot active" aria-label="Step 1"></button><button class="page-dot" aria-label="Step 2"></button><button class="page-dot" aria-label="Step 3"></button><button class="page-dot" aria-label="Step 4"></button></div>
     </div>
   </section>
@@ -763,6 +767,18 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         if(skip){
           e.preventDefault(); e.stopImmediatePropagation();
           step=3; paint();
+          return;
+        }
+        const existing=e.target.closest("#onboardExistingLogin");
+        if(existing){
+          e.preventDefault(); e.stopImmediatePropagation();
+          localStorage.setItem("zenitAuthMode","existing");
+          document.getElementById("onboarding")?.classList.add("hidden-screen");
+          document.getElementById("registrationScreen")?.classList.add("hidden-screen");
+          window.zenitOpenWallet?.().catch(error => {
+            document.getElementById("onboarding")?.classList.remove("hidden-screen");
+            window.zenitToast?.("Wallet login unavailable", error instanceof Error ? error.message : String(error), "error");
+          });
         }
       },true);
       paint();
