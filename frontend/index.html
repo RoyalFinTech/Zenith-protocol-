@@ -1210,10 +1210,11 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       let username=($("#registrationUsername")?.value||"").trim().toLowerCase();
       let email=($("#registrationEmail")?.value||"").trim().toLowerCase();
       let displayName=($("#registrationDisplayName")?.value||"").trim();
+      let pin=($("#registrationPin")?.value||"").trim();
       if(resend){
         try{
           const saved=JSON.parse(localStorage.getItem("zenitPendingRegistrationDraft")||"null");
-          if(saved){username=saved.username||username;email=saved.email||email;displayName=saved.displayName||displayName;}
+          if(saved){username=saved.username||username;email=saved.email||email;displayName=saved.displayName||displayName;pin=saved.pin||pin;}
         }catch(e){}
       }
       if(!/^[a-z0-9_]{3,24}$/.test(username)){toast("Username required","Use 3–24 lowercase letters, numbers or underscores.","warning");return;}
