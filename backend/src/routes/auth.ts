@@ -7,26 +7,16 @@ import { issueSession } from '../services/jwt.js';
 import { HttpError } from '../utils/http.js';
 import { v4 as uuid } from 'uuid';
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
-import { promisify } from 'node:util';
 import { sendVerificationEmail, sendWelcomeEmail } from '../services/email.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
-const scrypt = promisify(scryptCb);
 const PIN_PATTERN = /^\d{4}$/;
-async function hashPin(pin:string){
-  const salt=randomBytes(16).toString('hex');
-  const derived=await scrypt(pin,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024}) as Buffer;
-  return 'scrypt$16384$8$1$'+salt+'$'+derived.toString('hex');
+async function derivePin(pin:string,salt:string){
+  return await new Promise<Buffer>((resolve,reject)=>scryptCb(pin,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024},(error,key)=>error?reject(error):resolve(key as Buffer));
 }
-async function verifyPin(pin:string,encoded:string){
-  const parts=encoded.split('$');
-  if(parts.length!==7||parts[0]!=='scrypt') return false;
-  const [,n,r,p,salt,expectedHex]=parts;
-  const derived=await scrypt(pin,salt,64,{N:Number(n),r:Number(r),p:Number(p),maxmem:64*1024*1024}) as Buffer;
-  const expected=Buffer.from(expectedHex,'hex');
-  return expected.length===derived.length && timingSafeEqual(expected,derived);
-}
+async function hashPin(pin:string){ const salt=randomBytes(16).toString('hex'); const derived=await derivePin(pin,salt); return 'scrypt$16384$8$1$'+salt+'$'+derived.toString('hex'); }
+async function verifyPin(pin:string,encoded:string){ const parts=encoded.split('$'); if(parts.length!==7||parts[0]!=='scrypt') return false; const [,n,r,p,salt,expectedHex]=parts; const derived=await new Promise<Buffer>((resolve,reject)=>scryptCb(pin,salt,64,{N:Number(n),r:Number(r),p:Number(p),maxmem:64*1024*1024},(error,key)=>error?reject(error):resolve(key as Buffer))); const expected=Buffer.from(expectedHex,'hex'); return expected.length===derived.length && timingSafeEqual(expected,derived); }
 function buildMessage(address: string, nonce: string, issuedAt: Date, expiresAt: Date) {
   const domain = new URL(env.appOrigin).host;
   return `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Zenit Protocol.\n\nURI: ${env.appOrigin}\nVersion: 1\nChain ID: ${env.chainId}\nNonce: ${nonce}\nIssued At: ${issuedAt.toISOString()}\nExpiration Time: ${expiresAt.toISOString()}`;
@@ -157,6 +147,7 @@ router.post('/verify', async (req, res, next) => {
         throw error;
       }
     }
+    if (!user) throw new HttpError(500,'Unable to resolve wallet account');
     if (registration) {
       await client.query(`update pending_registrations set consumed_at=now(),updated_at=now() where id=$1`, [registration.id]);
     }
@@ -191,6 +182,7 @@ router.post('/pin/verify', async (req,res,next)=>{
     const valid=await verifyPin(pin,row.pin_hash);
     if(!valid){ await query(`update app_users set pin_failed_attempts=pin_failed_attempts+1,pin_locked_until=case when pin_failed_attempts+1>=5 then now()+interval '10 minutes' else pin_locked_until end where id=$1`,[row.user_id]); throw new HttpError(401,'Incorrect PIN'); }
     const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[row.user_id])).rows[0];
+    if(!user) throw new HttpError(404,'User not found');
     const sessionId=uuid(); await query(`update app_users set pin_failed_attempts=0,pin_locked_until=null where id=$1`,[row.user_id]); await query(`update pin_challenges set used_at=now() where id=$1`,[row.id]);
     await query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,row.user_id,row.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
     const token=await issueSession({userId:row.user_id,walletAddress:row.wallet_address,role:user.role,sessionId});
