@@ -223,7 +223,6 @@ router.post('/logout', requireAuth, async (req, res, next) => {
 });
 
 export default router;
-); if(parts.length!==7||parts[0]!=='scrypt') return false; const [,n,r,p,salt,expectedHex]=parts; const derived=await scrypt(pin,salt,64,{N:Number(n),r:Number(r),p:Number(p),maxmem:64*1024*1024}) as Buffer; const expected=Buffer.from(expectedHex,'hex'); return expected.length===derived.length && timingSafeEqual(expected,derived); }
 
 function buildMessage(address: string, nonce: string, issuedAt: Date, expiresAt: Date) {
   const domain = new URL(env.appOrigin).host;
