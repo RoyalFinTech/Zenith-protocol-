@@ -801,6 +801,8 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
           <div class="form-field identity-field"><label for="registrationUsername">Username <span class="field-status" id="usernameStatus" aria-live="polite"></span></label><input class="field" id="registrationUsername" autocomplete="username" maxlength="24" placeholder="yourname"></div>
           <div class="form-field identity-field" style="margin-top:13px"><label for="registrationEmail">Email address <span class="field-status" id="emailStatus" aria-live="polite"></span></label><input class="field" id="registrationEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
           <div class="form-field identity-field" style="margin-top:13px"><label for="registrationDisplayName">Display name <span class="field-status" id="displayNameStatus" aria-live="polite"></span></label><input class="field" id="registrationDisplayName" autocomplete="name" maxlength="80" placeholder="Your name"></div>
+          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationPin">4-digit security PIN</label><input class="field mono" id="registrationPin" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="\\d{4}" placeholder="••••"><small class="muted">Your PIN is stored as a secure hash and is required when you return with this wallet.</small></div>
+          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationPinConfirm">Confirm PIN</label><input class="field mono" id="registrationPinConfirm" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="\\d{4}" placeholder="••••"></div>
           <button class="btn primary registration-submit" id="registrationSubmit">SEND VERIFICATION EMAIL <span>→</span></button>
         </div>
         <div id="registrationStatus" class="registration-status hidden-screen" aria-live="polite"></div>
@@ -1103,6 +1105,29 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     $("#onboardSkip").addEventListener("click",()=>{onboardingStep=3;updateOnboarding();});
     $("#registrationSubmit").addEventListener("click",()=>requestRegistration());
     window.addEventListener("zenit:authenticated",()=>{ localStorage.setItem("zenitRegistrationVerified","1"); startApp(); });
+    async function completePinLogin(challengeId,pin){
+      const response=await fetch(`${window.location.origin}/api/auth/pin/verify`,{method:"POST",headers:{"content-type":"application/json","accept":"application/json"},body:JSON.stringify({challengeId,pin})});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||!data.token)throw new Error(data.error||"PIN authentication failed");
+      localStorage.setItem("zenitToken",data.token);
+      localStorage.removeItem("zenitPinChallenge");
+      localStorage.removeItem("zenitRegistrationVerified");
+      localStorage.removeItem("zenitAuthMode");
+      window.zenitSetWallet?.(true,data.user?.walletAddress||"");
+      window.zenitLoadBackend?.(data.token);
+      document.getElementById("modalBackdrop")?.classList.remove("open");
+      window.dispatchEvent(new CustomEvent("zenit:authenticated",{detail:data.user}));
+    }
+    window.addEventListener("zenit:pin-required",e=>{
+      const detail=e.detail||{};
+      if(!detail.challengeId)return;
+      localStorage.setItem("zenitPinChallenge",detail.challengeId);
+      openModal(`<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER</div><h2 id="modalTitle">Welcome back</h2><p>Your wallet is verified. Enter your 4-digit ZENIT security PIN to open your dashboard.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="current-password" maxlength="4" pattern="\\d{4}" placeholder="••••" data-autofocus></div><div class="modal-foot" style="padding:18px 0 0"><button class="btn primary" id="loginPinSubmit">OPEN DASHBOARD →</button></div></div>`);
+      const input=document.getElementById("loginPin"); const button=document.getElementById("loginPinSubmit");
+      const submit=async()=>{const pin=(input?.value||"").trim(); if(!/^\\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN.","warning");return;} if(button){button.disabled=true;button.textContent="VERIFYING PIN…";} try{await completePinLogin(detail.challengeId,pin);}catch(error){if(button){button.disabled=false;button.textContent="OPEN DASHBOARD →";}toast("Login failed",error?.message||String(error),"error");}};
+      button?.addEventListener("click",submit); input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});
+    });
+
     let onboardingStep=0;
     const onboardingData=[
       ["01 / 04 · Welcome","A premium digital wealth experience built around people.","Meet a human-first ZENIT workspace designed to make your network, identity and activity easier to understand.",["Human-first member experience","Premium financial workspace","Clear account journey"],"GET STARTED","https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1400&auto=format&fit=crop","YOUR JOURNEY","A human-first financial workspace"],
@@ -1192,6 +1217,9 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       if(!/^[a-z0-9_]{3,24}$/.test(username)){toast("Username required","Use 3–24 lowercase letters, numbers or underscores.","warning");return;}
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast("Email required","Enter a valid email address, for example name@gmail.com.","warning");return;}
       if(displayName.length<2||displayName.length>80){toast("Name required","Use 2–80 characters.","warning");return;}
+      const pin=($("#registrationPin")?.value||"").trim(); const pinConfirm=($("#registrationPinConfirm")?.value||"").trim();
+      if(!resend && !/^\\d{4}$/.test(pin)){toast("PIN required","Create a 4-digit security PIN.","warning");return;}
+      if(!resend && pin!==pinConfirm){toast("PIN mismatch","The two PIN entries must match.","warning");return;}
 
       if(!resend){
         await checkRegistrationAvailability();
@@ -1204,11 +1232,11 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       if(!resend){button.disabled=true;button.innerHTML="SENDING VERIFICATION…";}
 
       try{
-        const response=await fetch(`${window.location.origin}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username,email,displayName})});
+        const response=await fetch(`${window.location.origin}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username,email,displayName,pin})});
         const data=await response.json().catch(()=>({}));
         if(!response.ok)throw new Error(data.error||"Unable to send verification email");
         localStorage.setItem("zenitPendingRegistrationEmail",email);
-        localStorage.setItem("zenitPendingRegistrationDraft",JSON.stringify({username,email,displayName}));
+        localStorage.setItem("zenitPendingRegistrationDraft",JSON.stringify({username,email,displayName,pin}));
         $("#registrationForm").classList.add("hidden-screen");
         $("#registrationStatus").classList.remove("hidden-screen");
         $("#registrationStatus").innerHTML=`<strong>Check your email</strong>We sent a verification link to <b>${esc(email)}</b>. Check your inbox or spam folder.<div class="verification-resend"><button id="resendVerificationButton" type="button" disabled>RESEND VERIFICATION</button><span class="verification-timer" id="verificationTimer">Resend available in 30s</span></div>`;
