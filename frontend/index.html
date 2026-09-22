@@ -1105,8 +1105,9 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     $("#onboardSkip").addEventListener("click",()=>{onboardingStep=3;updateOnboarding();});
     $("#registrationSubmit").addEventListener("click",()=>requestRegistration());
     window.addEventListener("zenit:authenticated",()=>{ localStorage.setItem("zenitRegistrationVerified","1"); startApp(); });
-    async function completePinLogin(challengeId,pin){
-      const response=await fetch(`${window.location.origin}/api/auth/pin/verify`,{method:"POST",headers:{"content-type":"application/json","accept":"application/json"},body:JSON.stringify({challengeId,pin})});
+    async function completePinLogin(challengeId,pin,setup=false){
+      const endpoint=setup?"/api/auth/pin/setup":"/api/auth/pin/verify";
+      const response=await fetch(`${window.location.origin}${endpoint}`,{method:"POST",headers:{"content-type":"application/json","accept":"application/json"},body:JSON.stringify({challengeId,pin})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok||!data.token)throw new Error(data.error||"PIN authentication failed");
       localStorage.setItem("zenitToken",data.token);
@@ -1122,9 +1123,10 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       const detail=e.detail||{};
       if(!detail.challengeId)return;
       localStorage.setItem("zenitPinChallenge",detail.challengeId);
-      openModal(`<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER</div><h2 id="modalTitle">Welcome back</h2><p>Your wallet is verified. Enter your 4-digit ZENIT security PIN to open your dashboard.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="current-password" maxlength="4" pattern="\\d{4}" placeholder="••••" data-autofocus></div><div class="modal-foot" style="padding:18px 0 0"><button class="btn primary" id="loginPinSubmit">OPEN DASHBOARD →</button></div></div>`);
+      const setup=!!detail.setup; const title=setup?"Create your security PIN":"Welcome back"; const description=setup?"This wallet already has a ZENIT account. Create a 4-digit PIN once to protect future access.":"Your wallet is verified. Enter your 4-digit ZENIT security PIN to open your dashboard."; const action=setup?"CREATE PIN →":"OPEN DASHBOARD →";
+      openModal(`<div class="modal-head"><div><div class="eyebrow">${setup?"FIRST RETURN LOGIN":"RETURNING MEMBER"}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="${setup?"new-password":"current-password"}" maxlength="4" pattern="\\d{4}" placeholder="••••" data-autofocus></div><div class="modal-foot" style="padding:18px 0 0"><button class="btn primary" id="loginPinSubmit">${action}</button></div></div>`);
       const input=document.getElementById("loginPin"); const button=document.getElementById("loginPinSubmit");
-      const submit=async()=>{const pin=(input?.value||"").trim(); if(!/^\\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN.","warning");return;} if(button){button.disabled=true;button.textContent="VERIFYING PIN…";} try{await completePinLogin(detail.challengeId,pin);}catch(error){if(button){button.disabled=false;button.textContent="OPEN DASHBOARD →";}toast("Login failed",error?.message||String(error),"error");}};
+      const submit=async()=>{const pin=(input?.value||"").trim(); if(!/^\\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN.","warning");return;} if(button){button.disabled=true;button.textContent="VERIFYING PIN…";} try{await completePinLogin(detail.challengeId,pin,setup);}catch(error){if(button){button.disabled=false;button.textContent="OPEN DASHBOARD →";}toast("Login failed",error?.message||String(error),"error");}};
       button?.addEventListener("click",submit); input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});
     });
 
