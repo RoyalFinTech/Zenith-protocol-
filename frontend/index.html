@@ -1220,8 +1220,8 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       if(!/^[a-z0-9_]{3,24}$/.test(username)){toast("Username required","Use 3–24 lowercase letters, numbers or underscores.","warning");return;}
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast("Email required","Enter a valid email address, for example name@gmail.com.","warning");return;}
       if(displayName.length<2||displayName.length>80){toast("Name required","Use 2–80 characters.","warning");return;}
-      const pin=($("#registrationPin")?.value||"").trim(); const pinConfirm=($("#registrationPinConfirm")?.value||"").trim();
-      if(!resend && !/^\\d{4}$/.test(pin)){toast("PIN required","Create a 4-digit security PIN.","warning");return;}
+      pin=($("#registrationPin")?.value||"").trim(); const pinConfirm=($("#registrationPinConfirm")?.value||"").trim();
+      if(!resend && !/^\d{4}$/.test(pin)){toast("PIN required","Create a 4-digit security PIN.","warning");return;}
       if(!resend && pin!==pinConfirm){toast("PIN mismatch","The two PIN entries must match.","warning");return;}
 
       if(!resend){
