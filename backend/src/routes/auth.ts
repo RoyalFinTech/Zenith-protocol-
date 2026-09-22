@@ -6,7 +6,7 @@ import { randomNonce, randomReferralCode } from '../utils/crypto.js';
 import { issueSession } from '../services/jwt.js';
 import { HttpError } from '../utils/http.js';
 import { v4 as uuid } from 'uuid';
-import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { sendVerificationEmail, sendWelcomeEmail } from '../services/email.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -15,6 +15,9 @@ const PIN_PATTERN = /^\d{4}$/;
 async function derivePin(pin:string,salt:string){ return await new Promise<Buffer>((resolve,reject)=>scryptCb(pin,salt,64,(error,key)=>error?reject(error):resolve(key as Buffer))); }
 async function hashPin(pin:string){ const salt=randomBytes(16).toString('hex'); const derived=await derivePin(pin,salt); return 'scrypt$'+salt+'$'+derived.toString('hex'); }
 async function verifyPin(pin:string,encoded:string){ const parts=encoded.split('$'); if(parts.length!==3||parts[0]!=='scrypt') return false; const [,salt,expectedHex]=parts; if(!salt||!expectedHex) return false; const derived=await derivePin(pin,salt); const expected=Buffer.from(expectedHex,'hex'); return expected.length===derived.length && timingSafeEqual(expected,derived); }
+function b64url(input:Buffer|string){ return Buffer.from(input).toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,''); }
+function fromB64url(value:string){ return Buffer.from(value.replace(/-/g,'+').replace(/_/g,'/') + '='.repeat((4-value.length%4)%4),'base64'); }
+function webauthnOriginOk(origin:unknown){ return origin===env.appOrigin; }
 function buildMessage(address: string, nonce: string, issuedAt: Date, expiresAt: Date) {
   const domain = new URL(env.appOrigin).host;
   return `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Zenit Protocol.\n\nURI: ${env.appOrigin}\nVersion: 1\nChain ID: ${env.chainId}\nNonce: ${nonce}\nIssued At: ${issuedAt.toISOString()}\nExpiration Time: ${expiresAt.toISOString()}`;
@@ -205,6 +208,77 @@ router.post('/pin/setup', async (req,res,next)=>{
     res.json({token,user:{id:row.user_id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:row.wallet_address}});
   }catch(e){next(e);}
 });
+router.post('/webauthn/register/options', requireAuth, async (req,res,next)=>{
+  try{
+    const user=(await query<{id:string;username:string;display_name:string}>(`select id,username,display_name from app_users where id=$1`,[req.auth!.userId])).rows[0];
+    if(!user) throw new HttpError(404,'User not found');
+    const challenge=b64url(randomBytes(32));
+    await query(`delete from webauthn_challenges where (user_id=$1 or user_id is null) and used_at is null`,[user.id]);
+    await query(`insert into webauthn_challenges(user_id,challenge,kind) values($1,$2,'registration')`,[user.id,challenge]);
+    res.json({challenge,userId:b64url(Buffer.from(user.id)),username:user.username,displayName:user.display_name,rpId:new URL(env.appOrigin).hostname,rpName:'ZENIT Protocol'});
+  }catch(e){next(e);}
+});
+
+router.post('/webauthn/register/verify', requireAuth, async (req,res,next)=>{
+  try{
+    const credential=req.body?.credential;
+    if(!credential?.id||!credential?.response?.clientDataJSON||!credential?.response?.attestationObject) throw new HttpError(400,'Invalid biometric credential');
+    const clientData=JSON.parse(fromB64url(credential.response.clientDataJSON).toString('utf8'));
+    const challenge=(await query<{challenge:string;id:string}>(`select id,challenge from webauthn_challenges where user_id=$1 and kind='registration' and used_at is null and expires_at>now() order by created_at desc limit 1`,[req.auth!.userId])).rows[0];
+    if(!challenge||clientData.type!=='webauthn.create'||clientData.challenge!==challenge.challenge||!webauthnOriginOk(clientData.origin)) throw new HttpError(400,'Biometric registration challenge failed');
+    const response=credential.response;
+    const publicKeyDer=response.publicKey||response.publicKeyDer||null;
+    if(!publicKeyDer) throw new HttpError(400,'This browser cannot expose a biometric public key');
+    const credId=String(credential.rawId||credential.id);
+    const userHandle=b64url(Buffer.from(req.auth!.userId));
+    await query(`insert into webauthn_credentials(user_id,credential_id,user_handle,public_key_der,sign_count) values($1,$2,$3,$4,$5) on conflict(credential_id) do update set public_key_der=excluded.public_key_der,user_handle=excluded.user_handle`,[req.auth!.userId,credId,userHandle,String(publicKeyDer),0]);
+    await query(`update webauthn_challenges set used_at=now() where id=$1`,[challenge.id]);
+    res.status(201).json({registered:true});
+  }catch(e){next(e);}
+});
+
+router.post('/webauthn/login/options', async (_req,res,next)=>{
+  try{
+    const challenge=b64url(randomBytes(32));
+    await query(`delete from webauthn_challenges where kind='login' and used_at is null`);
+    await query(`insert into webauthn_challenges(challenge,kind) values($1,'login')`,[challenge]);
+    res.json({challenge,rpId:new URL(env.appOrigin).hostname,userVerification:'required'});
+  }catch(e){next(e);}
+});
+
+router.post('/webauthn/login/verify', async (req,res,next)=>{
+  try{
+    const credential=req.body?.credential;
+    if(!credential?.id||!credential?.response?.clientDataJSON||!credential?.response?.authenticatorData||!credential?.response?.signature) throw new HttpError(400,'Invalid biometric response');
+    const clientData=JSON.parse(fromB64url(credential.response.clientDataJSON).toString('utf8'));
+    const challenge=(await query<{id:string;challenge:string}>(`select id,challenge from webauthn_challenges where kind='login' and used_at is null and expires_at>now() and challenge=$1 limit 1`,[clientData.challenge])).rows[0];
+    if(!challenge||clientData.type!=='webauthn.get'||!webauthnOriginOk(clientData.origin)) throw new HttpError(401,'Biometric challenge failed');
+    const cred=(await query<{id:string;user_id:string;wallet_address:string;public_key_der:string;sign_count:string;user_handle:string}>(`select c.id,c.user_id,c.public_key_der,c.sign_count,c.user_handle,u.wallet_address from webauthn_credentials c join app_users u on u.id=c.user_id where c.credential_id=$1 limit 1`,[String(credential.rawId||credential.id)])).rows[0];
+    if(!cred) throw new HttpError(401,'Biometric credential not recognized');
+    const authData=fromB64url(credential.response.authenticatorData);
+    if(authData.length<37) throw new HttpError(401,'Invalid authenticator data');
+    const rpHash=createHash('sha256').update(new URL(env.appOrigin).hostname).digest();
+    if(!timingSafeEqual(authData.subarray(0,32),rpHash)) throw new HttpError(401,'Invalid relying party');
+    const flags=authData[32]; if((flags&1)===0||(flags&4)===0) throw new HttpError(401,'Biometric user verification required');
+    const counter=authData.readUInt32BE(33);
+    const clientHash=createHash('sha256').update(fromB64url(credential.response.clientDataJSON)).digest();
+    const signedData=Buffer.concat([authData,clientHash]);
+    const publicKey=createPublicKey({key:fromB64url(cred.public_key_der),format:'der',type:'spki'});
+    const valid=verifySignature('sha256',signedData,publicKey,fromB64url(credential.response.signature));
+    if(!valid) throw new HttpError(401,'Biometric signature invalid');
+    const previous=Number(cred.sign_count)||0;
+    if(counter!==0&&previous!==0&&counter<=previous) throw new HttpError(401,'Biometric credential replay detected');
+    await query(`update webauthn_credentials set sign_count=$1,last_used_at=now() where id=$2`,[counter,cred.id]);
+    await query(`update webauthn_challenges set used_at=now() where id=$1`,[challenge.id]);
+    const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[cred.user_id])).rows[0];
+    if(!user) throw new HttpError(404,'User not found');
+    const sessionId=uuid();
+    await query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,cred.user_id,cred.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
+    const token=await issueSession({userId:cred.user_id,walletAddress:cred.wallet_address,role:user.role,sessionId});
+    res.json({token,user:{id:cred.user_id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:cred.wallet_address}});
+  }catch(e){next(e);}
+});
+
 router.post('/logout', requireAuth, async (req, res, next) => {
   try {
     const auth = req.auth;
