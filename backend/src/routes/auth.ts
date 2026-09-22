@@ -18,8 +18,8 @@ async function verifyPin(pin:string,encoded:string){ const parts=encoded.split('
 function decodeCbor(input:Buffer):any{
   let o=0;
   const read=(n:number)=>{const b=input.subarray(o,o+n);o+=n;return b;};
-  const len=(ai:number):number=>{if(ai<24)return ai;if(ai===24)return read(1)[0];if(ai===25)return read(2).readUInt16BE(0);if(ai===26)return read(4).readUInt32BE(0);throw new Error('Unsupported CBOR length');};
-  const parse=():any=>{const h=read(1)[0],major=h>>5,ai=h&31,n=len(ai);
+  const len=(ai:number):number=>{if(ai<24)return ai;if(ai===24)return read(1)[0] ?? 0;if(ai===25)return read(2).readUInt16BE(0);if(ai===26)return read(4).readUInt32BE(0);throw new Error('Unsupported CBOR length');};
+  const parse=():any=>{const h=read(1)[0] ?? 0,major=h>>5,ai=h&31,n=len(ai);
     if(major===0)return n;if(major===1)return -1-n;if(major===2)return read(n);if(major===3)return read(n).toString('utf8');
     if(major===4){const a=[];for(let i=0;i<n;i++)a.push(parse());return a;}
     if(major===5){const m:any={};for(let i=0;i<n;i++){const k=parse();m[String(typeof k==='number'?k:k.toString())]=parse();}return m;}
@@ -27,7 +27,7 @@ function decodeCbor(input:Buffer):any{
   };
   return parse();
 }
-function b64url(input:Buffer|string){ return Buffer.from(input).toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,''); }
+function b64url(input:Buffer|string){ return Buffer.from(input).toString('base64').replaceAll('+','-').replaceAll('/','_').replace(/=+$/,''); }
 function fromB64url(value:string){ return Buffer.from(value.replace(/-/g,'+').replace(/_/g,'/') + '='.repeat((4-value.length%4)%4),'base64'); }
 function webauthnOriginOk(origin:unknown){ return origin===env.appOrigin; }
 function buildMessage(address: string, nonce: string, issuedAt: Date, expiresAt: Date) {
@@ -245,7 +245,7 @@ router.post('/webauthn/register/verify', requireAuth, async (req,res,next)=>{
     if(authData.length<55) throw new HttpError(400,'Invalid biometric authenticator data');
     const rpHash=createHash('sha256').update(new URL(env.appOrigin).hostname).digest();
     if(!timingSafeEqual(authData.subarray(0,32),rpHash)) throw new HttpError(400,'Invalid biometric relying party');
-    const flags=authData[32]; if((flags&1)===0||(flags&4)===0) throw new HttpError(400,'Biometric user verification is required');
+    const flags=authData[32] ?? 0; if((flags&1)===0||(flags&4)===0) throw new HttpError(400,'Biometric user verification is required');
     const aaguidStart=37, credLen=authData.readUInt16BE(aaguidStart+16), credStart=aaguidStart+18, coseStart=credStart+credLen;
     const credentialId=authData.subarray(credStart,coseStart);
     const cose=decodeCbor(authData.subarray(coseStart));
