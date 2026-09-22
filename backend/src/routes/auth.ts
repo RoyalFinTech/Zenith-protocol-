@@ -200,6 +200,7 @@ router.post('/pin/setup', async (req,res,next)=>{
     await query(`update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2`,[pinHash,row.user_id]);
     await query(`update pin_challenges set used_at=now() where id=$1`,[row.id]);
     const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[row.user_id])).rows[0];
+    if(!user) throw new HttpError(404,'User not found');
     const sessionId=uuid();
     await query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,row.user_id,row.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
     const token=await issueSession({userId:row.user_id,walletAddress:row.wallet_address,role:user.role,sessionId});
