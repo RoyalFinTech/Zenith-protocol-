@@ -324,12 +324,13 @@
     .verification-timer{color:#8f969f;font-size:10px}
     .registration-progress{display:flex;gap:6px;margin-top:28px}.registration-progress span{height:3px;flex:1;background:#34383d;border-radius:99px}.registration-progress span.active{background:var(--gold-bright)}
     .registration-footer{margin-top:18px;padding-top:16px;border-top:1px solid var(--line-soft);text-align:center;color:var(--muted);font-size:11px;line-height:1.6}.registration-footer button{border:0;background:none;color:var(--gold-bright);font-weight:800;padding:0;cursor:pointer}.registration-footer button:hover{text-decoration:underline}.registration-powered{margin-top:10px;color:var(--muted-2);font-size:10px;letter-spacing:.03em}
-    @media(max-width:800px){.registration-screen{grid-template-columns:1fr}.registration-art{min-height:300px;max-height:42vh}.registration-art-copy{bottom:22px}.registration-art-copy h2{font-size:32px}.registration-card-wrap{min-height:58vh;padding:24px}.registration-card{padding:25px}}
+    @media(max-width:800px){.registration-screen{grid-template-columns:1fr;align-content:start;overflow-y:auto}.registration-art{height:300px;min-height:300px;max-height:none;display:flex;align-items:flex-end;flex:none}.registration-art img{position:absolute;inset:0;height:100%}.registration-art-copy{position:relative;left:auto;right:auto;bottom:auto;width:100%;padding:24px;z-index:2}.registration-art-copy h2{font-size:32px;margin:6px 0}.registration-art-copy p{margin:8px 0 0}.registration-card-wrap{min-height:0;padding:24px;align-items:flex-start}.registration-card{padding:25px;margin:0 0 24px}.registration-art-scrim{z-index:1}}
 
     .identity-field .field{transition:border-color .2s ease,box-shadow .2s ease}
     .identity-field.valid .field{border-color:#43d17b;box-shadow:0 0 0 1px rgba(67,209,123,.18),0 0 18px rgba(67,209,123,.06)}
     .identity-field.invalid .field{border-color:#e45f69;box-shadow:0 0 0 1px rgba(228,95,105,.14)}
     .field-status{float:right;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+    .pin-field-wrap{position:relative}.pin-field-wrap .field{padding-right:44px}.pin-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:var(--muted);display:grid;place-items:center}.pin-toggle:hover{color:var(--text);background:rgba(255,255,255,.06)}.pin-toggle svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.biometric-actions{display:grid;gap:9px}.biometric-btn{width:100%;min-height:44px;border:1px solid rgba(97,214,163,.28);background:rgba(97,214,163,.08);color:var(--green);border-radius:10px;font-weight:800;font-size:11px;letter-spacing:.04em}.biometric-btn:hover{background:rgba(97,214,163,.14);border-color:rgba(97,214,163,.45)}.login-divider{display:flex;align-items:center;gap:10px;margin:15px 0;color:var(--muted-2);font-size:9px;text-transform:uppercase;letter-spacing:.1em}.login-divider:before,.login-divider:after{content:"";height:1px;flex:1;background:var(--line)}.identity-field.valid .field-status{display:inline-flex;align-items:center;gap:4px}.identity-field.valid .field-status:before{content:"";width:6px;height:6px;border-radius:50%;background:#43d17b;box-shadow:0 0 8px rgba(67,209,123,.6)}
     .field-status.ok{color:#43d17b}.field-status.bad{color:#e45f69}.field-status.checking{color:#caa652}
 
     /* Shared controls */
@@ -1290,5 +1291,118 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     /* Safety net for browsers where animation frames are throttled or delayed. */
     setTimeout(releaseSplash, SPLASH_DURATION + 700);
   </script>
+<script id="zenitRegistrationQaController">
+(() => {
+  const $ = (sel) => document.querySelector(sel);
+  const api = window.location.origin;
+  const b64 = (buf) => { const bytes=new Uint8Array(buf); let str=""; for(const b of bytes)str+=String.fromCharCode(b); return btoa(str).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); };
+  const bytes = (value) => { const s=value.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-value.length%4)%4); const raw=atob(s); return Uint8Array.from(raw,c=>c.charCodeAt(0)); };
+  const toast = (title,message,type="info") => window.zenitToast?.(title,message,type);
+
+  async function availabilityCheck(){
+    const username=($("#registrationUsername")?.value||"").trim().toLowerCase();
+    const email=($("#registrationEmail")?.value||"").trim().toLowerCase();
+    const displayName=($("#registrationDisplayName")?.value||"").trim();
+    const specs=[
+      ["registrationUsername",username,/^[a-z0-9_]{3,24}$/,"username"],
+      ["registrationEmail",email,/^[^\s@]+@[^\s@]+\.[^\s@]+$/,"email"],
+      ["registrationDisplayName",displayName,(v)=>v.length>=2&&v.length<=80,"displayName"]
+    ];
+    for(const [id,value,rule] of specs){
+      const input=document.getElementById(id), wrap=input?.closest(".identity-field"), status=document.getElementById(id==="registrationUsername"?"usernameStatus":id==="registrationEmail"?"emailStatus":"displayNameStatus");
+      const ok=rule.test?rule.test(value):rule(value);
+      if(wrap){wrap.classList.remove("valid","invalid");if(value)wrap.classList.add(ok?"valid":"invalid");}
+      if(status){status.className="field-status "+(value?(ok?"checking":"bad"):"");status.textContent=value?(ok?"CHECKING…":"INVALID"):"";}
+    }
+    const params=new URLSearchParams();
+    if(/^[a-z0-9_]{3,24}$/.test(username))params.set("username",username);
+    if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))params.set("email",email);
+    if(displayName.length>=2&&displayName.length<=80)params.set("displayName",displayName);
+    if(!params.toString())return;
+    try{
+      const r=await fetch(api+"/api/auth/register/check?"+params.toString(),{headers:{accept:"application/json"}});
+      const d=await r.json();
+      const values={username:d.username?.available,email:d.email?.available,displayName:d.displayName?.available};
+      const checks={};
+      for(const [id,value,rule,key] of specs){
+        const input=document.getElementById(id),wrap=input?.closest(".identity-field"),status=document.getElementById(id==="registrationUsername"?"usernameStatus":id==="registrationEmail"?"emailStatus":"displayNameStatus");
+        const ok=!!values[key];checks[key]=ok;
+        if(value){wrap?.classList.toggle("valid",ok);wrap?.classList.toggle("invalid",!ok);if(status){status.className="field-status "+(ok?"ok":"bad");status.textContent=ok?"✓ AVAILABLE":(key==="email"?"REGISTERED":key==="username"?"TAKEN":"ALREADY USED");}}
+      }
+      window.__ZENIT_AVAILABILITY__=checks;
+    }catch{
+      window.__ZENIT_AVAILABILITY__={username:false,email:false,displayName:false};
+      for(const [id,value] of specs){if(!value)continue;const status=document.getElementById(id==="registrationUsername"?"usernameStatus":id==="registrationEmail"?"emailStatus":"displayNameStatus");if(status){status.className="field-status bad";status.textContent="CHECK FAILED";}}
+    }
+  }
+  let timer=0;
+  function schedule(){clearTimeout(timer);timer=setTimeout(availabilityCheck,300);}
+  function addPinToggle(id){
+    const input=document.getElementById(id);if(!input||input.parentElement?.classList.contains("pin-field-wrap"))return;
+    const wrap=document.createElement("div");wrap.className="pin-field-wrap";input.parentNode.insertBefore(wrap,input);wrap.appendChild(input);
+    const btn=document.createElement("button");btn.type="button";btn.className="pin-toggle";btn.setAttribute("aria-label","Show PIN");btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.2-5 9.5-5 9.5 5 9.5 5-3.2 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.3"/></svg>';
+    btn.addEventListener("click",()=>{const show=input.type==="text";input.type=show?"password":"text";btn.setAttribute("aria-label",show?"Show PIN":"Hide PIN");});
+    wrap.appendChild(btn);
+  }
+  function bindPinInputs(){addPinToggle("registrationPin");addPinToggle("registrationPinConfirm");}
+  function openReturningLogin(){
+    const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
+    modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER</div><h2 id="modalTitle">Welcome back to ZENIT</h2><p>Use your phone biometrics first, or connect your wallet and use your 4-digit PIN.</p></div><button class="icon-btn" type="button" id="closeReturningLogin" aria-label="Close">×</button></div><div class="modal-body"><div class="biometric-actions"><button class="biometric-btn" type="button" id="useBiometricLogin">USE PHONE BIOMETRICS</button></div><div class="login-divider">OR USE WALLET + PIN</div><button class="btn primary" type="button" id="connectReturningWallet" style="width:100%;min-height:44px">CONNECT WALLET →</button><p style="margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.6">After your wallet signature, ZENIT will ask for your 4-digit security PIN.</p></div>';
+    backdrop.classList.add("open");
+    $("#closeReturningLogin")?.addEventListener("click",()=>backdrop.classList.remove("open"));
+    $("#connectReturningWallet")?.addEventListener("click",async()=>{localStorage.setItem("zenitAuthMode","existing");backdrop.classList.remove("open");try{await window.zenitOpenWallet?.();}catch(e){toast("Wallet unavailable",e?.message||String(e),"error");}});
+    $("#useBiometricLogin")?.addEventListener("click",()=>biometricLogin());
+  }
+  async function biometricLogin(){
+    if(!window.PublicKeyCredential||!navigator.credentials){toast("Biometrics unavailable","Use wallet + PIN instead.","warning");return;}
+    try{
+      const optR=await fetch(api+"/api/auth/webauthn/login/options",{method:"POST",headers:{accept:"application/json"}});
+      const opt=await optR.json();if(!optR.ok)throw new Error(opt.error||"Unable to start biometric login");
+      const credential=await navigator.credentials.get({publicKey:{challenge:bytes(opt.challenge),rpId:opt.rpId,userVerification:"required"}});
+      if(!credential)throw new Error("Biometric login was cancelled");
+      const payload={id:credential.id,rawId:b64(credential.rawId),type:credential.type,response:{clientDataJSON:b64(credential.response.clientDataJSON),authenticatorData:b64(credential.response.authenticatorData),signature:b64(credential.response.signature),userHandle:credential.response.userHandle?b64(credential.response.userHandle):null}};
+      const verifyR=await fetch(api+"/api/auth/webauthn/login/verify",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({credential:payload})});
+      const data=await verifyR.json().catch(()=>({}));if(!verifyR.ok||!data.token)throw new Error(data.error||"Biometric verification failed");
+      localStorage.setItem("zenitToken",data.token);localStorage.removeItem("zenitAuthMode");localStorage.removeItem("zenitRegistrationVerified");
+      $("#modalBackdrop")?.classList.remove("open");window.dispatchEvent(new CustomEvent("zenit:authenticated",{detail:data.user}));
+      toast("Welcome back","Welcome back, "+(data.user?.displayName||data.user?.username||"member")+".","success");
+    }catch(e){toast("Biometric login unavailable",e?.message||"Use wallet + PIN instead.","warning");}
+  }
+  async function enrollBiometric(){
+    if(!window.PublicKeyCredential||!navigator.credentials||!localStorage.getItem("zenitToken"))return false;
+    try{
+      const optR=await fetch(api+"/api/auth/webauthn/register/options",{method:"POST",headers:{Authorization:"Bearer "+localStorage.getItem("zenitToken"),accept:"application/json"}});
+      const opt=await optR.json();if(!optR.ok)throw new Error(opt.error||"Unable to start biometric setup");
+      const credential=await navigator.credentials.create({publicKey:{challenge:bytes(opt.challenge),rp:{id:opt.rpId,name:opt.rpName},user:{id:bytes(opt.userId),name:opt.username,displayName:opt.displayName},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{residentKey:"required",requireResidentKey:true,userVerification:"required"},timeout:60000,attestation:"none"}});
+      if(!credential)throw new Error("Biometric setup was cancelled");
+      const response=credential.response;const publicKey=response.getPublicKey?.();if(!publicKey)throw new Error("This device cannot expose a biometric public key");
+      const payload={id:credential.id,rawId:b64(credential.rawId),type:credential.type,response:{clientDataJSON:b64(response.clientDataJSON),attestationObject:b64(response.attestationObject),publicKey:b64(publicKey)}};
+      const verifyR=await fetch(api+"/api/auth/webauthn/register/verify",{method:"POST",headers:{"content-type":"application/json",Authorization:"Bearer "+localStorage.getItem("zenitToken"),accept:"application/json"},body:JSON.stringify({credential:payload})});
+      const data=await verifyR.json().catch(()=>({}));if(!verifyR.ok||!data.registered)throw new Error(data.error||"Biometric setup failed");
+      localStorage.setItem("zenitBiometricEnabled","1");return true;
+    }catch(e){toast("Biometric setup skipped",e?.message||"You can continue with PIN.","info");return false;}
+  }
+  document.addEventListener("click",(event)=>{
+    const target=event.target;if(!(target instanceof Element))return;
+    if(target.closest("#onboardExistingLogin")||target.closest('[data-action="existing-wallet-login"]')){event.preventDefault();event.stopImmediatePropagation();openReturningLogin();return;}
+  },true);
+  document.addEventListener("input",(event)=>{const target=event.target;if(target instanceof HTMLInputElement&&["registrationUsername","registrationEmail","registrationDisplayName"].includes(target.id))schedule();},true);
+  document.addEventListener("DOMContentLoaded",bindPinInputs);
+  window.addEventListener("zenit:authenticated",async()=>{
+    bindPinInputs();
+    if(localStorage.getItem("zenitBiometricPrompted")==="1"||localStorage.getItem("zenitBiometricEnabled")==="1")return;
+    localStorage.setItem("zenitBiometricPrompted","1");
+    setTimeout(async()=>{
+      if(!window.PublicKeyCredential||!navigator.credentials)return;
+      const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
+      modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">SECURE YOUR DEVICE</div><h2 id="modalTitle">Enable phone biometrics?</h2><p>Use your phone fingerprint, face or device biometric to return to ZENIT faster next time.</p></div><button class="icon-btn" type="button" id="skipBiometric">×</button></div><div class="modal-body"><button class="btn primary" type="button" id="enableBiometric" style="width:100%">ENABLE BIOMETRICS →</button><p style="margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.6">Your biometric never leaves your device. ZENIT stores only the public credential needed to verify future sign-ins.</p></div>';
+      backdrop.classList.add("open");
+      $("#skipBiometric")?.addEventListener("click",()=>backdrop.classList.remove("open"));
+      $("#enableBiometric")?.addEventListener("click",async()=>{const b=$("#enableBiometric");if(b){b.disabled=true;b.textContent="SETTING UP…";}const ok=await enrollBiometric();backdrop.classList.remove("open");if(ok)toast("Biometrics enabled","Next time you can use your phone biometric before PIN.","success");});
+    },500);
+  });
+  bindPinInputs();
+})();
+</script>
 </body>
 </html>
