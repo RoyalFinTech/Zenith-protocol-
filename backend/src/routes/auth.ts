@@ -150,12 +150,12 @@ router.post('/verify', async (req, res, next) => {
     if (registration) {
       await client.query(`update pending_registrations set consumed_at=now(),updated_at=now() where id=$1`, [registration.id]);
     }
-    if (!registration && user.pin_hash) {
+    if (!registration) {
       const challengeId=uuid();
       await client.query(`insert into pin_challenges(id,user_id,wallet_address) values($1,$2,$3)`, [challengeId,user.id,address]);
       await client.query('update auth_nonces set used_at=now() where id=$1', [record.id]);
       await client.query('commit');
-      res.json({pinRequired:true,challengeId,user:{id:user.id,username:(user as any).username||'',displayName:(user as any).display_name||'',walletAddress:address}});
+      res.json({pinRequired:!!user.pin_hash,pinSetupRequired:!user.pin_hash,challengeId,user:{id:user.id,username:(user as any).username||'',displayName:(user as any).display_name||'',walletAddress:address}});
       return;
     }
     const sessionId = uuid();
@@ -187,10 +187,21 @@ router.post('/pin/verify', async (req,res,next)=>{
     res.json({token,user:{id:row.user_id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:row.wallet_address}});
   }catch(e){next(e);}
 });
-router.post('/pin/set', async (req,res,next)=>{
-  try{ const address=getAddress(String(req.body?.address??'')); const pin=String(req.body?.pin??''); if(!PIN_PATTERN.test(pin)) throw new HttpError(400,'A 4-digit PIN is required');
-    const row=(await query<{id:string}>(`select id from app_users where wallet_address=$1 or exists(select 1 from wallet_accounts wa where wa.user_id=app_users.id and lower(wa.address)=lower($1) and wa.chain_id=$2) limit 1`,[address,env.chainId])).rows[0];
-    if(!row) throw new HttpError(404,'Account not found'); const pinHash=await hashPin(pin); await query(`update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2`,[pinHash,row.id]); res.status(204).end();
+router.post('/pin/setup', async (req,res,next)=>{
+  try{
+    const challengeId=String(req.body?.challengeId??''); const pin=String(req.body?.pin??'');
+    if(!/^[0-9a-fA-F-]{36}$/.test(challengeId)||!PIN_PATTERN.test(pin)) throw new HttpError(400,'Enter a 4-digit PIN');
+    const row=(await query<{id:string;user_id:string;wallet_address:string;expires_at:Date}>(`select id,user_id,wallet_address,expires_at from pin_challenges where id=$1 and used_at is null`,[challengeId])).rows[0];
+    if(!row) throw new HttpError(400,'PIN setup challenge is invalid or expired');
+    if(new Date(row.expires_at).getTime()<Date.now()) throw new HttpError(400,'PIN setup challenge expired; reconnect your wallet');
+    const pinHash=await hashPin(pin);
+    await query(`update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2`,[pinHash,row.user_id]);
+    await query(`update pin_challenges set used_at=now() where id=$1`,[row.id]);
+    const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[row.user_id])).rows[0];
+    const sessionId=uuid();
+    await query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,row.user_id,row.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
+    const token=await issueSession({userId:row.user_id,walletAddress:row.wallet_address,role:user.role,sessionId});
+    res.json({token,user:{id:row.user_id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:row.wallet_address}});
   }catch(e){next(e);}
 });
 router.post('/logout', requireAuth, async (req, res, next) => {
