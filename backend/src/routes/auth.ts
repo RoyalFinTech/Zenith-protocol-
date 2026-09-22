@@ -148,10 +148,10 @@ router.post('/verify', async (req, res, next) => {
       const username = registration?.username ?? `zenit_${address.slice(2,10).toLowerCase()}`;
       const email = registration?.email ?? null;
       const displayName = registration?.display_name ?? `Member ${address.slice(0,6)}…${address.slice(-4)}`;
-      user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string }>(`insert into app_users (wallet_address,username,email,display_name,pin_hash,role,referral_code) values ($1,$2,$3,$4,$5,'Member',$6) returning id,role,username,email,display_name,pin_hash`, [address,username,email,displayName,registration?.pin_hash ?? null,randomReferralCode()])).rows[0]!;
+      user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`insert into app_users (wallet_address,username,email,display_name,pin_hash,role,referral_code) values ($1,$2,$3,$4,$5,'Member',$6) returning id,role,username,email,display_name,pin_hash`, [address,username,email,displayName,registration?.pin_hash ?? null,randomReferralCode()])).rows[0]!;
     } else if (registration) {
       try {
-        user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string }>(`update app_users set username=$1,email=$2,display_name=$3,updated_at=now() where id=$4 returning id,role,username,email,display_name`, [registration.username,registration.email,registration.display_name,user.id])).rows[0]!;
+        user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`update app_users set username=$1,email=$2,display_name=$3,updated_at=now() where id=$4 returning id,role,username,email,display_name,pin_hash`, [registration.username,registration.email,registration.display_name,user.id])).rows[0]!;
       } catch (error:any) {
         if (error?.code === '23505') throw new HttpError(409, 'That username or email is already in use');
         throw error;
