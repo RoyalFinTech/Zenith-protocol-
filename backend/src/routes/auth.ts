@@ -14,9 +14,19 @@ import { requireAuth } from '../middleware/auth.js';
 const router = Router();
 const scrypt = promisify(scryptCb);
 const PIN_PATTERN = /^\d{4}$/;
-async function hashPin(pin:string){ const salt=randomBytes(16).toString('hex'); const derived=await scrypt(pin,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024}) as Buffer; return `scrypt$16384$8$1${salt}${derived.toString('hex')}`; }
-async function verifyPin(pin:string,encoded:string){ const parts=encoded.split('
-
+async function hashPin(pin:string){
+  const salt=randomBytes(16).toString('hex');
+  const derived=await scrypt(pin,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024}) as Buffer;
+  return 'scrypt$16384$8$1$'+salt+'$'+derived.toString('hex');
+}
+async function verifyPin(pin:string,encoded:string){
+  const parts=encoded.split('$');
+  if(parts.length!==7||parts[0]!=='scrypt') return false;
+  const [,n,r,p,salt,expectedHex]=parts;
+  const derived=await scrypt(pin,salt,64,{N:Number(n),r:Number(r),p:Number(p),maxmem:64*1024*1024}) as Buffer;
+  const expected=Buffer.from(expectedHex,'hex');
+  return expected.length===derived.length && timingSafeEqual(expected,derived);
+}
 function buildMessage(address: string, nonce: string, issuedAt: Date, expiresAt: Date) {
   const domain = new URL(env.appOrigin).host;
   return `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Zenit Protocol.\n\nURI: ${env.appOrigin}\nVersion: 1\nChain ID: ${env.chainId}\nNonce: ${nonce}\nIssued At: ${issuedAt.toISOString()}\nExpiration Time: ${expiresAt.toISOString()}`;
