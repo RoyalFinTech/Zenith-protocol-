@@ -15,6 +15,18 @@ const PIN_PATTERN = /^\d{4}$/;
 async function derivePin(pin:string,salt:string){ return await new Promise<Buffer>((resolve,reject)=>scryptCb(pin,salt,64,(error,key)=>error?reject(error):resolve(key as Buffer))); }
 async function hashPin(pin:string){ const salt=randomBytes(16).toString('hex'); const derived=await derivePin(pin,salt); return 'scrypt$'+salt+'$'+derived.toString('hex'); }
 async function verifyPin(pin:string,encoded:string){ const parts=encoded.split('$'); if(parts.length!==3||parts[0]!=='scrypt') return false; const [,salt,expectedHex]=parts; if(!salt||!expectedHex) return false; const derived=await derivePin(pin,salt); const expected=Buffer.from(expectedHex,'hex'); return expected.length===derived.length && timingSafeEqual(expected,derived); }
+function decodeCbor(input:Buffer):any{
+  let o=0;
+  const read=(n:number)=>{const b=input.subarray(o,o+n);o+=n;return b;};
+  const len=(ai:number):number=>{if(ai<24)return ai;if(ai===24)return read(1)[0];if(ai===25)return read(2).readUInt16BE(0);if(ai===26)return read(4).readUInt32BE(0);throw new Error('Unsupported CBOR length');};
+  const parse=():any=>{const h=read(1)[0],major=h>>5,ai=h&31,n=len(ai);
+    if(major===0)return n;if(major===1)return -1-n;if(major===2)return read(n);if(major===3)return read(n).toString('utf8');
+    if(major===4){const a=[];for(let i=0;i<n;i++)a.push(parse());return a;}
+    if(major===5){const m:any={};for(let i=0;i<n;i++){const k=parse();m[String(typeof k==='number'?k:k.toString())]=parse();}return m;}
+    throw new Error('Unsupported CBOR type');
+  };
+  return parse();
+}
 function b64url(input:Buffer|string){ return Buffer.from(input).toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,''); }
 function fromB64url(value:string){ return Buffer.from(value.replace(/-/g,'+').replace(/_/g,'/') + '='.repeat((4-value.length%4)%4),'base64'); }
 function webauthnOriginOk(origin:unknown){ return origin===env.appOrigin; }
@@ -227,11 +239,23 @@ router.post('/webauthn/register/verify', requireAuth, async (req,res,next)=>{
     const challenge=(await query<{challenge:string;id:string}>(`select id,challenge from webauthn_challenges where user_id=$1 and kind='registration' and used_at is null and expires_at>now() order by created_at desc limit 1`,[req.auth!.userId])).rows[0];
     if(!challenge||clientData.type!=='webauthn.create'||clientData.challenge!==challenge.challenge||!webauthnOriginOk(clientData.origin)) throw new HttpError(400,'Biometric registration challenge failed');
     const response=credential.response;
-    const publicKeyDer=response.publicKey||response.publicKeyDer||null;
-    if(!publicKeyDer) throw new HttpError(400,'This browser cannot expose a biometric public key');
-    const credId=String(credential.rawId||credential.id);
+    const attestation=fromB64url(response.attestationObject);
+    const decoded=decodeCbor(attestation);
+    const authData=Buffer.from(decoded.authData||[]);
+    if(authData.length<55) throw new HttpError(400,'Invalid biometric authenticator data');
+    const rpHash=createHash('sha256').update(new URL(env.appOrigin).hostname).digest();
+    if(!timingSafeEqual(authData.subarray(0,32),rpHash)) throw new HttpError(400,'Invalid biometric relying party');
+    const flags=authData[32]; if((flags&1)===0||(flags&4)===0) throw new HttpError(400,'Biometric user verification is required');
+    const aaguidStart=37, credLen=authData.readUInt16BE(aaguidStart+16), credStart=aaguidStart+18, coseStart=credStart+credLen;
+    const credentialId=authData.subarray(credStart,coseStart);
+    const cose=decodeCbor(authData.subarray(coseStart));
+    if(Number(cose[1])!==2||Number(cose[-1])!==1||Number(cose[3])!==-7) throw new HttpError(400,'Only ES256 biometric credentials are supported');
+    const x=Buffer.from(cose[-2]), y=Buffer.from(cose[-3]);
+    if(x.length!==32||y.length!==32) throw new HttpError(400,'Invalid biometric public key');
+    const publicKeyDer=Buffer.concat([Buffer.from([0x30,0x59,0x30,0x13,0x06,0x07,0x2a,0x86,0x48,0xce,0x3d,0x02,0x01,0x06,0x08,0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07,0x03,0x42,0x00,0x04]),x,y]);
+    const credId=b64url(credentialId);
     const userHandle=b64url(Buffer.from(req.auth!.userId));
-    await query(`insert into webauthn_credentials(user_id,credential_id,user_handle,public_key_der,sign_count) values($1,$2,$3,$4,$5) on conflict(credential_id) do update set public_key_der=excluded.public_key_der,user_handle=excluded.user_handle`,[req.auth!.userId,credId,userHandle,String(publicKeyDer),0]);
+    await query(`insert into webauthn_credentials(user_id,credential_id,user_handle,public_key_der,sign_count) values($1,$2,$3,$4,$5) on conflict(credential_id) do update set public_key_der=excluded.public_key_der,user_handle=excluded.user_handle`,[req.auth!.userId,credId,userHandle,b64url(publicKeyDer),0]);
     await query(`update webauthn_challenges set used_at=now() where id=$1`,[challenge.id]);
     res.status(201).json({registered:true});
   }catch(e){next(e);}
