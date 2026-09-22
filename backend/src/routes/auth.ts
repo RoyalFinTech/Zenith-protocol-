@@ -283,7 +283,7 @@ router.post('/webauthn/login/verify', async (req,res,next)=>{
     if(authData.length<37) throw new HttpError(401,'Invalid authenticator data');
     const rpHash=createHash('sha256').update(new URL(env.appOrigin).hostname).digest();
     if(!timingSafeEqual(authData.subarray(0,32),rpHash)) throw new HttpError(401,'Invalid relying party');
-    const flags=authData[32]; if((flags&1)===0||(flags&4)===0) throw new HttpError(401,'Biometric user verification required');
+    const flags=authData[32] ?? 0; if((flags&1)===0||(flags&4)===0) throw new HttpError(401,'Biometric user verification required');
     const counter=authData.readUInt32BE(33);
     const clientHash=createHash('sha256').update(fromB64url(credential.response.clientDataJSON)).digest();
     const signedData=Buffer.concat([authData,clientHash]);
