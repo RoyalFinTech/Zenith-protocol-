@@ -1389,6 +1389,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     if(target.closest("#onboardExistingLogin")||target.closest('[data-action="existing-wallet-login"]')){event.preventDefault();event.stopImmediatePropagation();openReturningLogin();return;}
   },true);
   document.addEventListener("input",(event)=>{const target=event.target;if(target instanceof HTMLInputElement&&["registrationUsername","registrationEmail","registrationDisplayName"].includes(target.id))schedule();},true);
+  window.addEventListener("zenit:pin-required",()=>setTimeout(()=>addPinToggle("loginPin"),0));
   document.addEventListener("DOMContentLoaded",bindPinInputs);
   window.addEventListener("zenit:authenticated",async()=>{
     bindPinInputs();
