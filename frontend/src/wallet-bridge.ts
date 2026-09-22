@@ -189,7 +189,12 @@ async function authenticate(address: `0x${string}`) {
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({ address, nonce, signature, registrationId: registrationId || undefined })
   });
-  const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string };
+  const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string; pinRequired?: boolean; challengeId?: string };
+  if (data.pinRequired && data.challengeId) {
+    localStorage.setItem('zenitPinChallenge', data.challengeId);
+    window.dispatchEvent(new CustomEvent('zenit:pin-required', { detail: { challengeId: data.challengeId, address } }));
+    return;
+  }
   if (!verifyR.ok || !data.token) throw new Error(data.error || 'Wallet authentication failed');
 
   authToken = data.token;
@@ -267,6 +272,7 @@ async function syncCurrentAccount() {
 
     (window as any).zenitSetWallet?.(true, readyAccount.address);
 
+    if (localStorage.getItem('zenitPinChallenge')) return;
     if (readyAccount.address === lastAddress && authToken) return;
     if (Date.now() < authRetryAt) return;
 
