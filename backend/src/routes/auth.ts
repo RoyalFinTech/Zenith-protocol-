@@ -14,7 +14,7 @@ const router = Router();
 const PIN_PATTERN = /^\d{4}$/;
 async function derivePin(pin:string,salt:string){ return await new Promise<Buffer>((resolve,reject)=>scryptCb(pin,salt,64,(error,key)=>error?reject(error):resolve(key as Buffer))); }
 async function hashPin(pin:string){ const salt=randomBytes(16).toString('hex'); const derived=await derivePin(pin,salt); return 'scrypt$'+salt+'$'+derived.toString('hex'); }
-async function verifyPin(pin:string,encoded:string){ const parts=encoded.split('$'); if(parts.length!==3||parts[0]!=='scrypt') return false; const [,salt,expectedHex]=parts; const derived=await derivePin(pin,salt); const expected=Buffer.from(expectedHex,'hex'); return expected.length===derived.length && timingSafeEqual(expected,derived); }
+async function verifyPin(pin:string,encoded:string){ const parts=encoded.split('$'); if(parts.length!==3||parts[0]!=='scrypt') return false; const [,salt,expectedHex]=parts; if(!salt||!expectedHex) return false; const derived=await derivePin(pin,salt); const expected=Buffer.from(expectedHex,'hex'); return expected.length===derived.length && timingSafeEqual(expected,derived); }
 function buildMessage(address: string, nonce: string, issuedAt: Date, expiresAt: Date) {
   const domain = new URL(env.appOrigin).host;
   return `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Zenit Protocol.\n\nURI: ${env.appOrigin}\nVersion: 1\nChain ID: ${env.chainId}\nNonce: ${nonce}\nIssued At: ${issuedAt.toISOString()}\nExpiration Time: ${expiresAt.toISOString()}`;
