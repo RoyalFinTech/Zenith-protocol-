@@ -189,10 +189,10 @@ async function authenticate(address: `0x${string}`) {
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({ address, nonce, signature, registrationId: registrationId || undefined })
   });
-  const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string; pinRequired?: boolean; challengeId?: string };
-  if (data.pinRequired && data.challengeId) {
+  const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string; pinRequired?: boolean; pinSetupRequired?: boolean; challengeId?: string };
+  if ((data.pinRequired || data.pinSetupRequired) && data.challengeId) {
     localStorage.setItem('zenitPinChallenge', data.challengeId);
-    window.dispatchEvent(new CustomEvent('zenit:pin-required', { detail: { challengeId: data.challengeId, address } }));
+    window.dispatchEvent(new CustomEvent('zenit:pin-required', { detail: { challengeId: data.challengeId, address, setup: !!data.pinSetupRequired } }));
     return;
   }
   if (!verifyR.ok || !data.token) throw new Error(data.error || 'Wallet authentication failed');
