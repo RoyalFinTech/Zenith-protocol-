@@ -14,6 +14,7 @@ Branch: `security/atomic-auth-withdrawal`
 - JWT middleware validates the backing session and revocation/expiry state.
 
 ### Package purchase / settlement
+- Capacity preflight now applies only to creation of a new purchase intent; existing pending purchases can still be completed if capacity changed afterward.
 - Added package-creation capacity preflight so users are blocked when no matrix position remains.
 - Authenticated purchase creation and settlement flow reviewed.
 - Exact USDT transfer verification added: sender, receiver, token contract, amount, chain, receipt success, and confirmation count.
@@ -66,7 +67,7 @@ These production counts are observations only; no records were changed as part o
 - Made \`createApp()\` available without automatically opening a listener on module import, enabling real endpoint integration tests.
 
 - Continue backend financial-integrity review for remaining ledger invariants and edge cases.
-- CI verification for the latest capacity-preflight/admin-test commits is pending.
+- CI verification for the latest capacity-preflight/admin-test lifecycle fix is pending.
 - Review admin/audit behavior around payout reconciliation and operational visibility.
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
@@ -113,6 +114,7 @@ These production counts are observations only; no records were changed as part o
 - `74ab6d9` — Preflight package matrix capacity
 - `348e47d` — Make server app import-safe for integration tests
 - `c14b13b` — Add admin authorization regression tests
+- `39f19d7` — Allow existing pending purchases through capacity checks
 
 ## Engineering rule going forward
 
