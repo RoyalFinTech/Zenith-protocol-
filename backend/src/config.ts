@@ -25,6 +25,7 @@ export const env = {
   bscRpcUrl: process.env.BSC_RPC_URL ?? 'https://bsc-dataseed.bnbchain.org',
   usdtContractAddress: process.env.USDT_CONTRACT_ADDRESS ?? '0x55d398326f99059ff775485246999027b3197955',
   paymentReceiverAddress: process.env.PAYMENT_RECEIVER_ADDRESS ?? '',
+  payoutSenderAddress: process.env.PAYOUT_SENDER_ADDRESS ?? '',
   paymentConfirmations: Number(process.env.PAYMENT_CONFIRMATIONS ?? 2),
   sessionTtlMinutes: Number(process.env.SESSION_TTL_MINUTES ?? 10080),
   nonceTtlMinutes: Number(process.env.NONCE_TTL_MINUTES ?? 10),
