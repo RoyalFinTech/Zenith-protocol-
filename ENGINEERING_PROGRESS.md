@@ -1,6 +1,6 @@
 # Zenith Protocol — Engineering Progress
 
-Last updated: 2026-09-26
+Last updated: 2026-09-26 (continued)
 Branch: `security/atomic-auth-withdrawal`
 
 ## Completed
@@ -39,6 +39,11 @@ Branch: `security/atomic-auth-withdrawal`
 - Payout completion requires configured treasury sender, correct chain/token, successful receipt, confirmations, exact destination, and exact token-unit amount.
 - Completion requires the corresponding pending reservation ledger entry and finalizes that entry atomically.
 - Duplicate payout transaction races return controlled 409 responses.
+
+### Regression coverage
+- Added shared financial transition/unique-constraint helpers.
+- Added Vitest coverage for withdrawal state transitions and PostgreSQL unique-constraint classification.
+- Admin withdrawal transitions now consume the shared state-machine invariant.
 
 ### Source-control / deployment integrity
 - Settlement idempotency constraints are now represented in a source-controlled Supabase migration:
@@ -79,7 +84,8 @@ These production counts are observations only; no records were changed as part o
 - No unsupported claim is made that the live Render health-check configuration is already fixed.
 
 ### Test coverage
-- CI is passing, but dedicated regression tests for the new payout completion races and settlement state transitions should still be expanded before this work is considered complete.
+- Initial focused regression coverage is now implemented.
+- Still pending: endpoint-level integration tests around real database transactions and on-chain payout verification.
 
 ## Recent commits
 
@@ -95,6 +101,9 @@ These production counts are observations only; no records were changed as part o
 - `e573946` — Track settlement idempotency constraints in migrations
 - `449d305` — Handle concurrent package purchase creation
 - `51be4a9` — Require withdrawal reservation before completion
+- `70c76b8` — Add financial transition invariants
+- `93aaa3b` — Add financial state regression tests
+- `a995e92` — Use shared financial invariants in admin routes
 
 ## Engineering rule going forward
 
