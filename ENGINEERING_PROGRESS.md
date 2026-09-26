@@ -62,10 +62,11 @@ Branch: `security/atomic-auth-withdrawal`
 These production counts are observations only; no records were changed as part of this log update.
 
 ### Testability
+- Added direct regression coverage for the admin-role authorization boundary.
 - Made \`createApp()\` available without automatically opening a listener on module import, enabling real endpoint integration tests.
 
 - Continue backend financial-integrity review for remaining ledger invariants and edge cases.
-- CI verification for the latest capacity-preflight commit is pending.
+- CI verification for the latest capacity-preflight/admin-test commits is pending.
 - Review admin/audit behavior around payout reconciliation and operational visibility.
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
@@ -111,6 +112,7 @@ These production counts are observations only; no records were changed as part o
 - `bfb3e01` — Fix PostgreSQL constraint classification on security branch
 - `74ab6d9` — Preflight package matrix capacity
 - `348e47d` — Make server app import-safe for integration tests
+- `c14b13b` — Add admin authorization regression tests
 
 ## Engineering rule going forward
 
