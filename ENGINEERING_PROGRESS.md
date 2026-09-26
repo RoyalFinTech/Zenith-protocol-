@@ -142,9 +142,19 @@ These production counts are observations only; no records were changed as part o
 - `cdec042` — Reconcile package settlement migration history
 - `12e68c9` — Reconcile withdrawal payout migration history
 - `a4f4c23` — Index active WebAuthn challenges by user
+- `1940ef9` — Align WebAuthn migration version with production
 - `c9b6953` — Document complete build concept
 - `1883f08` — Update README architecture/migration guidance
 
 ## Engineering rule going forward
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
+
+
+## Current verification gate
+- Security branch: `security/atomic-auth-withdrawal`
+- Draft PR: #7
+- Latest tracked change: `1940ef9`
+- CI status: no GitHub status check is currently attached to the latest head; verification remains pending.
+- Production migration history is reconciled through `20260926174932_webauthn_challenge_user_index`.
+- Production financial integrity checks performed during this cycle remain clean.
