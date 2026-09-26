@@ -1,0 +1,101 @@
+# Zenith Protocol — Engineering Progress
+
+Last updated: 2026-09-26
+Branch: `security/atomic-auth-withdrawal`
+
+## Completed
+
+### Authentication / session integrity
+- Wallet nonce verification and session issuance hardened with transactional row locking.
+- PIN challenge consumption made atomic.
+- PIN setup moved into a transaction with challenge row locking and rollback handling.
+- WebAuthn login challenge consumption made atomic.
+- WebAuthn credential sign-count update guarded against replay/non-monotonic counters.
+- JWT middleware validates the backing session and revocation/expiry state.
+
+### Package purchase / settlement
+- Authenticated purchase creation and settlement flow reviewed.
+- Exact USDT transfer verification added: sender, receiver, token contract, amount, chain, receipt success, and confirmation count.
+- Settlement runs atomically with purchase row locking and matrix-node locking.
+- Membership creation protected by database uniqueness constraints.
+- Deposit ledger references are idempotent.
+- Direct and matrix earnings use PostgreSQL numeric arithmetic rather than JavaScript Number.
+- Package settlement validation errors are persisted in `package_purchases.settlement_error` while keeping retryable purchases pending.
+- Package payment transaction hash is uniquely protected.
+- Only one pending purchase per user/package is uniquely protected.
+- Concurrent duplicate-purchase and duplicate-payment races return controlled 409 responses.
+- Package status API and frontend status card implemented with polling and settlement-error display.
+- Package/withdrawal status cards were visually stacked to avoid overlap.
+
+### Withdrawals / ledger reservations
+- Withdrawal creation validates positive decimal amounts and EVM destination addresses.
+- User row is locked during balance check and reservation creation.
+- Available balance calculation includes pending/completed withdrawal reservations.
+- A pending withdrawal ledger reservation is created atomically with the withdrawal request.
+- Admin withdrawal transitions are controlled by explicit state rules.
+- Rejection/failure requires a reason and releases/fails the pending reservation.
+- Withdrawal payout transaction hash uniqueness is protected.
+- Added an admin completion endpoint that verifies the payout on BNB Smart Chain before marking the withdrawal completed.
+- Payout completion requires configured treasury sender, correct chain/token, successful receipt, confirmations, exact destination, and exact token-unit amount.
+- Completion requires the corresponding pending reservation ledger entry and finalizes that entry atomically.
+- Duplicate payout transaction races return controlled 409 responses.
+
+### Source-control / deployment integrity
+- Settlement idempotency constraints are now represented in a source-controlled Supabase migration:
+  `supabase/migrations/20260926163000_settlement_idempotency_constraints.sql`
+- Latest verified CI run for commit `51be4a908c82afdfa7a10ab8d857f6ba08aa0d94`: Zenit CI run #226 — success.
+
+## Current production observations
+
+- `package_purchases`: 2 rows, both currently `pending`.
+- Duplicate pending user/package groups: 0.
+- `withdrawal_requests`: no rows currently returned by the status-count check.
+- Settlement-error count previously verified: 0.
+- Confirmed purchases with settlement errors previously verified: 0.
+
+These production counts are observations only; no records were changed as part of this log update.
+
+## In progress
+
+- Continue backend financial-integrity review for remaining ledger invariants and edge cases.
+- Review admin/audit behavior around payout reconciliation and operational visibility.
+- Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
+- Verify the newest commits with CI before treating each change as fully validated.
+
+## Pending / intentionally not implemented
+
+### Treasury signing / automatic payouts
+- No private key is stored or used by the backend.
+- No automatic payout signer/worker has been introduced.
+- Actual treasury payout execution remains an operational step outside this API.
+- The secure completion endpoint only verifies an already-broadcast payout transaction.
+
+### Production deployment
+- Security branch is not being deployed to the Render `main` service automatically.
+- Changes are being accumulated on `security/atomic-auth-withdrawal` until explicitly merged/deployed.
+
+### Render configuration
+- Render service configuration and repository `render.yaml` still need reconciliation for any drift, including health-check settings.
+- No unsupported claim is made that the live Render health-check configuration is already fixed.
+
+### Test coverage
+- CI is passing, but dedicated regression tests for the new payout completion races and settlement state transitions should still be expanded before this work is considered complete.
+
+## Recent commits
+
+- `496e7e3` — Persist package settlement validation errors
+- `ec645c5` — Show package settlement errors in frontend
+- `7a0644c` — Fix package settlement error scope
+- `a87b96f` — Stack package and withdrawal status cards
+- `244ce5b` — Handle duplicate package payment race cleanly
+- `eb095c3` — Add explicit payout sender configuration
+- `1dd63a7` — Verify withdrawals on-chain before completion
+- `3384c3c` — Use token units for payout verification
+- `0a92b0f` — Handle duplicate payout transaction races
+- `e573946` — Track settlement idempotency constraints in migrations
+- `449d305` — Handle concurrent package purchase creation
+- `51be4a9` — Require withdrawal reservation before completion
+
+## Engineering rule going forward
+
+Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
