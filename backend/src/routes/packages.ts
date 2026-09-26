@@ -98,7 +98,13 @@ router.post('/purchases', async (req, res, next) => {
         receiver, token: tokenInfo.token, decimals: tokenInfo.decimals
       }
     });
-  } catch (e) { next(e); }
+  } catch (e) {
+    const pgCode = typeof e === 'object' && e !== null && 'code' in e ? String((e as { code?: unknown }).code ?? '') : '';
+    if (pgCode === '23505' && String(e).includes('uq_package_purchases_one_pending_per_user_package')) {
+      return next(new HttpError(409, 'A package purchase is already pending for this package'));
+    }
+    next(e);
+  }
 });
 
 router.get('/purchases', async (req,res,next)=>{try{const limit=Math.min(Math.max(Number(req.query.limit??20),1),100);const r=await query(`select pp.id,pp.amount,pp.asset,pp.status,pp.payment_tx_hash,pp.created_at,pp.confirmed_at,pp.settlement_block_number,pp.settlement_confirmations,pp.referral_code,pp.settlement_error,ppk.code as package_code,ppk.name as package_name,p.code as program_code,p.name as program_name from package_purchases pp join program_packages ppk on ppk.id=pp.package_id join programs p on p.id=ppk.program_id where pp.user_id=$1 order by pp.created_at desc limit $2`,[req.auth!.userId,limit]);res.json({purchases:r.rows});}catch(e){next(e)}});
