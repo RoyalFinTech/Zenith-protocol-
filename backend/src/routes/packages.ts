@@ -101,7 +101,7 @@ router.post('/purchases', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get('/purchases', async (req,res,next)=>{try{const limit=Math.min(Math.max(Number(req.query.limit??20),1),100);const r=await query(`select pp.id,pp.amount,pp.asset,pp.status,pp.payment_tx_hash,pp.created_at,pp.confirmed_at,pp.settlement_block_number,pp.settlement_confirmations,pp.referral_code,ppk.code as package_code,ppk.name as package_name,p.code as program_code,p.name as program_name from package_purchases pp join program_packages ppk on ppk.id=pp.package_id join programs p on p.id=ppk.program_id where pp.user_id=$1 order by pp.created_at desc limit $2`,[req.auth!.userId,limit]);res.json({purchases:r.rows});}catch(e){next(e)}});
+router.get('/purchases', async (req,res,next)=>{try{const limit=Math.min(Math.max(Number(req.query.limit??20),1),100);const r=await query(`select pp.id,pp.amount,pp.asset,pp.status,pp.payment_tx_hash,pp.created_at,pp.confirmed_at,pp.settlement_block_number,pp.settlement_confirmations,pp.referral_code,pp.settlement_error,ppk.code as package_code,ppk.name as package_name,p.code as program_code,p.name as program_name from package_purchases pp join program_packages ppk on ppk.id=pp.package_id join programs p on p.id=ppk.program_id where pp.user_id=$1 order by pp.created_at desc limit $2`,[req.auth!.userId,limit]);res.json({purchases:r.rows});}catch(e){next(e)}});
 router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
   const client = await pool.connect();
   try {
@@ -177,7 +177,7 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     `, [req.auth!.userId,purchase.program_id,node.id,purchase.referrer_user_id,node.level,node.position])).rows[0];
 
     await client.query(`
-      update package_purchases set status='confirmed',payment_tx_hash=$2,confirmed_at=now(),
+      update package_purchases set status='confirmed',payment_tx_hash=$2,settlement_error=null,confirmed_at=now(),
       settlement_block_number=$3,settlement_confirmations=$4 where id=$1
     `, [purchaseId,txHash,receipt.blockNumber,confirmations]);
 
@@ -249,6 +249,11 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     res.json({ status:'confirmed', purchase:{id:purchaseId,packageCode:purchase.package_code,programCode:purchase.program_code,position:node.position,level:node.level,txHash,confirmations} });
   } catch (e) {
     await client.query('rollback').catch(()=>{});
+    const status = e instanceof HttpError ? e.status : 500;
+    if (status >= 400 && status < 500) {
+      const message = e instanceof HttpError ? e.message : 'Unable to verify package payment';
+      await query(`update package_purchases set settlement_error=$2 where id=$1 and user_id=$3 and status='pending'`, [purchaseId, message, req.auth!.userId]).catch(()=>{});
+    }
     next(e);
   } finally {
     client.release();
