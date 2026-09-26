@@ -58,6 +58,10 @@ app.use((req,res,next)=>{if(req.path.startsWith('/api/')||req.path==='/health'||
 app.use((_req,_res,next)=>next(new HttpError(404,'Route not found')));
 app.use((err:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{const status=err instanceof HttpError?err.status:500;res.status(status).json({error:status===500?'Internal server error':(err as Error).message, ...(err instanceof HttpError&&err.details?{details:err.details}: {})})});
 
-// Render requires the public HTTP server to listen on 0.0.0.0 and the injected PORT.
-// Keeping the host explicit also makes local/container behavior deterministic.
-app.listen(env.port, '0.0.0.0',()=>console.log(`Zenit API listening on 0.0.0.0:${env.port}`));
+export function createApp() { return app; }
+
+// Only listen when this module is the actual Node entrypoint. Importing the
+// application for integration tests must not create an unexpected listener.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  app.listen(env.port, '0.0.0.0',()=>console.log(`Zenit API listening on 0.0.0.0:${env.port}`));
+}
