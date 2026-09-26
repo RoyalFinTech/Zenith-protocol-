@@ -42,7 +42,7 @@ jobs:
       - name: Prepare Supabase-compatible roles
         working-directory: .
         run: |
-          PGPASSWORD=ci psql -h 127.0.0.1 -U ci -d zenit_test -v ON_ERROR_STOP=1 -c 'DO $ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname=\'anon\') THEN CREATE ROLE anon NOLOGIN; END IF; IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname=\'authenticated\') THEN CREATE ROLE authenticated NOLOGIN; END IF; END $;'
+          PGPASSWORD=ci psql -h 127.0.0.1 -U ci -d zenit_test -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon NOLOGIN; END IF; IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF; END \$\$;"
       - name: Apply database migrations
         working-directory: .
         run: |
