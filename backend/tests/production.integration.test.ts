@@ -3,7 +3,7 @@ import type { Server } from 'node:http';
 import { issueSession } from '../src/services/jwt.js';
 import { randomUUID } from 'node:crypto';
 
-const integrationEnvironmentReady = Boolean(process.env.TEST_DATABASE_URL && process.env.TEST_JWT_SECRET);
+const integrationEnvironmentReady = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
 const describeProduction = integrationEnvironmentReady ? describe : describe.skip;
 const testAddress = '0x0000000000000000000000000000000000000001';
 
@@ -16,8 +16,6 @@ describeProduction('production API against a real PostgreSQL test database', () 
   const testAccount = () => ({ address: testAddress });
 
   beforeAll(async () => {
-    process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
-    process.env.JWT_SECRET = process.env.TEST_JWT_SECRET;
     process.env.NODE_ENV = 'test';
     const [{ createApp }, db] = await Promise.all([import('../src/server.js'), import('../src/db.js')]);
     database = db;
