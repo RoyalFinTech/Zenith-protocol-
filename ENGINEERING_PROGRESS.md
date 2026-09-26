@@ -6,6 +6,7 @@ Branch: `security/atomic-auth-withdrawal`
 ## Completed
 
 ### Authentication / session integrity
+- Authentication middleware now distinguishes invalid credentials (401) from backend/session-store failures (503), avoiding misleading authentication errors during infrastructure outages.
 - WebAuthn registration is now insert-only for credential IDs, preventing an existing credential from being overwritten.
 - WebAuthn registration challenges are atomically claimed before credential creation.
 - WebAuthn registration challenge consumption and credential insertion now commit or roll back together.
@@ -126,6 +127,7 @@ These production counts are observations only; no records were changed as part o
 - `d46714e` — Make WebAuthn login atomic
 - `212ef81` — Make PIN login atomic
 - `5268b9d` — Make repeated package confirmation idempotent
+- `0658d84` — Distinguish auth failures from session store outages
 
 ## Engineering rule going forward
 
