@@ -186,7 +186,7 @@ router.post('/pin/verify', async (req,res,next)=>{
   try{
     const challengeId=String(req.body?.challengeId??''); const pin=String(req.body?.pin??'');
     if(!/^[0-9a-fA-F-]{36}$/.test(challengeId)||!PIN_PATTERN.test(pin)) throw new HttpError(400,'Enter your 4-digit PIN');
-    const row=(await query<{id:string;user_id:string;wallet_address:string;expires_at:Date;pin_hash:string|null}>(`select c.id,c.user_id,c.wallet_address,c.expires_at,u.pin_hash from pin_challenges c join app_users u on u.id=c.user_id where c.id=$1 and c.used_at is null for update`,[challengeId])).rows[0];
+    const row=(await query<{id:string;user_id:string;wallet_address:string;expires_at:Date;pin_hash:string|null}>(`select c.id,c.user_id,c.wallet_address,c.expires_at,u.pin_hash from pin_challenges c join app_users u on u.id=c.user_id where c.id=$1 and c.used_at is null`,[challengeId])).rows[0];
     if(!row) throw new HttpError(400,'PIN challenge is invalid or expired');
     if(new Date(row.expires_at).getTime()<Date.now()) throw new HttpError(400,'PIN challenge expired; reconnect your wallet');
     if(!row.pin_hash) throw new HttpError(409,'PIN setup is required for this account');
@@ -196,7 +196,7 @@ router.post('/pin/verify', async (req,res,next)=>{
     if(!valid){ await query(`update app_users set pin_failed_attempts=pin_failed_attempts+1,pin_locked_until=case when pin_failed_attempts+1>=5 then now()+interval '10 minutes' else pin_locked_until end where id=$1`,[row.user_id]); throw new HttpError(401,'Incorrect PIN'); }
     const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[row.user_id])).rows[0];
     if(!user) throw new HttpError(404,'User not found');
-    const sessionId=uuid(); await query(`update app_users set pin_failed_attempts=0,pin_locked_until=null where id=$1`,[row.user_id]); const consumed=(await query(`update pin_challenges set used_at=now() where id=$1 and used_at is null returning id`,[row.id])).rows[0]; if(!consumed) throw new HttpError(409,'PIN challenge has already been used');
+    const consumed=(await query(`update pin_challenges set used_at=now() where id=$1 and used_at is null returning id`,[row.id])).rows[0]; if(!consumed) throw new HttpError(409,'PIN challenge has already been used'); const sessionId=uuid(); await query(`update app_users set pin_failed_attempts=0,pin_locked_until=null where id=$1`,[row.user_id]);
     await query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,row.user_id,row.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
     const token=await issueSession({userId:row.user_id,walletAddress:row.wallet_address,role:user.role,sessionId});
     res.json({token,user:{id:row.user_id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:row.wallet_address}});
@@ -206,7 +206,7 @@ router.post('/pin/setup', async (req,res,next)=>{
   try{
     const challengeId=String(req.body?.challengeId??''); const pin=String(req.body?.pin??'');
     if(!/^[0-9a-fA-F-]{36}$/.test(challengeId)||!PIN_PATTERN.test(pin)) throw new HttpError(400,'Enter a 4-digit PIN');
-    const row=(await query<{id:string;user_id:string;wallet_address:string;expires_at:Date}>(`select id,user_id,wallet_address,expires_at from pin_challenges where id=$1 and used_at is null for update`,[challengeId])).rows[0];
+    const row=(await query<{id:string;user_id:string;wallet_address:string;expires_at:Date}>(`select id,user_id,wallet_address,expires_at from pin_challenges where id=$1 and used_at is null`,[challengeId])).rows[0];
     if(!row) throw new HttpError(400,'PIN setup challenge is invalid or expired');
     if(new Date(row.expires_at).getTime()<Date.now()) throw new HttpError(400,'PIN setup challenge expired; reconnect your wallet');
     const pinHash=await hashPin(pin);
@@ -275,7 +275,7 @@ router.post('/webauthn/login/verify', async (req,res,next)=>{
     const credential=req.body?.credential;
     if(!credential?.id||!credential?.response?.clientDataJSON||!credential?.response?.authenticatorData||!credential?.response?.signature) throw new HttpError(400,'Invalid biometric response');
     const clientData=JSON.parse(fromB64url(credential.response.clientDataJSON).toString('utf8'));
-    const challenge=(await query<{id:string;challenge:string}>(`select id,challenge from webauthn_challenges where kind='login' and used_at is null and expires_at>now() and challenge=$1 for update limit 1`,[clientData.challenge])).rows[0];
+    const challenge=(await query<{id:string;challenge:string}>(`select id,challenge from webauthn_challenges where kind='login' and used_at is null and expires_at>now() and challenge=$1 limit 1`,[clientData.challenge])).rows[0];
     if(!challenge||clientData.type!=='webauthn.get'||!webauthnOriginOk(clientData.origin)) throw new HttpError(401,'Biometric challenge failed');
     const cred=(await query<{id:string;user_id:string;wallet_address:string;public_key_der:string;sign_count:string;user_handle:string}>(`select c.id,c.user_id,c.public_key_der,c.sign_count,c.user_handle,u.wallet_address from webauthn_credentials c join app_users u on u.id=c.user_id where c.credential_id=$1 limit 1`,[String(credential.rawId||credential.id)])).rows[0];
     if(!cred) throw new HttpError(401,'Biometric credential not recognized');
@@ -292,8 +292,10 @@ router.post('/webauthn/login/verify', async (req,res,next)=>{
     if(!valid) throw new HttpError(401,'Biometric signature invalid');
     const previous=Number(cred.sign_count)||0;
     if(counter!==0&&previous!==0&&counter<=previous) throw new HttpError(401,'Biometric credential replay detected');
-    await query(`update webauthn_credentials set sign_count=$1,last_used_at=now() where id=$2`,[counter,cred.id]);
-    await query(`update webauthn_challenges set used_at=now() where id=$1`,[challenge.id]);
+    const claimed=(await query(`update webauthn_challenges set used_at=now() where id=$1 and used_at is null returning id`,[challenge.id])).rows[0];
+    if(!claimed) throw new HttpError(409,'Biometric challenge has already been used');
+    const updatedCredential=(await query(`update webauthn_credentials set sign_count=$1,last_used_at=now() where id=$2 and (sign_count=0 or $1>sign_count) returning id`,[counter,cred.id])).rows[0];
+    if(!updatedCredential) throw new HttpError(401,'Biometric credential counter replay detected');
     const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[cred.user_id])).rows[0];
     if(!user) throw new HttpError(404,'User not found');
     const sessionId=uuid();
