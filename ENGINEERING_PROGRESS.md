@@ -20,6 +20,7 @@ Branch: `security/atomic-auth-withdrawal`
 
 ### Package purchase / settlement
 - Capacity preflight now applies only to creation of a new purchase intent; existing pending purchases can still be completed if capacity changed afterward.
+- Re-submitting confirmation for the same already-confirmed transaction is now idempotent; a different transaction remains rejected.
 - Added package-creation capacity preflight so users are blocked when no matrix position remains.
 - Authenticated purchase creation and settlement flow reviewed.
 - Exact USDT transfer verification added: sender, receiver, token contract, amount, chain, receipt success, and confirmation count.
@@ -124,6 +125,7 @@ These production counts are observations only; no records were changed as part o
 - `91acb27` — Make WebAuthn registration atomic
 - `d46714e` — Make WebAuthn login atomic
 - `212ef81` — Make PIN login atomic
+- `5268b9d` — Make repeated package confirmation idempotent
 
 ## Engineering rule going forward
 
