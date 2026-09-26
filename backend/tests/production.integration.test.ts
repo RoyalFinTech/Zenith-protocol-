@@ -26,6 +26,10 @@ describeProduction('production API against a real PostgreSQL test database', () 
       [testAccount().address,'ci_member','CI Integration Member','CICIMEMBER01']
     );
     userId = created.rows[0]!.id;
+    const program = await database.pool.query<{id:string}>(`select id from programs where code='2x4' limit 1`);
+    const node = await database.pool.query<{id:string;level:number;position:number}>(`select id,level,position from matrix_nodes where program_id=$1 and status='available' order by position limit 1`, [program.rows[0]!.id]);
+    await database.pool.query(`update matrix_nodes set status='active',user_id=$1,activated_at=now() where id=$2`, [userId,node.rows[0]!.id]);
+    await database.pool.query(`insert into matrix_memberships(user_id,program_id,node_id,level,position,status) values($1,$2,$3,$4,$5,'active')`, [userId,program.rows[0]!.id,node.rows[0]!.id,node.rows[0]!.level,node.rows[0]!.position]);
     const sessionId = randomUUID();
     await database.pool.query(
       `insert into user_sessions(id,user_id,wallet_address,expires_at) values($1,$2,$3,now()+interval '1 hour')`,
@@ -101,7 +105,16 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect((await request('/api/wallets', { headers: authorization })).status).toBe(200);
     expect((await request('/api/dashboard/matrix/2x4', { headers: authorization })).status).toBe(200);
     expect((await request('/api/transactions', { headers: authorization })).status).toBe(200);
+    const catalog = await request('/api/packages/catalog', { headers: authorization });
+    expect(catalog.status).toBe(200);
+    const packages = (await catalog.json()).packages as Array<{code:string;price:string|null}>;
+    expect(packages.find(x => x.code === '2x4-starter')?.price).toBe('10.00000000');
+    expect(packages.find(x => x.code === '2x6-starter')?.price).toBe('30.00000000');
     expect((await request('/api/transactions/withdrawals', { method: 'POST', headers: authorization, body: JSON.stringify({ amount: '1.5', address: testAccount().address }) })).status).toBe(201);
+    await database.pool.query(`update matrix_memberships set status='completed' where user_id=$1 and program_id=(select id from programs where code='2x4')`, [userId]);
+    const inactiveWithdrawal = await request('/api/transactions/withdrawals', { method: 'POST', headers: authorization, body: JSON.stringify({ amount: '0.5', address: testAccount().address }) });
+    expect(inactiveWithdrawal.status).toBe(409);
+    await database.pool.query(`update matrix_memberships set status='active' where user_id=$1 and program_id=(select id from programs where code='2x4')`, [userId]);
     const overdraw = await request('/api/transactions/withdrawals', {
       method: 'POST',
       headers: authorization,
