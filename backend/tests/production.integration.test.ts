@@ -32,22 +32,6 @@ describeProduction('production API against a real PostgreSQL test database', () 
     const [{ createApp }, db] = await Promise.all([import('../src/server.js'), import('../src/db.js')]);
     database = db;
     await database.pool.query('delete from app_users where wallet_address=$1', [testAccount().address]);
-    await database.pool.query(
-      `insert into ledger_transactions(user_id,type,amount,asset,status,reference,description)
-       values((select id from app_users where wallet_address=$1),'earned',5,'USDT','completed',$2,'CI integration test opening balance')`,
-      [testAccount().address, `ci:opening-balance:${testAccount().address}`]
-    ).catch(async () => {
-      const user = (await database.pool.query(
-        `insert into app_users(wallet_address,username,display_name,referral_code,pin_hash)
-         values($1,$2,$3,$4,null) returning id`,
-        [testAccount().address, `ci_${testAccount().address.slice(2,10).toLowerCase()}`, 'CI Integration Member', `CITEST${testAccount().address.slice(2,10).toUpperCase()}`]
-      )).rows[0];
-      await database.pool.query(
-        `insert into ledger_transactions(user_id,type,amount,asset,status,reference,description)
-         values($1,'earned',5,'USDT','completed',$2,'CI integration test opening balance')`,
-        [user.id, `ci:opening-balance:${testAccount().address}`]
-      );
-    });
     server = createApp().listen(0);
     await new Promise<void>(resolve => server.once('listening', resolve));
     const address = server.address();
