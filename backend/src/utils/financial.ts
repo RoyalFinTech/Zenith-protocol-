@@ -13,6 +13,8 @@ export function canTransitionWithdrawal(current: string, next: string): boolean 
 
 export function isUniqueConstraintViolation(error: unknown, constraint: string): boolean {
   if (!error || typeof error !== 'object') return false;
-  const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
-  return code === '23505' && String(error).includes(constraint);
+  const value = error as Record<string, unknown>;
+  const code = String(value.code ?? '');
+  if (code !== '23505') return false;
+  return Object.values(value).some(v => typeof v === 'string' && v.includes(constraint));
 }
