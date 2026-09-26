@@ -110,6 +110,18 @@ Completion verification:
 
 No automatic treasury signing is implemented.
 
+## Program/package activation model
+
+Members choose one of two Starter entry paths:
+- **2x4 Starter:** 10 USDT, 30 matrix positions, 4 levels.
+- **2x6 Starter:** 30 USDT, 126 matrix positions, 6 levels.
+
+Only Starter packages may activate a matrix position. Growth and Elite catalog entries remain unpriced until separately approved.
+
+The authenticated purchase flow sends the selected package code to the backend. Settlement verifies the exact on-chain USDT transfer, then atomically activates the first available node in the selected program and creates the matching active membership.
+
+Both Starter packages use the established 20/70/10 allocation model. The 2x6 level distribution is configured. The 2x4 level-by-level distribution remains intentionally unset pending approved business rules; this does not block package payment verification or matrix-position activation.
+
 ## Database integrity strategy
 
 The application uses both:
