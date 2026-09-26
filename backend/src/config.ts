@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { getAddress } from 'viem';
 
 const required = (name: string, fallback?: string) => {
   const value = process.env[name] ?? fallback;
@@ -21,6 +22,9 @@ if (nodeEnv === 'production') {
   if (jwtSecret.length < 32) throw new Error('JWT_SECRET must be at least 32 characters in production');
   if (!/^https:\/\//i.test(appOrigin)) throw new Error('APP_ORIGIN must use HTTPS in production');
   if (!/^https:\/\//i.test(apiPublicUrl)) throw new Error('API_PUBLIC_URL must use HTTPS in production');
+  if (!process.env.WALLETCONNECT_PROJECT_ID) throw new Error('WALLETCONNECT_PROJECT_ID is required in production');
+  if (!/^https:\/\//i.test(process.env.BSC_RPC_URL ?? 'https://bsc-dataseed.bnbchain.org')) throw new Error('BSC_RPC_URL must use HTTPS in production');
+  try { getAddress(process.env.USDT_CONTRACT_ADDRESS ?? '0x55d398326f99059ff775485246999027b3197955'); } catch { throw new Error('USDT_CONTRACT_ADDRESS must be a valid EVM address in production'); }
   if (corsOrigins.length === 0 || corsOrigins.some(origin => !/^https:\/\//i.test(origin))) {
     throw new Error('CORS_ORIGINS must contain only HTTPS origins in production');
   }
