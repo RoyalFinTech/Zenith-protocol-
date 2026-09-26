@@ -1,7 +1,7 @@
 # Zenith Protocol — Engineering Progress
 
 Last updated: 2026-09-26 (continued)
-Branch: `security/atomic-auth-withdrawal`
+Branch: `main`
 
 ## Completed
 
@@ -59,6 +59,11 @@ Branch: `security/atomic-auth-withdrawal`
   `supabase/migrations/20260926163000_settlement_idempotency_constraints.sql`
 - Latest verified CI run for commit `51be4a908c82afdfa7a10ab8d857f6ba08aa0d94`: Zenit CI run #226 — success.
 
+### Frontend login regression
+- Fixed the onboarding `CONNECT WALLET / LOGIN` click path by removing competing event handling, adding a wallet fallback, and raising the modal layer above onboarding.
+- Fix commit: `e89d9d9`.
+- Render deployment `dep-das19ifavr4c738jo2qg` is live on that commit.
+
 ## Current production observations
 
 - `package_purchases`: 2 rows, both currently `pending`.
@@ -74,7 +79,7 @@ These production counts are observations only; no records were changed as part o
 - Made \`createApp()\` available without automatically opening a listener on module import, enabling real endpoint integration tests.
 
 - Continue backend financial-integrity review for remaining ledger invariants and edge cases.
-- CI verification for the latest capacity-preflight/admin-test/WebAuthn hardening changes is pending.
+- The capacity-preflight/admin-test/WebAuthn hardening set was verified by CI before merge.
 - Review admin/audit behavior around payout reconciliation and operational visibility.
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
@@ -99,11 +104,11 @@ These production counts are observations only; no records were changed as part o
 - The secure completion endpoint only verifies an already-broadcast payout transaction.
 
 ### Production deployment
-- Security branch is not being deployed to the Render `main` service automatically.
-- Changes are being accumulated on `security/atomic-auth-withdrawal` until explicitly merged/deployed.
+- Security hardening PR #7 was merged to `main` on 2026-09-26 after CI verification.
+- Render auto-deploys from `main`; the merged release was deployed successfully.
 
 ### Render configuration
-- Render service configuration and repository `render.yaml` still need reconciliation for any drift, including health-check settings.
+- Render service configuration still has a health-check drift: live service reports an empty health-check path while repository `render.yaml` declares `/health`.
 - No unsupported claim is made that the live Render health-check configuration is already fixed.
 
 ### Test coverage
@@ -170,9 +175,9 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Current live Render deployment is `70c76b8` from `main`; the security branch is separate and has not been manually deployed.
 
 ## Current verification gate
-- Security branch: `security/atomic-auth-withdrawal`
-- Draft PR: #7
-- Latest tracked change: `1940ef9`
-- CI status: no GitHub status check is currently attached to the latest head; verification remains pending.
+- Release branch: `main`
+- PR #7: merged
+- Latest tracked change: `e89d9d9`
+- CI for the release candidate passed: Zenit CI #285 (backend lint/tests + frontend build).
 - Production migration history is reconciled through `20260926174932_webauthn_challenge_user_index`.
 - Production financial integrity checks performed during this cycle remain clean.
