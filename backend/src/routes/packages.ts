@@ -122,10 +122,10 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) throw new HttpError(400, 'Valid transaction hash required');
 
     const purchase = (await query<{
-      id:string; user_id:string; package_id:string; amount:string; asset:string; status:string;
+      id:string; user_id:string; package_id:string; amount:string; asset:string; status:string; payment_tx_hash:string|null;
       referrer_user_id:string|null; package_code:string; program_code:string; program_id:string;
     }>(`
-      select pp.id,pp.user_id,pp.package_id,pp.amount,pp.asset,pp.status,pp.referrer_user_id,
+      select pp.id,pp.user_id,pp.package_id,pp.amount,pp.asset,pp.status,pp.payment_tx_hash,pp.referrer_user_id,
              ppk.code as package_code,p.code as program_code,p.id as program_id
       from package_purchases pp
       join program_packages ppk on ppk.id=pp.package_id
@@ -134,7 +134,12 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     `, [purchaseId, req.auth!.userId])).rows[0];
 
     if (!purchase) throw new HttpError(404, 'Purchase not found');
-    if (purchase.status === 'confirmed') throw new HttpError(409, 'Purchase is already confirmed');
+    if (purchase.status === 'confirmed') {
+      if (purchase.payment_tx_hash?.toLowerCase() === txHash.toLowerCase()) {
+        return res.json({ status:'confirmed', purchase:{ id:purchase.id, packageCode:purchase.package_code, programCode:purchase.program_code, txHash } });
+      }
+      throw new HttpError(409, 'Purchase is already confirmed with a different transaction');
+    }
     if (purchase.status !== 'pending') throw new HttpError(409, 'Purchase is not pending');
 
     const receiver = receiverAddress();
