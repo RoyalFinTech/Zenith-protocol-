@@ -249,10 +249,17 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     res.json({ status:'confirmed', purchase:{id:purchaseId,packageCode:purchase.package_code,programCode:purchase.program_code,position:node.position,level:node.level,txHash,confirmations} });
   } catch (e) {
     await client.query('rollback').catch(()=>{});
-    const status = e instanceof HttpError ? e.status : 500;
+    const pgCode = typeof e === 'object' && e !== null && 'code' in e ? String((e as { code?: unknown }).code ?? '') : '';
+    const isPaymentTxConflict = pgCode === '23505' && String(e).includes('uq_package_purchases_payment_tx_hash');
+    const status = e instanceof HttpError ? e.status : (isPaymentTxConflict ? 409 : 500);
     if (status >= 400 && status < 500) {
-      const message = e instanceof HttpError ? e.message : 'Unable to verify package payment';
+      const message = e instanceof HttpError
+        ? e.message
+        : 'This transaction has already been used for another package purchase';
       await query(`update package_purchases set settlement_error=$2 where id=$1 and user_id=$3 and status='pending'`, [purchaseId, message, req.auth!.userId]).catch(()=>{});
+      if (isPaymentTxConflict) {
+        return next(new HttpError(409, message));
+      }
     }
     next(e);
   } finally {
