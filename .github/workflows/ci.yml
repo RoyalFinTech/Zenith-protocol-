@@ -51,7 +51,14 @@ jobs:
             PGPASSWORD=ci psql -h 127.0.0.1 -U ci -d zenit_test -v ON_ERROR_STOP=1 -f "$file"
           done
       - run: npm test
-      - run: npm run test:integration
+      - name: Run integration tests
+        run: |
+          set -o pipefail
+          npm run test:integration 2>&1 | tee /tmp/integration.log
+          if grep -Eq '[0-9]+ skipped' /tmp/integration.log; then
+            echo "Integration suite contains skipped tests; configure TEST_* CI credentials before accepting this gate."
+            exit 1
+          fi
   frontend:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
