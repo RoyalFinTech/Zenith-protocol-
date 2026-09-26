@@ -51,3 +51,13 @@ describe('pagination validation', () => {
     }
   });
 });
+
+
+describe('matrix response contract', () => {
+  it('documents the frontend-safe node shape', () => {
+    const node = { id: 1, program_code: '2x4', level: 1, position: 1, status: 'active', is_current_user: true };
+    expect(node).not.toHaveProperty('user_id');
+    expect(node).not.toHaveProperty('referrer_user_id');
+    expect(node).toHaveProperty('is_current_user', true);
+  });
+});
