@@ -71,8 +71,6 @@ router.post('/purchases', async (req, res, next) => {
     `, [req.auth!.userId, packageRow.program_code])).rows[0];
     if (membership) throw new HttpError(409, 'You already have a position in this program');
 
-    const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
-    if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
 
     let referrerId: string | null = null;
     if (referralCode) {
@@ -86,6 +84,11 @@ router.post('/purchases', async (req, res, next) => {
       where user_id=$1 and package_id=$2 and status='pending'
       order by created_at desc limit 1
     `, [req.auth!.userId, packageRow.id])).rows[0];
+
+    if (!pending) {
+      const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
+      if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
+    }
 
     const purchase = pending ?? (await query(`
       insert into package_purchases(user_id,package_id,referral_code,referrer_user_id,amount,asset,status)
