@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canTransitionWithdrawal, isUniqueConstraintViolation } from '../src/utils/financial.js';
+import { HttpError, parseLimit } from '../src/utils/http.js';
 
 describe('withdrawal state machine', () => {
   it('allows only controlled forward transitions', () => {
@@ -33,5 +34,20 @@ describe('unique constraint classification', () => {
       { code: '23514', detail: 'uq_package_purchases_one_pending_per_user_package' },
       'uq_package_purchases_one_pending_per_user_package'
     )).toBe(false);
+  });
+});
+
+
+describe('pagination validation', () => {
+  it('uses defaults and caps valid integer limits', () => {
+    expect(parseLimit(undefined, 20, 100)).toBe(20);
+    expect(parseLimit('25', 20, 100)).toBe(25);
+    expect(parseLimit('500', 20, 100)).toBe(100);
+  });
+
+  it('rejects malformed limits', () => {
+    for (const value of ['0', '-1', '1.5', 'NaN', 'abc']) {
+      expect(() => parseLimit(value, 20, 100)).toThrow(HttpError);
+    }
   });
 });
