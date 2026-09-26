@@ -143,6 +143,7 @@ These production counts are observations only; no records were changed as part o
 - `12e68c9` — Reconcile withdrawal payout migration history
 - `a4f4c23` — Index active WebAuthn challenges by user
 - `1940ef9` — Align WebAuthn migration version with production
+- `38c0192f` — Normalize package payment unique-constraint races
 - `c9b6953` — Document complete build concept
 - `1883f08` — Update README architecture/migration guidance
 
@@ -150,6 +151,9 @@ These production counts are observations only; no records were changed as part o
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
 
+
+### Package settlement race handling
+- Production `package_purchases` has both the existing unique `payment_tx_hash` constraint and the newer partial uniqueness index. The package API now recognizes both constraint names and returns a controlled conflict instead of leaking a database error during concurrent duplicate settlement attempts.
 
 ## Current verification gate
 - Security branch: `security/atomic-auth-withdrawal`
