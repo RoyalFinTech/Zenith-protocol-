@@ -85,6 +85,7 @@ These production counts are observations only; no records were changed as part o
 
 ### Test coverage
 - Initial focused regression coverage is now implemented.
+- CI exposed and the constraint-classifier test fixture mismatch was corrected; latest fix is awaiting CI.
 - Still pending: endpoint-level integration tests around real database transactions and on-chain payout verification.
 
 ## Recent commits
@@ -104,6 +105,7 @@ These production counts are observations only; no records were changed as part o
 - `70c76b8` — Add financial transition invariants
 - `93aaa3b` — Add financial state regression tests
 - `a995e92` — Use shared financial invariants in admin routes
+- `bfb3e01` — Fix PostgreSQL constraint classification on security branch
 
 ## Engineering rule going forward
 
