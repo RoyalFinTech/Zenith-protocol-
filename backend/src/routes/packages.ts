@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool, query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { HttpError } from '../utils/http.js';
+import { HttpError, parseLimit } from '../utils/http.js';
 import { env } from '../config.js';
 import { createPublicClient, erc20Abi, getAddress, http, parseEventLogs, parseUnits } from 'viem';
 import { bsc } from 'viem/chains';
@@ -117,7 +117,7 @@ router.post('/purchases', async (req, res, next) => {
   }
 });
 
-router.get('/purchases', async (req,res,next)=>{try{const limit=Math.min(Math.max(Number(req.query.limit??20),1),100);const r=await query(`select pp.id,pp.amount,pp.asset,pp.status,pp.payment_tx_hash,pp.created_at,pp.confirmed_at,pp.settlement_block_number,pp.settlement_confirmations,pp.referral_code,pp.settlement_error,ppk.code as package_code,ppk.name as package_name,p.code as program_code,p.name as program_name from package_purchases pp join program_packages ppk on ppk.id=pp.package_id join programs p on p.id=ppk.program_id where pp.user_id=$1 order by pp.created_at desc limit $2`,[req.auth!.userId,limit]);res.json({purchases:r.rows});}catch(e){next(e)}});
+router.get('/purchases', async (req,res,next)=>{try{const limit=parseLimit(req.query.limit,20,100);const r=await query(`select pp.id,pp.amount,pp.asset,pp.status,pp.payment_tx_hash,pp.created_at,pp.confirmed_at,pp.settlement_block_number,pp.settlement_confirmations,pp.referral_code,pp.settlement_error,ppk.code as package_code,ppk.name as package_name,p.code as program_code,p.name as program_name from package_purchases pp join program_packages ppk on ppk.id=pp.package_id join programs p on p.id=ppk.program_id where pp.user_id=$1 order by pp.created_at desc limit $2`,[req.auth!.userId,limit]);res.json({purchases:r.rows});}catch(e){next(e)}});
 router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
   const client = await pool.connect();
   const purchaseId = String(req.params.purchaseId);
