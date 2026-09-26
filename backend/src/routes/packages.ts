@@ -51,10 +51,10 @@ router.post('/purchases', async (req, res, next) => {
     const tokenInfo = await tokenMetadata();
 
     const packageRow = (await query<{
-      id:string; code:string; name:string; price:string|null; asset:string;
+      id:string; code:string; name:string; tier:string; price:string|null; asset:string;
       program_id:string; program_code:string; program_name:string; levels:number; capacity:number;
     }>(`
-      select pp.id,pp.code,pp.name,pp.price,pp.asset,
+      select pp.id,pp.code,pp.name,pp.tier,pp.price,pp.asset,
              p.id as program_id,p.code as program_code,p.name as program_name,p.levels,p.capacity
       from program_packages pp
       join programs p on p.id=pp.program_id
@@ -63,7 +63,8 @@ router.post('/purchases', async (req, res, next) => {
     `, [packageCode])).rows[0];
 
     if (!packageRow) throw new HttpError(404, 'Package not found');
-    if (packageRow.price == null) throw new HttpError(409, 'This package is not priced for purchase yet');
+    if (packageRow.tier !== 'starter') throw new HttpError(409, 'Only Starter packages can activate a matrix position');
+    if (packageRow.price == null) throw new HttpError(409, 'This Starter package is not priced for purchase yet');
     if (packageRow.asset !== env.primaryAsset) throw new HttpError(409, 'This package uses an unsupported settlement asset');
 
     const membership = (await query(`
