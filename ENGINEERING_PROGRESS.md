@@ -145,6 +145,7 @@ These production counts are observations only; no records were changed as part o
 - `1940ef9` — Align WebAuthn migration version with production
 - `38c0192f` — Normalize package payment unique-constraint races
 - `3031cf3d` — Require withdrawal reservation before processing
+- `7ae27fcb` — Fail fast on unsafe production configuration
 - `c9b6953` — Document complete build concept
 - `1883f08` — Update README architecture/migration guidance
 
@@ -158,6 +159,10 @@ Every substantive change should be recorded here under Completed, In Progress, o
 
 ### Package settlement race handling
 - Production `package_purchases` has both the existing unique `payment_tx_hash` constraint and the newer partial uniqueness index. The package API now recognizes both constraint names and returns a controlled conflict instead of leaking a database error during concurrent duplicate settlement attempts.
+
+### Production configuration hardening
+- Production startup now fails fast for weak/unsafe authentication and deployment configuration: JWT secret length, HTTPS app/API URLs, HTTPS CORS origins, BNB chain ID, confirmation count, session TTL, and nonce TTL are validated explicitly.
+- Development defaults remain available for local development; production no longer silently accepts localhost/HTTP security settings.
 
 ## Current verification gate
 - Security branch: `security/atomic-auth-withdrawal`
