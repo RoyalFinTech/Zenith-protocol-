@@ -68,9 +68,19 @@ describeProduction('production API against a real PostgreSQL test database', () 
     const signature = await testAccount().signMessage({ message: challengeData.message });
     const verified = await request('/api/auth/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address, nonce, signature }) });
     expect(verified.status).toBe(200);
-    token = (await verified.json() as { token: string }).token;
+    const verifiedData = await verified.json() as { token?: string; pinSetupRequired?: boolean; challengeId?: string };
+    expect(verifiedData.pinSetupRequired).toBe(true);
+    expect(verifiedData.challengeId).toBeTruthy();
+    const pinSetup = await request('/api/auth/pin/setup', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ challengeId: verifiedData.challengeId, pin: '1234' })
+    });
+    expect(pinSetup.status).toBe(200);
+    token = (await pinSetup.json() as { token: string }).token;
+    expect(token).toBeTruthy();
     const replay = await request('/api/auth/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address, nonce, signature }) });
-    expect(replay.status).toBe(400);
+    expect(replay.status).toBe(409);
   });
 
   it('rejects invalid signatures and expired nonces', async () => {
