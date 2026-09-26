@@ -248,11 +248,13 @@ router.post('/webauthn/register/options', requireAuth, async (req,res,next)=>{
 });
 
 router.post('/webauthn/register/verify', requireAuth, async (req,res,next)=>{
+  const client=await pool.connect();
   try{
     const credential=req.body?.credential;
     if(!credential?.id||!credential?.response?.clientDataJSON||!credential?.response?.attestationObject) throw new HttpError(400,'Invalid biometric credential');
     const clientData=JSON.parse(fromB64url(credential.response.clientDataJSON).toString('utf8'));
-    const challenge=(await query<{challenge:string;id:string}>(`select id,challenge from webauthn_challenges where user_id=$1 and kind='registration' and used_at is null and expires_at>now() order by created_at desc limit 1`,[req.auth!.userId])).rows[0];
+    await client.query('begin');
+    const challenge=(await client.query<{challenge:string;id:string}>(`select id,challenge from webauthn_challenges where user_id=$1 and kind='registration' and used_at is null and expires_at>now() order by created_at desc limit 1 for update`,[req.auth!.userId])).rows[0];
     if(!challenge||clientData.type!=='webauthn.create'||clientData.challenge!==challenge.challenge||!webauthnOriginOk(clientData.origin)) throw new HttpError(400,'Biometric registration challenge failed');
     const response=credential.response;
     const attestation=fromB64url(response.attestationObject);
@@ -271,12 +273,14 @@ router.post('/webauthn/register/verify', requireAuth, async (req,res,next)=>{
     const publicKeyDer=Buffer.concat([Buffer.from([0x30,0x59,0x30,0x13,0x06,0x07,0x2a,0x86,0x48,0xce,0x3d,0x02,0x01,0x06,0x08,0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07,0x03,0x42,0x00,0x04]),x,y]);
     const credId=b64url(credentialId);
     const userHandle=b64url(Buffer.from(req.auth!.userId));
-    const claimed=(await query(`update webauthn_challenges set used_at=now() where id=$1 and used_at is null returning id`,[challenge.id])).rows[0];
+    const claimed=(await client.query(`update webauthn_challenges set used_at=now() where id=$1 and used_at is null returning id`,[challenge.id])).rows[0];
     if(!claimed) throw new HttpError(409,'Biometric registration challenge has already been used');
-    const created=(await query(`insert into webauthn_credentials(user_id,credential_id,user_handle,public_key_der,sign_count) values($1,$2,$3,$4,$5) on conflict(credential_id) do nothing returning id`,[req.auth!.userId,credId,userHandle,b64url(publicKeyDer),0])).rows[0];
+    const created=(await client.query(`insert into webauthn_credentials(user_id,credential_id,user_handle,public_key_der,sign_count) values($1,$2,$3,$4,$5) on conflict(credential_id) do nothing returning id`,[req.auth!.userId,credId,userHandle,b64url(publicKeyDer),0])).rows[0];
     if(!created) throw new HttpError(409,'This biometric credential is already registered');
+    await client.query('commit');
     res.status(201).json({registered:true});
-  }catch(e){next(e);}
+  }catch(e){await client.query('rollback').catch(()=>{});next(e);}
+  finally{client.release();}
 });
 
 router.post('/webauthn/login/options', async (_req,res,next)=>{
