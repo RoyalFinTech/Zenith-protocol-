@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test:login": "node tests/login-wiring.test.ts"
+    "test:login": "node tests/login-wiring.test.mjs"
   },
   "dependencies": {
     "@reown/appkit": "1.8.23",
