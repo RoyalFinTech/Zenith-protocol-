@@ -6,6 +6,8 @@ Branch: `security/atomic-auth-withdrawal`
 ## Completed
 
 ### Authentication / session integrity
+- WebAuthn registration is now insert-only for credential IDs, preventing an existing credential from being overwritten.
+- WebAuthn registration challenges are atomically claimed before credential creation.
 - Wallet nonce verification and session issuance hardened with transactional row locking.
 - PIN challenge consumption made atomic.
 - PIN setup moved into a transaction with challenge row locking and rollback handling.
@@ -67,7 +69,7 @@ These production counts are observations only; no records were changed as part o
 - Made \`createApp()\` available without automatically opening a listener on module import, enabling real endpoint integration tests.
 
 - Continue backend financial-integrity review for remaining ledger invariants and edge cases.
-- CI verification for the latest capacity-preflight/admin-test lifecycle fix is pending.
+- CI verification for the latest capacity-preflight/admin-test/WebAuthn hardening changes is pending.
 - Review admin/audit behavior around payout reconciliation and operational visibility.
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
@@ -115,6 +117,7 @@ These production counts are observations only; no records were changed as part o
 - `348e47d` — Make server app import-safe for integration tests
 - `c14b13b` — Add admin authorization regression tests
 - `39f19d7` — Allow existing pending purchases through capacity checks
+- `54b6d3d` — Harden WebAuthn credential registration
 
 ## Engineering rule going forward
 
