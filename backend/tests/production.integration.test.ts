@@ -89,7 +89,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
   it('reads and updates the authenticated profile and persisted preferences', async () => {
     const authorization = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
     expect((await request('/api/me', { headers: authorization })).status).toBe(200);
-    expect((await request('/api/me/profile', { method: 'PATCH', headers: authorization, body: JSON.stringify({ displayName: 'Production Test Member' }) })).status).toBe(200);
+    expect((await request('/api/me/profile', { method: 'PATCH', headers: authorization, body: JSON.stringify({ username: 'ci_profile_member', displayName: 'Production Test Member' }) })).status).toBe(200);
     const preferences = await request('/api/me/preferences', { method: 'PATCH', headers: authorization, body: JSON.stringify({ theme: 'light', compactDensity: false, activityNotifications: true, reducedMotion: true }) });
     expect(preferences.status).toBe(200);
     expect((await preferences.json()).preference.theme).toBe('light');
@@ -112,12 +112,13 @@ describeProduction('production API against a real PostgreSQL test database', () 
   });
 
   it('rejects a session whose database expiry has elapsed', async () => {
-    const challenge = await request('/api/auth/nonce', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address }) });
-    const data = await challenge.json() as { nonce: string; message: string };
-    const signature = await testAccount().signMessage({ message: data.message });
-    const verified = await request('/api/auth/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address, nonce: data.nonce, signature }) });
-    const expiredToken = (await verified.json() as { token: string }).token;
-    await database.pool.query(`update user_sessions set expires_at=now()-interval '1 minute' where id=(select id from user_sessions where user_id=(select id from app_users where wallet_address=$1) order by created_at desc limit 1)`, [testAccount().address]);
+    const sessionId = randomUUID();
+    await database.pool.query(
+      `insert into user_sessions(id,user_id,wallet_address,expires_at) values($1,$2,$3,now()+interval '1 hour')`,
+      [sessionId,userId,testAccount().address]
+    );
+    const expiredToken = await issueSession({userId,walletAddress:testAccount().address,role:'Member',sessionId});
+    await database.pool.query(`update user_sessions set expires_at=now()-interval '1 minute' where id=$1`, [sessionId]);
     expect((await request('/api/me', { headers: { authorization: `Bearer ${expiredToken}` } })).status).toBe(401);
   });
 
