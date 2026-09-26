@@ -11,9 +11,11 @@ Production-oriented Vite frontend + Node/TypeScript API for the ZENIT Protocol a
 
 The frontend only stores the public API base URL and Reown project ID. JWT, database credentials and any server secrets remain backend-only.
 
-## Database
+## Architecture and database
 
-Run the canonical migration `20260913000000_zenit_production.sql`; it establishes the backend's wallet-auth/session model, including nonce and session tables. Do not run superseded `20260912` ZENIT migrations from older revisions of this repository.
+See `BUILD_CONCEPT.md` for the current end-to-end architecture, authentication model, package settlement flow, withdrawal lifecycle, database invariants, deployment boundaries, and engineering workflow.
+
+Production migrations are tracked in `supabase/migrations/`. Do not run superseded migrations from older revisions of this repository.
 
 ## Important production boundary
 
