@@ -10,6 +10,7 @@ Branch: `security/atomic-auth-withdrawal`
 - WebAuthn registration challenges are atomically claimed before credential creation.
 - WebAuthn registration challenge consumption and credential insertion now commit or roll back together.
 - WebAuthn login challenge consumption, credential counter advancement, and session creation now commit or roll back together with row locking.
+- Successful PIN login challenge consumption, lockout reset, and session creation now commit or roll back together.
 - Wallet nonce verification and session issuance hardened with transactional row locking.
 - PIN challenge consumption made atomic.
 - PIN setup moved into a transaction with challenge row locking and rollback handling.
@@ -122,6 +123,7 @@ These production counts are observations only; no records were changed as part o
 - `54b6d3d` — Harden WebAuthn credential registration
 - `91acb27` — Make WebAuthn registration atomic
 - `d46714e` — Make WebAuthn login atomic
+- `212ef81` — Make PIN login atomic
 
 ## Engineering rule going forward
 
