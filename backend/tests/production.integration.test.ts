@@ -21,9 +21,9 @@ describeProduction('production API against a real PostgreSQL test database', () 
     database = db;
     await database.pool.query('delete from app_users where wallet_address=$1', [testAccount().address]);
     const created = await database.pool.query<{id:string}>(
-      `insert into app_users(wallet_address,display_name,role,referral_code)
-       values($1,$2,'Member',$3) returning id`,
-      [testAccount().address,'CI Integration Member','CICIMEMBER01']
+      `insert into app_users(wallet_address,username,display_name,role,referral_code)
+       values($1,$2,$3,'Member',$4) returning id`,
+      [testAccount().address,'ci_member','CI Integration Member','CICIMEMBER01']
     );
     userId = created.rows[0]!.id;
     const sessionId = randomUUID();
