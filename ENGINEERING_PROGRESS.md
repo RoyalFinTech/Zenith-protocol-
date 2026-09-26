@@ -144,6 +144,7 @@ These production counts are observations only; no records were changed as part o
 - `a4f4c23` — Index active WebAuthn challenges by user
 - `1940ef9` — Align WebAuthn migration version with production
 - `38c0192f` — Normalize package payment unique-constraint races
+- `3031cf3d` — Require withdrawal reservation before processing
 - `c9b6953` — Document complete build concept
 - `1883f08` — Update README architecture/migration guidance
 
@@ -151,6 +152,9 @@ These production counts are observations only; no records were changed as part o
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
 
+
+### Withdrawal reservation enforcement
+- Admin transitions to `approved` or `processing` now require the matching pending withdrawal reservation ledger row under the same database transaction. This prevents advancing legacy/incomplete withdrawals into active payout states without a financial reservation.
 
 ### Package settlement race handling
 - Production `package_purchases` has both the existing unique `payment_tx_hash` constraint and the newer partial uniqueness index. The package API now recognizes both constraint names and returns a controlled conflict instead of leaking a database error during concurrent duplicate settlement attempts.
