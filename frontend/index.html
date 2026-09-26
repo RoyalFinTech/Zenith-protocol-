@@ -780,14 +780,19 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         if(existing){
           e.preventDefault(); e.stopImmediatePropagation();
           localStorage.setItem("zenitAuthMode","existing");
-          window.zenitOpenReturningLogin?.();
-          return;
-          document.getElementById("onboarding")?.classList.add("hidden-screen");
-          document.getElementById("registrationScreen")?.classList.add("hidden-screen");
-          window.zenitOpenWallet?.().catch(error => {
-            document.getElementById("onboarding")?.classList.remove("hidden-screen");
-            window.zenitToast?.("Wallet login unavailable", error instanceof Error ? error.message : String(error), "error");
-          });
+          const openReturning=window.zenitOpenReturningLogin;
+          const openWallet=window.zenitOpenWallet;
+          if(typeof openReturning==="function"){
+            try{openReturning();}catch(error){
+              window.zenitToast?.("Login unavailable", error instanceof Error ? error.message : String(error), "error");
+            }
+            return;
+          }
+          if(typeof openWallet==="function"){
+            openWallet().catch(error=>window.zenitToast?.("Wallet login unavailable", error instanceof Error ? error.message : String(error), "error"));
+            return;
+          }
+          window.zenitToast?.("Login is still loading","Please wait a moment and try CONNECT WALLET / LOGIN again.","warning");
         }
       },true);
       paint();
