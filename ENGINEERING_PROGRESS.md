@@ -96,7 +96,7 @@ These production counts are observations only; no records were changed as part o
 - Reintroduced repository migration files matching the two production-applied migration versions for package settlement and withdrawal payout idempotency. These are no-op/idempotent DDL because the indexes already exist in production.
 
 ## Pending / intentionally not implemented
-- CI PostgreSQL integration environment completed: GitHub Actions now starts disposable PostgreSQL 16, bootstraps Supabase-compatible roles, applies every repository migration, and runs the real endpoint integration suite.
+- CI PostgreSQL integration environment completed: GitHub Actions now starts disposable PostgreSQL 16, bootstraps Supabase-compatible roles, and applies every repository migration. Integration command is present, but authenticated integration tests require controlled `TEST_*` wallet credentials; CI now fails if the suite is skipped rather than reporting false coverage.
 
 ### Treasury signing / automatic payouts
 - No private key is stored or used by the backend.
