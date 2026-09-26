@@ -17,11 +17,16 @@ Plan: Free
 
 ### Live deployment observed
 
-Latest live Render deployment observed during this engineering cycle:
-
+Latest live Render deployment observed before the current release:
 - Deploy status: `live`
-- Commit: `dbd1e7745b9a36d124cafc8999c18753928e25d8`
-- Deploy ID: `dep-das2garncjis73e5cfog`
+- Commit: `f8ee8d4d49ab862d8e12bbaea4e1bbe0afcd5299`
+- Deploy ID: `dep-das36ajtqb8s739ea8u0`
+
+### Current release deployment
+- Commit: `be0ca3ab187d85e8e4f3130d460c9d1f15559061`
+- Deploy ID: `dep-das379s56k3c73aks94g`
+- Status at last check: `build_in_progress`
+- GitHub CI run #342: `success`
 
 ### Drift / verification notes
 
@@ -54,6 +59,8 @@ Draft PR:
 The branch contains the engineering hardening documented in `ENGINEERING_PROGRESS.md` and `BUILD_CONCEPT.md`.
 
 ## Release gate
+
+The dual-program Starter change is committed directly to `main` and is awaiting the Render deployment to finish. GitHub CI run #342 passed.
 
 Before promoting the security branch:
 1. Obtain CI results for the actual current branch head.
