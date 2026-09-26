@@ -146,6 +146,7 @@ These production counts are observations only; no records were changed as part o
 - `38c0192f` — Normalize package payment unique-constraint races
 - `3031cf3d` — Require withdrawal reservation before processing
 - `7ae27fcb` — Fail fast on unsafe production configuration
+- `771b97a3` — Track live deployment versus security branch
 - `c9b6953` — Document complete build concept
 - `1883f08` — Update README architecture/migration guidance
 
@@ -163,6 +164,10 @@ Every substantive change should be recorded here under Completed, In Progress, o
 ### Production configuration hardening
 - Production startup now fails fast for weak/unsafe authentication and deployment configuration: JWT secret length, HTTPS app/API URLs, HTTPS CORS origins, BNB chain ID, confirmation count, session TTL, and nonce TTL are validated explicitly.
 - Development defaults remain available for local development; production no longer silently accepts localhost/HTTP security settings.
+
+### Deployment state tracking
+- Added `DEPLOYMENT_STATE.md` to record the live Render commit, deployment source branch, health-check configuration drift, production migration state, security-branch head, and explicit release gates.
+- Current live Render deployment is `70c76b8` from `main`; the security branch is separate and has not been manually deployed.
 
 ## Current verification gate
 - Security branch: `security/atomic-auth-withdrawal`
