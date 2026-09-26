@@ -51,10 +51,10 @@ router.post('/purchases', async (req, res, next) => {
 
     const packageRow = (await query<{
       id:string; code:string; name:string; price:string|null; asset:string;
-      program_code:string; program_name:string; levels:number; capacity:number;
+      program_id:string; program_code:string; program_name:string; levels:number; capacity:number;
     }>(`
       select pp.id,pp.code,pp.name,pp.price,pp.asset,
-             p.code as program_code,p.name as program_name,p.levels,p.capacity
+             p.id as program_id,p.code as program_code,p.name as program_name,p.levels,p.capacity
       from program_packages pp
       join programs p on p.id=pp.program_id
       where pp.code=$1 and pp.active=true and p.active=true
@@ -70,6 +70,9 @@ router.post('/purchases', async (req, res, next) => {
       where m.user_id=$1 and p.code=$2 limit 1
     `, [req.auth!.userId, packageRow.program_code])).rows[0];
     if (membership) throw new HttpError(409, 'You already have a position in this program');
+
+    const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
+    if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
 
     let referrerId: string | null = null;
     if (referralCode) {
