@@ -1,17 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Server } from 'node:http';
-import { privateKeyToAccount } from 'viem/accounts';
 
-const integrationEnvironmentReady = Boolean(
-  process.env.TEST_DATABASE_URL &&
-  process.env.TEST_JWT_SECRET &&
-  process.env.TEST_WALLET_PRIVATE_KEY &&
-  process.env.TEST_WALLETCONNECT_PROJECT_ID
-);
-
+const integrationEnvironmentReady = Boolean(process.env.TEST_DATABASE_URL && process.env.TEST_JWT_SECRET);
 const describeProduction = integrationEnvironmentReady ? describe : describe.skip;
-const walletPrivateKey = process.env.TEST_WALLET_PRIVATE_KEY;
-const account = walletPrivateKey ? privateKeyToAccount(walletPrivateKey as `0x${string}`) : undefined;
+const testAddress = '0x0000000000000000000000000000000000000001';
 
 describeProduction('production API against a real PostgreSQL test database', () => {
   let server: Server;
@@ -19,10 +11,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
   let database: typeof import('../src/db.js');
   let token = '';
   let nonce = '';
-  const testAccount = () => {
-    if (!account) throw new Error('TEST_WALLET_PRIVATE_KEY is required');
-    return account;
-  };
+  const testAccount = () => ({ address: testAddress });
 
   beforeAll(async () => {
     process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
