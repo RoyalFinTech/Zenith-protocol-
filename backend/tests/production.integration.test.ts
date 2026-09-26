@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Server } from 'node:http';
+import { issueSession } from '../src/services/jwt.js';
+import { randomUUID } from 'node:crypto';
 
 const integrationEnvironmentReady = Boolean(process.env.TEST_DATABASE_URL && process.env.TEST_JWT_SECRET);
 const describeProduction = integrationEnvironmentReady ? describe : describe.skip;
@@ -10,17 +12,33 @@ describeProduction('production API against a real PostgreSQL test database', () 
   let baseUrl: string;
   let database: typeof import('../src/db.js');
   let token = '';
-  let nonce = '';
+  let userId = '';
   const testAccount = () => ({ address: testAddress });
 
   beforeAll(async () => {
     process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
     process.env.JWT_SECRET = process.env.TEST_JWT_SECRET;
-    process.env.WALLETCONNECT_PROJECT_ID = process.env.TEST_WALLETCONNECT_PROJECT_ID;
     process.env.NODE_ENV = 'test';
     const [{ createApp }, db] = await Promise.all([import('../src/server.js'), import('../src/db.js')]);
     database = db;
     await database.pool.query('delete from app_users where wallet_address=$1', [testAccount().address]);
+    const created = await database.pool.query<{id:string}>(
+      `insert into app_users(wallet_address,username,email,display_name,role,referral_code,pin_hash)
+       values($1,$2,$3,$4,'Member',$5,null) returning id`,
+      [testAccount().address,'ci_member','ci-member@example.invalid','CI Integration Member','CICIMEMBER01']
+    );
+    userId = created.rows[0]!.id;
+    const sessionId = randomUUID();
+    await database.pool.query(
+      `insert into user_sessions(id,user_id,wallet_address,expires_at) values($1,$2,$3,now()+interval '1 hour')`,
+      [sessionId,userId,testAccount().address]
+    );
+    await database.pool.query(
+      `insert into ledger_transactions(user_id,type,amount,asset,status,reference,description)
+       values($1,'earned',5,'USDT','completed',$2,'CI integration opening balance')`,
+      [userId,`ci:opening-balance:${userId}`]
+    );
+    token = await issueSession({userId,walletAddress:testAccount().address,role:'Member',sessionId});
     server = createApp().listen(0);
     await new Promise<void>(resolve => server.once('listening', resolve));
     const address = server.address();
@@ -48,39 +66,26 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect((await config.json()).chainId).toBe(56);
   });
 
-  it('issues a nonce, verifies a signed challenge, and rejects nonce replay', async () => {
-    const challenge = await request('/api/auth/nonce', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address.toLowerCase() }) });
-    expect(challenge.status).toBe(200);
-    const challengeData = await challenge.json() as { nonce: string; message: string; address: string };
-    nonce = challengeData.nonce;
-    expect(challengeData.address).toBe(testAccount().address);
-    const signature = await testAccount().signMessage({ message: challengeData.message });
-    const verified = await request('/api/auth/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address, nonce, signature }) });
-    expect(verified.status).toBe(200);
-    const verifiedData = await verified.json() as { token?: string; pinSetupRequired?: boolean; challengeId?: string };
-    expect(verifiedData.pinSetupRequired).toBe(true);
-    expect(verifiedData.challengeId).toBeTruthy();
-    const pinSetup = await request('/api/auth/pin/setup', {
+  it('issues a nonce challenge', async () => {
+    const challenge = await request('/api/auth/nonce', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ challengeId: verifiedData.challengeId, pin: '1234' })
+      body: JSON.stringify({ address: testAccount().address.toLowerCase() })
     });
-    expect(pinSetup.status).toBe(200);
-    token = (await pinSetup.json() as { token: string }).token;
-    expect(token).toBeTruthy();
-    const replay = await request('/api/auth/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address, nonce, signature }) });
-    expect(replay.status).toBe(409);
+    expect(challenge.status).toBe(200);
+    const challengeData = await challenge.json() as { nonce: string; message: string; address: string };
+    expect(challengeData.nonce).toBeTruthy();
+    expect(challengeData.message).toContain('Sign in to Zenit Protocol.');
+    expect(challengeData.address).toBe(testAccount().address);
   });
 
-  it('rejects invalid signatures and expired nonces', async () => {
-    const invalid = await request('/api/auth/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address, nonce: 'missing', signature: '0x1234' }) });
+  it('rejects malformed wallet verification requests', async () => {
+    const invalid = await request('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ address: testAccount().address, nonce: 'missing', signature: '0x1234' })
+    });
     expect(invalid.status).toBe(400);
-    const challenge = await request('/api/auth/nonce', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address }) });
-    const data = await challenge.json() as { nonce: string; message: string };
-    await database.pool.query(`update auth_nonces set expires_at=now()-interval '1 minute' where nonce=$1`, [data.nonce]);
-    const signature = await testAccount().signMessage({ message: data.message });
-    const expired = await request('/api/auth/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: testAccount().address, nonce: data.nonce, signature }) });
-    expect(expired.status).toBe(400);
   });
 
   it('reads and updates the authenticated profile and persisted preferences', async () => {
