@@ -5,6 +5,7 @@ import { HttpError } from '../utils/http.js';
 import { env } from '../config.js';
 import { createPublicClient, erc20Abi, getAddress, http, parseEventLogs, parseUnits } from 'viem';
 import { bsc } from 'viem/chains';
+import { isUniqueConstraintViolation } from '../utils/financial.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -105,9 +106,12 @@ router.post('/purchases', async (req, res, next) => {
       }
     });
   } catch (e) {
-    const pgCode = typeof e === 'object' && e !== null && 'code' in e ? String((e as { code?: unknown }).code ?? '') : '';
-    if (pgCode === '23505' && String(e).includes('uq_package_purchases_one_pending_per_user_package')) {
+    if (isUniqueConstraintViolation(e, 'uq_package_purchases_one_pending_per_user_package')) {
       return next(new HttpError(409, 'A package purchase is already pending for this package'));
+    }
+    if (isUniqueConstraintViolation(e, 'uq_package_purchases_payment_tx_hash') ||
+        isUniqueConstraintViolation(e, 'package_purchases_payment_tx_hash_key')) {
+      return next(new HttpError(409, 'This transaction hash has already been used for another package purchase'));
     }
     next(e);
   }
