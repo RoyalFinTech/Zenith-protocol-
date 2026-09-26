@@ -293,13 +293,15 @@ router.post('/webauthn/login/options', async (_req,res,next)=>{
 });
 
 router.post('/webauthn/login/verify', async (req,res,next)=>{
+  const client=await pool.connect();
   try{
     const credential=req.body?.credential;
     if(!credential?.id||!credential?.response?.clientDataJSON||!credential?.response?.authenticatorData||!credential?.response?.signature) throw new HttpError(400,'Invalid biometric response');
     const clientData=JSON.parse(fromB64url(credential.response.clientDataJSON).toString('utf8'));
-    const challenge=(await query<{id:string;challenge:string}>(`select id,challenge from webauthn_challenges where kind='login' and used_at is null and expires_at>now() and challenge=$1 limit 1`,[clientData.challenge])).rows[0];
+    await client.query('begin');
+    const challenge=(await client.query<{id:string;challenge:string}>(`select id,challenge from webauthn_challenges where kind='login' and used_at is null and expires_at>now() and challenge=$1 limit 1 for update`,[clientData.challenge])).rows[0];
     if(!challenge||clientData.type!=='webauthn.get'||!webauthnOriginOk(clientData.origin)) throw new HttpError(401,'Biometric challenge failed');
-    const cred=(await query<{id:string;user_id:string;wallet_address:string;public_key_der:string;sign_count:string;user_handle:string}>(`select c.id,c.user_id,c.public_key_der,c.sign_count,c.user_handle,u.wallet_address from webauthn_credentials c join app_users u on u.id=c.user_id where c.credential_id=$1 limit 1`,[String(credential.rawId||credential.id)])).rows[0];
+    const cred=(await client.query<{id:string;user_id:string;wallet_address:string;public_key_der:string;sign_count:string;user_handle:string}>(`select c.id,c.user_id,c.public_key_der,c.sign_count,c.user_handle,u.wallet_address from webauthn_credentials c join app_users u on u.id=c.user_id where c.credential_id=$1 limit 1 for update`,[String(credential.rawId||credential.id)])).rows[0];
     if(!cred) throw new HttpError(401,'Biometric credential not recognized');
     const authData=fromB64url(credential.response.authenticatorData);
     if(authData.length<37) throw new HttpError(401,'Invalid authenticator data');
@@ -314,17 +316,19 @@ router.post('/webauthn/login/verify', async (req,res,next)=>{
     if(!valid) throw new HttpError(401,'Biometric signature invalid');
     const previous=Number(cred.sign_count)||0;
     if(counter!==0&&previous!==0&&counter<=previous) throw new HttpError(401,'Biometric credential replay detected');
-    const claimed=(await query(`update webauthn_challenges set used_at=now() where id=$1 and used_at is null returning id`,[challenge.id])).rows[0];
+    const claimed=(await client.query(`update webauthn_challenges set used_at=now() where id=$1 and used_at is null returning id`,[challenge.id])).rows[0];
     if(!claimed) throw new HttpError(409,'Biometric challenge has already been used');
-    const updatedCredential=(await query(`update webauthn_credentials set sign_count=$1,last_used_at=now() where id=$2 and (sign_count=0 or $1>sign_count) returning id`,[counter,cred.id])).rows[0];
+    const updatedCredential=(await client.query(`update webauthn_credentials set sign_count=$1,last_used_at=now() where id=$2 and (sign_count=0 or $1>sign_count) returning id`,[counter,cred.id])).rows[0];
     if(!updatedCredential) throw new HttpError(401,'Biometric credential counter replay detected');
-    const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[cred.user_id])).rows[0];
+    const user=(await client.query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[cred.user_id])).rows[0];
     if(!user) throw new HttpError(404,'User not found');
     const sessionId=uuid();
-    await query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,cred.user_id,cred.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
+    await client.query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,cred.user_id,cred.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
     const token=await issueSession({userId:cred.user_id,walletAddress:cred.wallet_address,role:user.role,sessionId});
+    await client.query('commit');
     res.json({token,user:{id:cred.user_id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:cred.wallet_address}});
-  }catch(e){next(e);}
+  }catch(e){await client.query('rollback').catch(()=>{});next(e);}
+  finally{client.release();}
 });
 
 router.post('/logout', requireAuth, async (req, res, next) => {
