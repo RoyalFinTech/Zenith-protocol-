@@ -61,7 +61,8 @@ Branch: `security/atomic-auth-withdrawal`
 
 These production counts are observations only; no records were changed as part of this log update.
 
-## In progress
+### Testability
+- Made \`createApp()\` available without automatically opening a listener on module import, enabling real endpoint integration tests.
 
 - Continue backend financial-integrity review for remaining ledger invariants and edge cases.
 - CI verification for the latest capacity-preflight commit is pending.
@@ -109,6 +110,7 @@ These production counts are observations only; no records were changed as part o
 - `a995e92` — Use shared financial invariants in admin routes
 - `bfb3e01` — Fix PostgreSQL constraint classification on security branch
 - `74ab6d9` — Preflight package matrix capacity
+- `348e47d` — Make server app import-safe for integration tests
 
 ## Engineering rule going forward
 
