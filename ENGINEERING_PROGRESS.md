@@ -14,6 +14,7 @@ Branch: `security/atomic-auth-withdrawal`
 - JWT middleware validates the backing session and revocation/expiry state.
 
 ### Package purchase / settlement
+- Added package-creation capacity preflight so users are blocked when no matrix position remains.
 - Authenticated purchase creation and settlement flow reviewed.
 - Exact USDT transfer verification added: sender, receiver, token contract, amount, chain, receipt success, and confirmation count.
 - Settlement runs atomically with purchase row locking and matrix-node locking.
@@ -63,6 +64,7 @@ These production counts are observations only; no records were changed as part o
 ## In progress
 
 - Continue backend financial-integrity review for remaining ledger invariants and edge cases.
+- CI verification for the latest capacity-preflight commit is pending.
 - Review admin/audit behavior around payout reconciliation and operational visibility.
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
@@ -106,6 +108,7 @@ These production counts are observations only; no records were changed as part o
 - `93aaa3b` — Add financial state regression tests
 - `a995e92` — Use shared financial invariants in admin routes
 - `bfb3e01` — Fix PostgreSQL constraint classification on security branch
+- `74ab6d9` — Preflight package matrix capacity
 
 ## Engineering rule going forward
 
