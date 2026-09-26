@@ -195,7 +195,8 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
 
     if (economics) {
       if (purchase.referrer_user_id) {
-        const directAmount = Number(economics.entry_amount) * Number(economics.direct_percent) / 100;
+        const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.direct_percent])).rows[0]?.amount;
+        if (directAmount == null) throw new HttpError(500, 'Unable to calculate direct referral earning');
         await client.query(`
           insert into ledger_transactions(user_id,type,program_code,amount,asset,status,reference,description,metadata)
           values($1,'earned',$2,$3,$4,'completed',$5,$6,$7::jsonb) on conflict (reference) do nothing
@@ -214,7 +215,8 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       let upline = purchase.referrer_user_id;
       for (const rule of rules) {
         if (!upline) break;
-        const matrixAmount = Number(economics.entry_amount) * Number(economics.matrix_percent) / 100 * Number(rule.percent_of_matrix_pool) / 100;
+        const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100 * $3::numeric / 100)::text as amount`, [economics.entry_amount, economics.matrix_percent, rule.percent_of_matrix_pool])).rows[0]?.amount;
+        if (matrixAmount == null) throw new HttpError(500, 'Unable to calculate matrix earning');
         await client.query(`
           insert into matrix_earnings(purchase_id,recipient_user_id,source_user_id,level,amount,asset,status)
           values($1,$2,$3,$4,$5,$6,'credited') on conflict (purchase_id,recipient_user_id,level) do nothing
