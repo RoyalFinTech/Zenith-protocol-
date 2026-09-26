@@ -9,13 +9,17 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   try {
     const token = getBearer(req);
     if (!token) throw new HttpError(401, 'Authentication required');
-    req.auth = await verifySession(token);
+    try {
+      req.auth = await verifySession(token);
+    } catch {
+      throw new HttpError(401, 'Invalid or expired session');
+    }
     const session = (await query<{ user_id:string }>(`select user_id from user_sessions where id=$1 and user_id=$2 and revoked_at is null and expires_at>now()`, [req.auth.sessionId, req.auth.userId])).rows[0];
     if (!session) throw new HttpError(401, 'Session expired or revoked');
     next();
   } catch (error) {
-    const status = error instanceof HttpError ? error.status : 401;
-    next(new HttpError(status, 'Invalid or expired session'));
+    if (error instanceof HttpError) return next(error);
+    next(new HttpError(503, 'Authentication service temporarily unavailable'));
   }
 }
 
