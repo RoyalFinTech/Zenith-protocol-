@@ -8,6 +8,7 @@ Branch: `security/atomic-auth-withdrawal`
 ### Authentication / session integrity
 - WebAuthn registration is now insert-only for credential IDs, preventing an existing credential from being overwritten.
 - WebAuthn registration challenges are atomically claimed before credential creation.
+- WebAuthn registration challenge consumption and credential insertion now commit or roll back together.
 - Wallet nonce verification and session issuance hardened with transactional row locking.
 - PIN challenge consumption made atomic.
 - PIN setup moved into a transaction with challenge row locking and rollback handling.
@@ -118,6 +119,7 @@ These production counts are observations only; no records were changed as part o
 - `c14b13b` — Add admin authorization regression tests
 - `39f19d7` — Allow existing pending purchases through capacity checks
 - `54b6d3d` — Harden WebAuthn credential registration
+- `91acb27` — Make WebAuthn registration atomic
 
 ## Engineering rule going forward
 
