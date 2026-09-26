@@ -79,6 +79,10 @@ These production counts are observations only; no records were changed as part o
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
 
+### Database security / performance
+- Confirmed `anon`/`authenticated`/`public` have no table grants on the core backend-owned tables; RLS-without-policy advisories are therefore consistent with the backend-only access model.
+- Added the missing partial index for active WebAuthn challenges by user/kind/expiry; applied to production and mirrored in repository migrations.
+
 ### Migration reconciliation
 - Reintroduced repository migration files matching the two production-applied migration versions for package settlement and withdrawal payout idempotency. These are no-op/idempotent DDL because the indexes already exist in production.
 
@@ -133,6 +137,7 @@ These production counts are observations only; no records were changed as part o
 - `0658d84` — Distinguish auth failures from session store outages
 - `cdec042` — Reconcile package settlement migration history
 - `12e68c9` — Reconcile withdrawal payout migration history
+- `a4f4c23` — Index active WebAuthn challenges by user
 
 ## Engineering rule going forward
 
