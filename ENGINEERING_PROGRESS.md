@@ -79,6 +79,10 @@ These production counts are observations only; no records were changed as part o
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
 
+### Build architecture
+- Added `BUILD_CONCEPT.md` as the consolidated source of truth for frontend/backend/database/blockchain responsibilities, authentication, package settlement, withdrawals, deployment boundaries, invariants, and engineering workflow.
+- Updated `README.md` to point to the current architecture/migration guidance instead of the obsolete single-migration instructions.
+
 ### Database security / performance
 - Confirmed `anon`/`authenticated`/`public` have no table grants on the core backend-owned tables; RLS-without-policy advisories are therefore consistent with the backend-only access model.
 - Added the missing partial index for active WebAuthn challenges by user/kind/expiry; applied to production and mirrored in repository migrations.
@@ -138,6 +142,8 @@ These production counts are observations only; no records were changed as part o
 - `cdec042` — Reconcile package settlement migration history
 - `12e68c9` — Reconcile withdrawal payout migration history
 - `a4f4c23` — Index active WebAuthn challenges by user
+- `c9b6953` — Document complete build concept
+- `1883f08` — Update README architecture/migration guidance
 
 ## Engineering rule going forward
 
