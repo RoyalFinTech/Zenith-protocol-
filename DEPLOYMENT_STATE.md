@@ -20,17 +20,16 @@ Plan: Free
 Latest live Render deployment observed during this engineering cycle:
 
 - Deploy status: `live`
-- Commit: `70c76b880dd0fce89ef141bbed465a1b4ea6806`
-- Deploy ID: `dep-darvgu67bikc739nqjj0`
+- Commit: `dbd1e7745b9a36d124cafc8999c18753928e25d8`
+- Deploy ID: `dep-das2garncjis73e5cfog`
 
 ### Drift / verification notes
 
 - Repository `render.yaml` declares `healthCheckPath: /health`.
 - Render service configuration currently reports an empty health-check path.
 - This is configuration drift and remains pending reconciliation.
-- The Render service is deployed from `main`; the security branch `security/atomic-auth-withdrawal` is not the live deployment source.
-- Security branch current tracked head at the time of this record: `7949ff1da8f5c6958c9ccfa9d98b771939131141`.
-- No manual production deploy of the security branch has been performed during this engineering cycle.
+- The Render service is deployed from `main`; PR #7 security hardening has been merged to `main`.
+- The security branch `security/atomic-auth-withdrawal` is no longer a release blocker.
 - A direct browser-style health check could not be verified through the current web retrieval channel, so no claim is made about the live `/health` response.
 
 ## Supabase
