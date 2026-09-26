@@ -203,22 +203,38 @@ router.post('/pin/verify', async (req,res,next)=>{
   }catch(e){next(e);}
 });
 router.post('/pin/setup', async (req,res,next)=>{
+  const client=await pool.connect();
   try{
     const challengeId=String(req.body?.challengeId??''); const pin=String(req.body?.pin??'');
     if(!/^[0-9a-fA-F-]{36}$/.test(challengeId)||!PIN_PATTERN.test(pin)) throw new HttpError(400,'Enter a 4-digit PIN');
-    const row=(await query<{id:string;user_id:string;wallet_address:string;expires_at:Date}>(`select id,user_id,wallet_address,expires_at from pin_challenges where id=$1 and used_at is null`,[challengeId])).rows[0];
-    if(!row) throw new HttpError(400,'PIN setup challenge is invalid or expired');
+    await client.query('begin');
+    const row=(await client.query<{id:string;user_id:string;wallet_address:string;expires_at:Date}>(
+      `select id,user_id,wallet_address,expires_at from pin_challenges where id=$1 and used_at is null for update`,
+      [challengeId]
+    )).rows[0];
+    if(!row) throw new HttpError(400,'PIN setup challenge is invalid or already used');
     if(new Date(row.expires_at).getTime()<Date.now()) throw new HttpError(400,'PIN setup challenge expired; reconnect your wallet');
     const pinHash=await hashPin(pin);
-    await query(`update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2`,[pinHash,row.user_id]);
-    const consumed=(await query(`update pin_challenges set used_at=now() where id=$1 and used_at is null returning id`,[row.id])).rows[0]; if(!consumed) throw new HttpError(409,'PIN setup challenge has already been used');
-    const user=(await query<{role:string;username:string;email:string|null;display_name:string}>(`select role,username,email,display_name from app_users where id=$1`,[row.user_id])).rows[0];
+    await client.query(
+      `update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2`,
+      [pinHash,row.user_id]
+    );
+    await client.query(`update pin_challenges set used_at=now() where id=$1`,[row.id]);
+    const user=(await client.query<{role:string;username:string;email:string|null;display_name:string}>(
+      `select role,username,email,display_name from app_users where id=$1`,[row.user_id]
+    )).rows[0];
     if(!user) throw new HttpError(404,'User not found');
     const sessionId=uuid();
-    await query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,row.user_id,row.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
+    await client.query(
+      `insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent)
+       values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,
+      [sessionId,row.user_id,row.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]
+    );
+    await client.query('commit');
     const token=await issueSession({userId:row.user_id,walletAddress:row.wallet_address,role:user.role,sessionId});
     res.json({token,user:{id:row.user_id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:row.wallet_address}});
-  }catch(e){next(e);}
+  }catch(e){await client.query('rollback').catch(()=>{});next(e);}
+  finally{client.release();}
 });
 router.post('/webauthn/register/options', requireAuth, async (req,res,next)=>{
   try{
