@@ -156,6 +156,34 @@ These production counts are observations only; no records were changed as part o
 - `c9b6953` — Document complete build concept
 - `1883f08` — Update README architecture/migration guidance
 
+## Dual-program Starter activation and withdrawal eligibility — 2026-09-26
+
+### Completed
+- Enabled **2x4 Starter** package purchase at **10 USDT**.
+- Enabled **2x6 Starter** package purchase at **30 USDT**.
+- Kept Growth and Elite packages unpriced so only Starter packages can activate a matrix position.
+- Backend package purchase now explicitly rejects non-Starter tiers before creating a purchase intent.
+- Frontend package purchase now lets the authenticated member choose **2x4 or 2x6** and displays the corresponding Starter price.
+- Confirmed settlement continues to allocate the purchased position from the selected program's available matrix node; the existing row lock prevents concurrent double placement.
+- Added active-membership eligibility to withdrawal requests: a member must have an active matrix membership before a withdrawal reservation can be created.
+- Production package configuration was applied and verified: 2x4 Starter = 10 USDT; 2x6 Starter = 30 USDT; Growth/Elite remain unpriced.
+- Added source migration: `20260926210000_enable_dual_starter_matrix_packages.sql`.
+
+### Economics note
+- Both Starter packages use the established **20% direct / 70% matrix / 10% admin** allocation model.
+- The 2x6 Starter retains its existing six-level distribution.
+- The 2x4 Starter **level-by-level matrix distribution is intentionally not invented** because no approved split was supplied. The package can be purchased and the matrix position activated; matrix-level earning allocation for 2x4 remains pending an explicit approved distribution.
+
+### Verification
+- Production currently has 30 available 2x4 positions and 126 available 2x6 positions.
+- Production currently has zero memberships and zero active nodes in either program, so no existing member position was altered by this change.
+- Production migration history now includes `enable_dual_starter_matrix_packages`.
+- Backend source and frontend purchase flow were updated on `main`; automated CI verification is still pending for the new commits.
+
+### Pending
+- Add/verify integration coverage for the new active-membership withdrawal gate and both Starter package codes.
+- Define the approved 2x4 level distribution before crediting 2x4 matrix-level earnings.
+
 ## Engineering rule going forward
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
