@@ -79,6 +79,9 @@ These production counts are observations only; no records were changed as part o
 - Reconcile repository migration history/name drift with Supabase's applied migration history before any production migration cleanup.
 - Verify the newest commits with CI before treating each change as fully validated.
 
+### Migration reconciliation
+- Reintroduced repository migration files matching the two production-applied migration versions for package settlement and withdrawal payout idempotency. These are no-op/idempotent DDL because the indexes already exist in production.
+
 ## Pending / intentionally not implemented
 
 ### Treasury signing / automatic payouts
@@ -128,6 +131,8 @@ These production counts are observations only; no records were changed as part o
 - `212ef81` — Make PIN login atomic
 - `5268b9d` — Make repeated package confirmation idempotent
 - `0658d84` — Distinguish auth failures from session store outages
+- `cdec042` — Reconcile package settlement migration history
+- `12e68c9` — Reconcile withdrawal payout migration history
 
 ## Engineering rule going forward
 
