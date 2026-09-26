@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { pool, query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { HttpError, parseLimit } from '../utils/http.js';
+import { env } from '../config.js';
 const router=Router(); router.use(requireAuth);
 router.get('/',async(req,res,next)=>{try{const limit=parseLimit(req.query.limit,50,200); const r=await query(`select id,occurred_at,type,program_code,amount,asset,status,reference,tx_hash,description from ledger_transactions where user_id=$1 order by occurred_at desc limit $2`,[req.auth!.userId,limit]);res.json({transactions:r.rows});}catch(e){next(e)}});
 router.get('/withdrawals',async(req,res,next)=>{try{const limit=parseLimit(req.query.limit,20,100);const r=await query(`select id,amount,asset,destination_address,status,tx_hash,rejection_reason,created_at,updated_at from withdrawal_requests where user_id=$1 order by created_at desc limit $2`,[req.auth!.userId,limit]);res.json({withdrawals:r.rows});}catch(e){next(e)}});router.get('/withdrawals/:id',async(req,res,next)=>{try{const r=await query(`select id,amount,asset,destination_address,status,tx_hash,rejection_reason,created_at,updated_at from withdrawal_requests where id=$1 and user_id=$2`,[req.params.id,req.auth!.userId]);if(!r.rowCount)throw new HttpError(404,'Withdrawal not found');res.json({withdrawal:r.rows[0]});}catch(e){next(e)}});
