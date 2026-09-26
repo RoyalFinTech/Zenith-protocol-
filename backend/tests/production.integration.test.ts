@@ -102,6 +102,12 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect((await request('/api/dashboard/matrix/2x4', { headers: authorization })).status).toBe(200);
     expect((await request('/api/transactions', { headers: authorization })).status).toBe(200);
     expect((await request('/api/transactions/withdrawals', { method: 'POST', headers: authorization, body: JSON.stringify({ amount: '1.5', address: testAccount().address }) })).status).toBe(201);
+    const overdraw = await request('/api/transactions/withdrawals', {
+      method: 'POST',
+      headers: authorization,
+      body: JSON.stringify({ amount: '4', address: testAccount().address })
+    });
+    expect(overdraw.status).toBe(409);
     expect((await request('/api/wallets', { headers: { authorization: 'Bearer malformed' } })).status).toBe(401);
   });
 
