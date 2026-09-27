@@ -68,6 +68,43 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect(result.rows[0]?.count ?? 0).toBe(0);
   });
 
+  it('stores email wallet handoffs as short-lived one-time secrets', async () => {
+    const id = randomUUID();
+    const handoff = randomBytes(32).toString('base64url');
+    const hash = (await import('node:crypto')).createHash('sha256').update(handoff).digest('hex');
+    try {
+      await database.pool.query(
+        `insert into pending_registrations(
+          id,username,email,display_name,token_hash,expires_at,verified_at,
+          wallet_handoff_token_hash,wallet_handoff_expires_at
+        ) values($1,'ci_handoff','ci-handoff@example.test','CI Handoff',$2,now()+interval '30 minutes',now(),$3,now()+interval '10 minutes')`,
+        [id, randomBytes(32).toString('hex'), hash]
+      );
+      const first = await database.pool.query(
+        `select id from pending_registrations
+         where wallet_handoff_token_hash=$1
+           and verified_at is not null
+           and wallet_handoff_expires_at > now()
+           and consumed_at is null
+         for update`,
+        [hash]
+      );
+      expect(first.rows[0]?.id).toBe(id);
+      await database.pool.query(`update pending_registrations set consumed_at=now() where id=$1`, [id]);
+      const second = await database.pool.query(
+        `select id from pending_registrations
+         where wallet_handoff_token_hash=$1
+           and verified_at is not null
+           and wallet_handoff_expires_at > now()
+           and consumed_at is null`,
+        [hash]
+      );
+      expect(second.rows).toHaveLength(0);
+    } finally {
+      await database.pool.query('delete from pending_registrations where id=$1', [id]);
+    }
+  });
+
   it('keeps the admin portal separate from member authentication', async () => {
     const denied = await request('/api/admin-portal/overview', { headers: { authorization: `Bearer ${token}` } });
     expect(denied.status).toBe(401);
