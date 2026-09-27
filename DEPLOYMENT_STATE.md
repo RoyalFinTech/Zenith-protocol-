@@ -111,3 +111,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Admin Security / first administrator provisioning remains PENDING.
 - Production inspection during this cycle was read-only; no admin or financial production rows were created.
 - Next release gates: review upgrade/settlement retry idempotency, reconcile stale deployment documentation, then decide whether the validated branch is ready for PR/release.
+
+
+## Release checkpoint — 2026-09-27 12:43 UTC
+
+- New admin withdrawal transition/completion APIs and frontend controls are on the feature branch and awaiting CI.
+- Completion is verification-first: the staff UI cannot mark a withdrawal completed without an exact verified on-chain USDT payout.
+- No production financial/admin rows were created by this continuation.
+- Admin provisioning remains **PENDING**.
+- Do not promote this continuation to production until CI and final accounting/state review pass.
