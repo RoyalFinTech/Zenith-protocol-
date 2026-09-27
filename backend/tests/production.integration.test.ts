@@ -132,6 +132,48 @@ describeProduction('production API against a real PostgreSQL test database', () 
     }
   });
 
+  it('supports authenticated notification reads and admin withdrawal transition guards', async () => {
+    const authorization = { authorization: `Bearer ${token}` };
+    const notifications = await request('/api/me/notifications', { headers: authorization });
+    expect(notifications.status).toBe(200);
+    expect(Array.isArray((await notifications.json()).notifications)).toBe(true);
+
+    const adminEmail = `ci-withdrawal-admin-${randomUUID()}@example.test`;
+    const adminPassword = randomBytes(24).toString('base64url');
+    const passwordHash = await hashAdminPassword(adminPassword);
+    const admin = await database.pool.query<{id:string}>(`insert into admin_users(email,password_hash,is_active) values($1,$2,true) returning id`, [adminEmail,passwordHash]);
+    const adminId = admin.rows[0]!.id;
+    try {
+      const withdrawal = await database.pool.query<{id:string}>(`
+        insert into withdrawal_requests(user_id,amount,asset,destination_address,status)
+        values($1,1.25,'USDT',$2,'pending') returning id
+      `, [userId,testAddress]);
+      const login = await request('/api/admin-portal/login', {
+        method:'POST', headers:{'content-type':'application/json'},
+        body:JSON.stringify({email:adminEmail,password:adminPassword})
+      });
+      expect(login.status).toBe(200);
+      const adminToken=(await login.json()).token as string;
+
+      const approved=await request(`/api/admin-portal/withdrawals/${withdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'approved'})
+      });
+      expect(approved.status).toBe(409);
+
+      const rejected=await request(`/api/admin-portal/withdrawals/${withdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'rejected',reason:'CI test rejection'})
+      });
+      expect(rejected.status).toBe(200);
+      const final=(await database.pool.query<{status:string}>(`select status from withdrawal_requests where id=$1`,[withdrawal.rows[0]!.id])).rows[0];
+      expect(final?.status).toBe('rejected');
+    } finally {
+      await database.pool.query('delete from withdrawal_requests where user_id=$1',[userId]);
+      await database.pool.query('delete from admin_users where id=$1',[adminId]);
+    }
+  });
+
   it('serves health and public configuration', async () => {
     const [health, config] = await Promise.all([request('/health'), request('/config/public')]);
     expect(health.status).toBe(200);
