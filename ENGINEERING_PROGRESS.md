@@ -497,3 +497,20 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Render service configuration was rechecked: the live Health Check Path remains blank while repository `render.yaml` declares `/health`; this is still a separate infrastructure-drift item.
 - Real-device Web Push acceptance remains a release gate.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 14:19 UTC
+
+### Settlement retry/idempotency hardening
+- Tightened package confirmation retry handling so a request that reaches a row already confirmed with a different transaction hash now returns HTTP 409 instead of reporting a generic confirmed response.
+- Added an integration regression that verifies the recorded transaction hash is idempotent while a different hash is rejected for the same confirmed purchase.
+
+### Validation / release state
+- Current validated feature head: `19f6a13089a488d41ddd60680cd0e1fd41c60375`.
+- CI run #491 passed end-to-end: backend lint, migration application, unit tests, integration tests, frontend build, and frontend login tests.
+- Production Supabase remains unchanged. The live `package_purchases` table still does not contain the new economics-snapshot columns; the feature migration remains unpromoted.
+- The two existing pending 2×6 Starter purchases remain 10.00000000 USDT while current package economics show a 30.00000000 entry amount; no production purchase rows were changed.
+- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Live Render Health Check Path remains blank while repository `render.yaml` declares `/health`; the live health URL could not be verified through the available web retrieval channel.
+- Real-device Web Push acceptance remains a release gate.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.

@@ -1,6 +1,6 @@
 # ZENIT Protocol — Deployment State
 
-Last checked: 2026-09-27 14:04 UTC
+Last checked: 2026-09-27 14:19 UTC
 
 ## Render API
 
@@ -233,5 +233,18 @@ The original package lifecycle/admin implementation was already merged into main
 - Production Supabase remains unchanged by this continuation. The two existing pending 2×6 Starter purchases remain 10.00000000 USDT despite the current 30.00000000 economics entry amount.
 - Feature branch remains un-deployed. Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
 - Live Render Health Check Path is still blank while repository `render.yaml` specifies `/health`; infrastructure reconciliation remains pending.
+- Real-device Web Push acceptance remains a release gate.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Deployment / engineering checkpoint — 2026-09-27 14:19 UTC
+
+- Current validated feature head: `19f6a13089a488d41ddd60680cd0e1fd41c60375`.
+- CI run #491 passed all backend and frontend gates, including the new package confirmation idempotency regression.
+- Package confirmation retries now require the submitted transaction hash to match the transaction already recorded on a confirmed purchase; a different hash is rejected with HTTP 409.
+- Production Supabase remains unchanged and does not yet contain the five economics-snapshot columns from the feature migration.
+- The two existing pending 2×6 Starter purchases remain 10.00000000 USDT; no production financial rows were changed.
+- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Live Render Health Check Path is blank while `render.yaml` declares `/health`; reconciliation remains pending.
 - Real-device Web Push acceptance remains a release gate.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
