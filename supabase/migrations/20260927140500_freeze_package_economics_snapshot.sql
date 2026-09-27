@@ -17,7 +17,9 @@ begin
   end if;
   return new;
 end
-$$;
+$;
+
+revoke all on function public.prevent_package_purchase_snapshot_mutation() from public, anon, authenticated;
 
 drop trigger if exists trg_package_purchase_snapshot_immutable on public.package_purchases;
 
