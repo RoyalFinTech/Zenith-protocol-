@@ -34,7 +34,7 @@ where e.package_id=pp.package_id
     or pp.matrix_distribution_rules is null
   );
 
-do $
+do $snap$
 begin
   if exists (
     select 1
@@ -47,7 +47,7 @@ begin
   ) then
     raise exception 'Cannot enforce package purchase economics snapshots: one or more purchases could not be backfilled';
   end if;
-end $;
+end $snap$;
 
 alter table public.package_purchases
   alter column package_tier set not null,
