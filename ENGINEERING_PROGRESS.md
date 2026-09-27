@@ -309,3 +309,24 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
 - Production deployment of this continuation is not claimed; Render deploys from `main`.
 - Continue checking accounting/ledger presentation, upgrade idempotency, settlement retries, and frontend state refresh after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:48 UTC
+
+### Completed
+- Settlement allocation now uses the actual `package_purchases.amount` that the member's confirmed payment was verified against, instead of re-reading `package_economics.entry_amount` during settlement. This prevents catalog-price changes between purchase creation and confirmation from changing the financial split.
+- Direct, matrix, and admin allocation calculations still use the configured 20/70/10 percentages and PostgreSQL numeric arithmetic.
+- Withdrawal transition/completion logic was consolidated into `backend/src/services/admin-withdrawals.ts` so the separate staff portal and legacy admin authorization path share the same transition and payout-verification rules.
+- Legacy app-user admin routes now reuse the shared withdrawal service instead of maintaining a second copy of payout logic.
+- Extended integration coverage for notification read behavior and both blocked/valid admin withdrawal transitions.
+- Fixed the frontend delegated action handler so Admin withdrawal controls have a defined event target.
+
+### Validation state
+- Prior continuation CI passed completely before this accounting/consolidation pass.
+- Current latest CI run #415 is queued/in progress for the newest test cleanup commit; this commit must pass before these newest changes are marked validated.
+- Production inspection remains read-only; no financial or admin production rows were created.
+
+### Pending
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Final current-head CI validation for the accounting/admin-route consolidation.
+- Continue frontend accounting/history review and settlement retry edge-case review after CI.
