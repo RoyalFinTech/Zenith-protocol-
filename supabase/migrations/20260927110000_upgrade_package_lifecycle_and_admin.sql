@@ -146,7 +146,7 @@ set package_tier='starter',
       order by pp.sort_order
       limit 1
     ))
-where m.package_tier is null or m.package_tier='';
+where m.package_tier='starter' or m.package_tier='';
 
 -- Helpful cleanup/indexing for admin and settlement paths.
 create index if not exists idx_package_purchases_program_status
