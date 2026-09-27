@@ -19,8 +19,9 @@ Plan: Free
 
 Latest live Render deployment observed before the current release:
 - Deploy status: `live`
-- Commit: `f8ee8d4d49ab862d8e12bbaea4e1bbe0afcd5299`
-- Deploy ID: `dep-das36ajtqb8s739ea8u0`
+- Commit: `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`
+- Deploy ID: `dep-dashbk3bc2fs73f91pig`
+- This deployment finished live at 2026-09-27 13:12 UTC after the Render environment update.
 
 ### Current release deployment
 - Commit: `be0ca3ab187d85e8e4f3130d460c9d1f15559061`
@@ -155,4 +156,13 @@ The original package lifecycle/admin implementation was already merged into main
 - The frontend now registers `/sw.js`, requests notification permission only from an explicit Enable action, supports installed iOS/iPadOS web apps, stores subscription material server-side, shows push status in the notification/profile UI, and removes the device registration on wallet logout.
 - Real-device acceptance is still required before calling phone push delivery production-validated.
 - Render continues to deploy from `main`; this feature branch is not being claimed live.
+- Admin Security / first administrator provisioning remains **PENDING**.
+
+
+## Engineering checkpoint — 2026-09-27 13:14 UTC
+
+- Latest feature head: `b92654e11f2e6f9906bf2565d7ba9b46cdc8082e`.
+- Current-head CI run #454 is in progress after correcting approved/processing withdrawal reservation accounting.
+- Render `main` deployment `dep-dashbk3bc2fs73f91pig` is confirmed `live` on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- The Render VAPID environment configuration is present, but the live `main` code does not yet include the feature-branch push implementation; no live push-delivery claim is made.
 - Admin Security / first administrator provisioning remains **PENDING**.
