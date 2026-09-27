@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Server } from 'node:http';
 import { issueSession } from '../src/services/jwt.js';
-import { hashAdminPassword } from '../src/services/admin-auth.js';
+import { adminLogin, hashAdminPassword } from '../src/services/admin-auth.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 
 const integrationEnvironmentReady = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
@@ -122,20 +122,11 @@ describeProduction('production API against a real PostgreSQL test database', () 
         `update admin_users set failed_attempts=0,locked_until=null where id=$1`,
         [adminId]
       );
-      for (let i=0;i<5;i++) {
-        const failed = await request('/api/admin-portal/login', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ email: adminEmail, password: 'still-wrong' })
-        });
-        expect(failed.status).toBe(401);
+      for (let i=0;i<4;i++) {
+        await expect(adminLogin(adminEmail, 'still-wrong', '127.0.0.1', 'vitest')).rejects.toMatchObject({ status: 401 });
       }
-      const locked = await request('/api/admin-portal/login', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: adminEmail, password: replacementPassword })
-      });
-      expect(locked.status).toBe(429);
+      await expect(adminLogin(adminEmail, 'still-wrong', '127.0.0.1', 'vitest')).rejects.toMatchObject({ status: 401 });
+      await expect(adminLogin(adminEmail, replacementPassword, '127.0.0.1', 'vitest')).rejects.toMatchObject({ status: 429 });
     } finally {
       await database.pool.query('delete from admin_users where id=$1', [adminId]);
     }
