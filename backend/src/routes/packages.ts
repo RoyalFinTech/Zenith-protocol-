@@ -115,8 +115,8 @@ router.post('/purchases', async (req, res, next) => {
       if (referrerId === req.auth!.userId) throw new HttpError(400, 'You cannot use your own referral code');
     }
 
-    const pending = (await query(`
-      select id,created_at from package_purchases
+    const pending = (await query<{id:string;created_at:string;amount:string}>(`
+      select id,created_at,amount from package_purchases
       where user_id=$1 and package_id=$2 and status='pending'
       order by created_at desc limit 1
     `, [req.auth!.userId, packageRow.id])).rows[0];
@@ -183,7 +183,7 @@ router.post('/purchases', async (req, res, next) => {
       purchase: {
         id: purchase.id, packageCode: packageRow.code, packageName: packageRow.name,
         programCode: packageRow.program_code, programName: packageRow.program_name,
-        amount: packageRow.price, asset: packageRow.asset, chainId: env.chainId,
+        amount: purchase.amount, asset: packageRow.asset, chainId: env.chainId,
         receiver, token: tokenInfo.token, decimals: tokenInfo.decimals
       }
     });
