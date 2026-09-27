@@ -235,3 +235,37 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Review final PR diff.
 - Create PR from feature/admin-control-center-and-package-lifecycle to main.
 - Do not claim production deployment until Render reports the new commit live.
+
+
+## Lifecycle / frontend state continuation — 2026-09-27 12:12 UTC
+
+### Completed in this continuation
+- Repository documentation is now being treated as the engineering checkpoint/source of truth rather than relying on conversation history.
+- Feature branch was refreshed to the latest main commit before continuing inspection.
+- Removed the obsolete duplicate manual matrix-placement endpoint from backend/src/routes/mutations.ts; package confirmation remains the authoritative lifecycle path for paid package activation and placement.
+- Added authenticated notification APIs: GET /api/me/notifications, PATCH /api/me/notifications/:id/read, and PATCH /api/me/notifications/read-all.
+- Replaced the frontend's hard-coded notification list/badge with backend-backed notification state, unread count, individual read handling, and mark-all-read handling.
+- Dashboard balance state now consumes the backend withdrawal reservation amount so the displayed available balance does not ignore funds already reserved by pending/completed withdrawal requests.
+- Production inspection confirmed the notification table exists with id, user_id, title, message, created_at, and nullable read_at fields.
+
+### Production observations recorded during this continuation
+- notifications: 0 rows; unread notifications: 0.
+- activity_events: 0 rows.
+- package_purchases: 2 rows; confirmed purchases: 0.
+- withdrawal_requests: 0 rows; open withdrawals: 0.
+- platform_revenue_ledger: 0 rows.
+- admin_users: 0 rows. Admin provisioning remains intentionally pending.
+
+### Pending / intentionally incomplete
+- Admin Security / first administrator provisioning: intentionally pending until the operator is ready to provision the administrator. No claim of completed admin access is made.
+- Admin bootstrap must remain an operator-controlled credential-provisioning step; no plaintext password is committed to the repository.
+- Current frontend/backend notification and balance changes are awaiting current-head CI verification.
+- Continue review of withdrawal drawer/status behavior, accounting/ledger presentation, package lifecycle edge cases, and frontend state synchronization after CI returns.
+
+### Current verification
+- CI for current continuation head 0aaf4fd9ddc18d15758a58469f3325679369f982 is currently IN PROGRESS for both backend and frontend jobs.
+- Production database inspection was read-only for this continuation; no production rows were modified.
+
+### Engineering checkpoint
+- Completed: lifecycle/admin implementation, package tier state, matrix parent metadata, accounting fields, protected admin APIs/UI, backend notification read APIs, backend-backed notification UI, reservation-aware balance display, duplicate placement endpoint removal.
+- Pending: administrator provisioning/security handoff, CI validation of current continuation, final withdrawal/accounting/frontend-state review, final release/deployment decision.
