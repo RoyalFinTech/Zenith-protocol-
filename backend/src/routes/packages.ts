@@ -339,9 +339,9 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     `, [purchase.package_id])).rows[0];
 
     if (economics) {
-      const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.direct_percent])).rows[0]?.amount;
-      const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.matrix_percent])).rows[0]?.amount;
-      const adminAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.admin_percent])).rows[0]?.amount;
+      const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.direct_percent])).rows[0]?.amount;
+      const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.matrix_percent])).rows[0]?.amount;
+      const adminAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.admin_percent])).rows[0]?.amount;
       if (directAmount == null || matrixAmount == null || adminAmount == null) throw new HttpError(500, 'Unable to calculate package allocation');
 
       await client.query(`update package_purchases set direct_amount=$2,matrix_amount=$3,admin_amount=$4 where id=$1`, [purchaseId,directAmount,matrixAmount,adminAmount]);
@@ -361,7 +361,7 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
         await client.query(`
           insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
           values($1,'unallocated_direct',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
-        `,[purchaseId,directAmount,purchase.asset,JSON.stringify({reason:'No sponsor on confirmed purchase'})]);
+        `,[purchaseId,directAmount,purchase.asset,JSON.stringify({reason:'No sponsor on confirmed purchase',purchaseAmount:purchase.amount})]);
       }
 
       const rules = (await client.query<{level:number;percent_of_matrix_pool:string}>(`
@@ -404,7 +404,7 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
         await client.query(`
           insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
           values($1,'unallocated_matrix',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
-        `,[purchaseId,unallocatedMatrix,purchase.asset,JSON.stringify({reason:'No eligible matrix ancestor at one or more levels',matrixPool:matrixAmount,allocatedMatrix})]);
+        `,[purchaseId,unallocatedMatrix,purchase.asset,JSON.stringify({reason:'No eligible matrix ancestor at one or more levels',purchaseAmount:purchase.amount,matrixPool:matrixAmount,allocatedMatrix})]);
       }
 
       await client.query(`
