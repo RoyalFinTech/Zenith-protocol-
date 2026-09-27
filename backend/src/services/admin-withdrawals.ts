@@ -4,7 +4,7 @@ import { env } from '../config.js';
 import { canTransitionWithdrawal, isUniqueConstraintViolation } from '../utils/financial.js';
 import { createPublicClient, erc20Abi, getAddress, http, parseEventLogs, parseUnits } from 'viem';
 import { bsc } from 'viem/chains';
-import { createUserNotification } from './notifications.js';
+import { createUserNotification, sendUserPushNotification } from './notifications.js';
 
 const publicClient = createPublicClient({ chain: bsc, transport: http(env.bscRpcUrl) });
 
@@ -60,8 +60,9 @@ export async function transitionAdminWithdrawal(withdrawalId:string, actorAdminI
       rejected:'Your withdrawal request was rejected and the reserved balance was released.',
       failed:'Your withdrawal payout failed and the reserved balance was released.'
     };
-    await createUserNotification(client,current.user_id,'Withdrawal status updated',statusCopy[nextStatus]||`Your withdrawal status changed to ${nextStatus}.`);
+    const notificationId=await createUserNotification(client,current.user_id,'Withdrawal status updated',statusCopy[nextStatus]||`Your withdrawal status changed to ${nextStatus}.`);
     await client.query('commit');
+    if(notificationId){void sendUserPushNotification(current.user_id,'Withdrawal status updated',statusCopy[nextStatus]||`Your withdrawal status changed to ${nextStatus}.`,notificationId).catch(error=>console.warn('withdrawal status push notification failed',error));}
     return updated;
   }catch(e){ await client.query('rollback').catch(()=>{}); throw e; }
   finally{ client.release(); }
@@ -122,8 +123,9 @@ export async function completeAdminWithdrawal(withdrawalId:string, actorAdminId:
        values($3,'withdrawal_completed','withdrawal_request',$1,$2::jsonb)`,
       [withdrawalId,JSON.stringify({adminId:actorAdminId,txHash,confirmations,payoutSender}),actorUserId]
     );
-    await createUserNotification(client,row.user_id,'Withdrawal completed','Your USDT withdrawal payout was verified on-chain and marked completed.');
+    const notificationId=await createUserNotification(client,row.user_id,'Withdrawal completed','Your USDT withdrawal payout was verified on-chain and marked completed.');
     await client.query('commit');
+    if(notificationId){void sendUserPushNotification(row.user_id,'Withdrawal completed','Your USDT withdrawal payout was verified on-chain and marked completed.',notificationId).catch(error=>console.warn('withdrawal completion push notification failed',error));}
     return {withdrawal:updated,confirmations};
   }catch(e){
     await client.query('rollback').catch(()=>{});
