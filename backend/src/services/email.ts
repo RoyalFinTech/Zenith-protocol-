@@ -33,14 +33,16 @@ export async function sendWelcomeEmail({ to, username, appOrigin }: WelcomeEmail
     method: 'POST',
     headers: {
       Authorization: `Bearer ${env.resendApiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Idempotency-Key': `zenit-welcome#${to.toLowerCase()}#${username.toLowerCase()}`
     },
     body: JSON.stringify({
       from: env.resendFrom,
       to: [to],
       subject: 'Welcome to ZENIT Protocol',
       html
-    })
+    }),
+    signal: AbortSignal.timeout(10000)
   });
 
   if (!response.ok) {
@@ -76,7 +78,8 @@ export async function sendVerificationEmail({ to, username, verifyUrl, registrat
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.resendApiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `zenit-email-verification#${registrationId}` },
-    body: JSON.stringify({ from: env.resendFrom, to: [to], subject: 'Verify your email for ZENIT Protocol', html })
+    body: JSON.stringify({ from: env.resendFrom, to: [to], subject: 'Verify your email for ZENIT Protocol', html }),
+    signal: AbortSignal.timeout(10000)
   });
   if (!response.ok) { const body = await response.text().catch(() => ''); throw new Error(`Resend verification email failed (${response.status}): ${body.slice(0,300)}`); }
   return { sent: true, skipped: false };
