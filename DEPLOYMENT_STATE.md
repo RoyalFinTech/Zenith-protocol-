@@ -176,3 +176,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Latest feature CI is still running; no feature-branch production release is claimed.
 - Render main remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
 - Admin Security / first administrator provisioning remains **PENDING**.
+
+
+## Engineering checkpoint — 2026-09-27 13:17 UTC
+
+- Member Earnings charts now use live authenticated ledger data rather than fixed illustrative values.
+- Current feature branch is 72 commits ahead of `main`, with no branch divergence behind main.
+- CI run #464 is still in progress for the latest frontend change.
+- No feature-branch production release is claimed.
+- Admin Security / first administrator provisioning remains **PENDING**.
