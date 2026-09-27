@@ -186,12 +186,12 @@ async function authenticate(address: `0x${string}`) {
 
   const signature = await signMessage(adapter.wagmiConfig, { message });
   const authMode = localStorage.getItem('zenitAuthMode') || (localStorage.getItem('zenitRegistrationVerified') === '1' ? 'onboarding' : 'existing');
-  const registrationId = authMode === 'onboarding' ? (localStorage.getItem('zenitRegistrationId') || '') : '';
+  const walletHandoffToken = authMode === 'onboarding' ? (localStorage.getItem('zenitWalletHandoffToken') || '') : '';
 
   const verifyR = await fetch(`${base}/api/auth/verify`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ address, nonce, signature, registrationId: registrationId || undefined })
+    body: JSON.stringify({ address, nonce, signature, walletHandoffToken: walletHandoffToken || undefined })
   });
   const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string; pinRequired?: boolean; pinSetupRequired?: boolean; challengeId?: string };
   if ((data.pinRequired || data.pinSetupRequired) && data.challengeId) {
@@ -203,7 +203,7 @@ async function authenticate(address: `0x${string}`) {
 
   authToken = data.token;
   localStorage.setItem('zenitToken', authToken);
-  localStorage.removeItem('zenitRegistrationId');
+  localStorage.removeItem('zenitWalletHandoffToken');
   localStorage.removeItem('zenitRegistrationVerified');
   localStorage.removeItem('zenitAuthMode');
 
