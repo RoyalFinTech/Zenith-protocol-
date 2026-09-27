@@ -121,35 +121,6 @@ router.post('/purchases', async (req, res, next) => {
       order by created_at desc limit 1
     `, [req.auth!.userId, packageRow.id])).rows[0];
 
-    let economicsSnapshot:{
-      direct_percent:string;
-      matrix_percent:string;
-      admin_percent:string;
-      matrix_distribution_rules:unknown;
-    }|undefined;
-    if (!pending) {
-      economicsSnapshot=(await query<{
-        direct_percent:string;
-        matrix_percent:string;
-        admin_percent:string;
-        matrix_distribution_rules:unknown;
-      }>(`
-        select e.direct_percent,e.matrix_percent,e.admin_percent,
-               coalesce((
-                 select jsonb_agg(
-                   jsonb_build_object('level',r.level,'percentOfMatrixPool',r.percent_of_matrix_pool)
-                   order by r.level
-                 )
-                 from matrix_distribution_rules r
-                 where r.package_id=e.package_id
-               ),'[]'::jsonb) as matrix_distribution_rules
-        from package_economics e
-        where e.package_id=$1
-        limit 1
-      `, [packageRow.id])).rows[0];
-      if (!economicsSnapshot) throw new HttpError(409, 'Package economics are not configured');
-    }
-
     if (!pending) {
       if (packageRow.tier === 'starter') {
         const capacity = (await query<{available:boolean}>(`
@@ -179,14 +150,30 @@ router.post('/purchases', async (req, res, next) => {
         user_id,package_id,referral_code,referrer_user_id,amount,asset,status,
         package_tier,direct_percent,matrix_percent,admin_percent,matrix_distribution_rules
       )
-      values($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,$10,$11::jsonb)
+      select $1,$2,$3,$4,pp.price,pp.asset,'pending',
+             pp.tier,e.direct_percent,e.matrix_percent,e.admin_percent,
+             coalesce((
+               select jsonb_agg(
+                 jsonb_build_object('level',r.level,'percentOfMatrixPool',r.percent_of_matrix_pool)
+                 order by r.level
+               )
+               from matrix_distribution_rules r
+               where r.package_id=pp.id
+             ),'[]'::jsonb)
+      from program_packages pp
+      join package_economics e on e.package_id=pp.id
+      where pp.id=$2
+        and pp.active=true
+        and pp.tier=$7
+        and pp.price=$5
+        and pp.asset=$6
       returning id,created_at,amount
     `, [
-      req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset,
-      packageRow.tier,
-      economicsSnapshot!.direct_percent,economicsSnapshot!.matrix_percent,economicsSnapshot!.admin_percent,
-      JSON.stringify(economicsSnapshot!.matrix_distribution_rules)
+      req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset, packageRow.tier
     ])).rows[0];
+    if (!purchase && !pending) {
+      throw new HttpError(409, 'Package pricing or settlement economics changed; refresh and retry');
+    }
     if (!purchase) throw new HttpError(500, 'Unable to create package purchase');
     if (!pending) {
       const notifyClient = await pool.connect();
