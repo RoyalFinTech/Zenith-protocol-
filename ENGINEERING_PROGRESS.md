@@ -366,3 +366,25 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Confirm current-head CI success after the notification event changes.
 - Continue final frontend/accounting synchronization review.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:10 UTC
+
+### Completed
+- Added server-backed browser/device push subscriptions in `push_subscriptions`, with per-user ownership, endpoint uniqueness, delivery timestamps, failure counters, RLS enabled, and public/anonymous Data API access revoked.
+- Added native Web Push `aes128gcm` encryption and VAPID authorization without introducing a third-party push dependency.
+- Added authenticated push subscription registration/removal endpoints.
+- Added post-commit push dispatch for package purchase creation, package activation, withdrawal submission, withdrawal status changes, and withdrawal completion.
+- Added a root service worker, installable web-app manifest, phone-notification permission flow, push status controls in Notifications/Profile, notification deep links, foreground refresh, and push cleanup on wallet logout.
+- Fixed an existing frontend notification-state destructuring defect so backend notifications are loaded into the correct state slot.
+
+### Production verification
+- Supabase push subscription migration was applied successfully to production and verified: expected columns exist, RLS is enabled, and no `anon`/`authenticated` table grants were found.
+- Supabase security advisor now shows the expected backend-owned `push_subscriptions` RLS/no-policy informational finding; no elevated security finding was reported for the new table.
+- VAPID credentials have not been placed in source control and must be provisioned as Render environment secrets before production device delivery can be enabled.
+
+### Pending / release gates
+- Run and pass current-head backend/frontend CI after the push changes.
+- Perform one real device acceptance test on HTTPS: grant notification permission, register a phone subscription, trigger a lifecycle notification, receive it with the app backgrounded, and tap it to return to the member workspace.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Continue the remaining accounting/history and settlement retry review after CI.
