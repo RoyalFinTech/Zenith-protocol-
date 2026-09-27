@@ -101,8 +101,25 @@ router.post('/purchases', async (req, res, next) => {
 
     if (!pending) {
       if (packageRow.tier === 'starter') {
-        const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
-        if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
+        const capacity = (await query<{available:boolean}>(`
+          select exists(
+            select 1
+            from matrix_nodes n
+            where n.program_id=$1
+              and n.status='available'
+              and (
+                n.position=1
+                or exists (
+                  select 1
+                  from matrix_nodes parent
+                  where parent.program_id=n.program_id
+                    and parent.position=floor(n.position/2)::int
+                    and parent.status='active'
+                )
+              )
+          ) as available
+        `, [packageRow.program_id])).rows[0]?.available;
+        if (!capacity) throw new HttpError(409, 'No eligible matrix position remains in this program');
       }
     }
 
