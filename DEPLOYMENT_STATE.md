@@ -1,6 +1,6 @@
 # ZENIT Protocol — Deployment State
 
-Last checked: 2026-09-27 12:41 UTC
+Last checked: 2026-09-27 13:25 UTC
 
 ## Render API
 
@@ -24,10 +24,11 @@ Latest live Render deployment observed before the current release:
 - This deployment finished live at 2026-09-27 13:12 UTC after the Render environment update.
 
 ### Current release deployment
-- Commit: `be0ca3ab187d85e8e4f3130d460c9d1f15559061`
-- Deploy ID: `dep-das379s56k3c73aks94g`
-- Status at last check: `build_in_progress`
-- GitHub CI run #342: `success`
+- Feature branch is **not deployed**.
+- Render `main` remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Live deployment observed: `dep-dashbk3bc2fs73f91pig`, status `live`, completed 2026-09-27 13:12 UTC after the Render environment update.
+- Render VAPID environment configuration is present, but the live `main` code predates the feature-branch Web Push implementation; no live phone-push delivery claim is made.
+- Current feature branch must pass its current-head CI and complete real-device acceptance before promotion.
 
 ### Drift / verification notes
 
@@ -42,10 +43,14 @@ Latest live Render deployment observed before the current release:
 
 Project: `fukvhfrqafudqwnnuimq`
 
-Production migrations currently observed through:
+Production migration history currently includes:
 - `20260926145028_package_payment_settlement_hardening_constraints`
 - `20260926145451_withdrawal_payout_idempotency`
 - `20260926174932_webauthn_challenge_user_index`
+- `20260926210429_enable_dual_starter_matrix_packages`
+- `20260927114925_upgrade_package_lifecycle_and_admin`
+- `20260927130432_push_notifications`
+- `20260927130737_add_matrix_memberships_package_index`
 
 Production financial integrity checks during this cycle reported no violations in the tracked package, matrix, ledger, or withdrawal invariants.
 
@@ -185,3 +190,14 @@ The original package lifecycle/admin implementation was already merged into main
 - CI run #464 is still in progress for the latest frontend change.
 - No feature-branch production release is claimed.
 - Admin Security / first administrator provisioning remains **PENDING**.
+
+
+## Current engineering checkpoint — 2026-09-27 13:25 UTC
+
+- Current feature head: `383a8cce1e3cdc035caf84a001658ee3610ea5b5`.
+- Feature branch is 78 commits ahead of `main` with no commits behind.
+- CI runs #467 through #469 exposed the same backend regression introduced by the withdrawal-reservation assertion; the test was corrected to compare the dashboard reservation delta from a pre-test baseline.
+- The pending-package response now returns the purchase's locked `amount` instead of the current catalog price, preventing payment instructions from changing when a catalog price changes while a purchase remains pending.
+- Latest CI run #470 is in progress for the corrected test baseline.
+- Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; no feature-branch deployment is claimed.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
