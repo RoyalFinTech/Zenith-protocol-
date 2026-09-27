@@ -272,6 +272,13 @@ describeProduction('production API against a real PostgreSQL test database', () 
 
       await expect(
         database.pool.query(
+          `update package_purchases set amount=11 where id=$1`,
+          [purchase.rows[0]!.id]
+        )
+      ).rejects.toThrow('Package purchase settlement economics snapshot is immutable');
+
+      await expect(
+        database.pool.query(
           `update package_purchases set direct_percent=21 where id=$1`,
           [purchase.rows[0]!.id]
         )
