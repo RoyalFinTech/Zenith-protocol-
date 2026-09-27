@@ -102,8 +102,13 @@ router.get('/register/verify', async (req, res, next) => {
     if (!token) throw new HttpError(400, 'Verification token is required');
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const row = (await query<{id:string}>(`update pending_registrations set verified_at=now(),updated_at=now() where token_hash=$1 and verified_at is null and expires_at > now() returning id`, [tokenHash])).rows[0];
-    if (!row) throw new HttpError(400, 'This verification link is invalid or expired');
     const target = new URL(env.appOrigin);
+    if (!row) {
+      target.searchParams.set('email_verification', 'error');
+      target.searchParams.set('reason', 'invalid_or_expired');
+      res.redirect(target.toString());
+      return;
+    }
     target.searchParams.set('registration', row.id);
     target.searchParams.set('email_verified', '1');
     res.redirect(target.toString());
