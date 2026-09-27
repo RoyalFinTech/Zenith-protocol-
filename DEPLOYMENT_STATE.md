@@ -201,3 +201,13 @@ The original package lifecycle/admin implementation was already merged into main
 - Latest CI run #470 is in progress for the corrected test baseline.
 - Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; no feature-branch deployment is claimed.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Current engineering checkpoint — 2026-09-27 13:28 UTC
+
+- Current feature head: `7c9ba098b183b574ad4e61c789a74a63c2eed959`.
+- CI run #473 completed successfully for the current code head: backend lint/unit/integration and frontend build/login tests all passed.
+- The CI regression was isolated to a malformed test authorization header in the approved-withdrawal double-spend regression; the test now spreads the authenticated header object correctly.
+- Pending package purchases now return their locked purchase amount in the purchase response.
+- Feature branch remains un-deployed; Render `main` is still live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Real-device Web Push acceptance remains a release gate, and Admin Security / first administrator provisioning remains intentionally **PENDING**.
