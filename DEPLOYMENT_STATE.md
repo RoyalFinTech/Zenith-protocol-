@@ -211,3 +211,14 @@ The original package lifecycle/admin implementation was already merged into main
 - Pending package purchases now return their locked purchase amount in the purchase response.
 - Feature branch remains un-deployed; Render `main` is still live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
 - Real-device Web Push acceptance remains a release gate, and Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Current engineering checkpoint — 2026-09-27 13:41 UTC
+
+- Runtime feature head validated: `d6e618ca360559a166ff85f750c7be250005ad30`.
+- CI run #481 passed backend lint, all backend unit tests, migration application, integration tests, frontend build, and frontend login tests.
+- Package settlement economics are now snapshotted on each new purchase: package tier, direct/matrix/admin percentages, and matrix distribution rules.
+- Existing package purchases are backfilled from their package economics where available; purchase amount remains the authoritative locked payment amount.
+- Production currently has 2 pending package purchases and 0 confirmed package purchases; production data was inspected read-only and not modified by this continuation.
+- The feature branch is not deployed. Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Real-device Web Push acceptance remains a release gate. Admin Security / first administrator provisioning remains intentionally **PENDING**.
