@@ -67,8 +67,8 @@ router.post('/purchases', async (req, res, next) => {
     if (packageRow.price == null) throw new HttpError(409, 'This package is not priced for purchase yet');
     if (packageRow.asset !== env.primaryAsset) throw new HttpError(409, 'This package uses an unsupported settlement asset');
 
-    const membership = (await query<{package_tier:string}>(`
-      select package_tier from matrix_memberships m
+    const membership = (await query<{package_tier:string;referrer_user_id:string|null}>(`
+      select package_tier,referrer_user_id from matrix_memberships m
       where m.user_id=$1 and m.program_id=$2 and m.status in ('active','completed')
       limit 1
     `, [req.auth!.userId, packageRow.program_id])).rows[0];
@@ -84,7 +84,10 @@ router.post('/purchases', async (req, res, next) => {
     }
 
     let referrerId: string | null = null;
-    if (referralCode) {
+    if (packageRow.tier !== 'starter') {
+      if (referralCode) throw new HttpError(400, 'Referral codes can only be supplied with the Starter purchase');
+      referrerId = membership?.referrer_user_id ?? null;
+    } else if (referralCode) {
       referrerId = (await query<{id:string}>(`select id from app_users where referral_code=$1 limit 1`, [referralCode])).rows[0]?.id ?? null;
       if (!referrerId) throw new HttpError(400, 'Referral code not found');
       if (referrerId === req.auth!.userId) throw new HttpError(400, 'You cannot use your own referral code');
