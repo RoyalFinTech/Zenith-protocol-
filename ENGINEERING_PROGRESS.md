@@ -533,3 +533,16 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Render live Health Check Path remains blank while repository `render.yaml` declares `/health`; the live health URL could not be verified through the available retrieval channel.
 - Real-device Web Push acceptance remains a release gate.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## 2026-09-27 14:38 UTC — Purchase integrity + admin provisioning gate
+- Confirmed CI #497 passed for the prior snapshot-immutability documentation checkpoint.
+- Hardened package_purchases immutability: settlement-critical user_id, package_id, amount, and asset are now frozen alongside the purchase-time economics snapshot fields.
+- Added an integration regression proving a purchase amount mutation is rejected by the database trigger; CI #499 passed fully (backend lint, migrations, unit/integration tests, frontend build/login).
+- Removed the historical seeded admin@zenitprotocol.com bootstrap via an idempotent, hash-specific cleanup migration; administrator provisioning remains an explicit operator-controlled step.
+- Added an integration regression asserting the default administrator email is absent after migrations; CI #501 passed fully.
+- Production Supabase remains unchanged by these feature migrations. Current production read-only check reports admin_users=0 and no historical seed email.
+- Real-device Web Push acceptance remains pending; live Render main still does not contain the feature branch push implementation.
+- Render health-check configuration drift (render.yaml /health vs live blank path) remains pending and was not changed.
+- Admin Security / first administrator provisioning remains intentionally pending.
+- Feature branch remains unmerged and not deployed to production.
