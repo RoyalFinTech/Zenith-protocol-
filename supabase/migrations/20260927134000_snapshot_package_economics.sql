@@ -3,13 +3,15 @@
 -- New purchases must carry their own percentage and matrix-distribution snapshot.
 
 alter table public.package_purchases
+  add column if not exists package_tier text,
   add column if not exists direct_percent numeric(7,4),
   add column if not exists matrix_percent numeric(7,4),
   add column if not exists admin_percent numeric(7,4),
   add column if not exists matrix_distribution_rules jsonb;
 
 update public.package_purchases pp
-set direct_percent=e.direct_percent,
+set package_tier=ppk.tier,
+    direct_percent=e.direct_percent,
     matrix_percent=e.matrix_percent,
     admin_percent=e.admin_percent,
     matrix_distribution_rules=coalesce((
@@ -24,6 +26,7 @@ set direct_percent=e.direct_percent,
       where r.package_id=pp.package_id
     ),'[]'::jsonb)
 from public.package_economics e
+join public.program_packages ppk on ppk.id=pp.package_id
 where e.package_id=pp.package_id
   and (
     pp.direct_percent is null
@@ -33,6 +36,13 @@ where e.package_id=pp.package_id
   );
 
 alter table public.package_purchases
+  drop constraint if exists package_purchases_snapshot_tier_check;
+
+alter table public.package_purchases
+  add constraint package_purchases_snapshot_tier_check
+  check (package_tier is null or package_tier in ('starter','growth','elite'));
+
+alter table public.package_purchases
   drop constraint if exists package_purchases_snapshot_percentages_check;
 
 alter table public.package_purchases
@@ -40,7 +50,8 @@ alter table public.package_purchases
   check (
     (direct_percent is null and matrix_percent is null and admin_percent is null)
     or (
-      direct_percent >= 0 and direct_percent <= 100
+      package_tier is not null
+      and direct_percent >= 0 and direct_percent <= 100
       and matrix_percent >= 0 and matrix_percent <= 100
       and admin_percent >= 0 and admin_percent <= 100
       and direct_percent + matrix_percent + admin_percent = 100
