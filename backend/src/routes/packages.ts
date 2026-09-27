@@ -209,7 +209,7 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     let membershipRow: {id:string} | undefined;
     let parentNodeId: string | null = null;
 
-    const existingMembership = (await client.query<{id:string;node_id:string|null;package_tier:string;referrer_user_id:string|null}>(`
+    const existingMembership = (await client.query<{id:string;node_id:string|null;package_tier:string;referrer_user_id:string|null;status:string}>(`
       select id,node_id,package_tier,referrer_user_id,status
       from matrix_memberships
       where user_id=$1 and program_id=$2
@@ -252,6 +252,9 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
         `, [purchase.program_id])).rows[0];
       }
       if (!node) throw new HttpError(409, 'No available matrix position remains in this program');
+      if (!parentNodeId && node.position > 1) {
+        parentNodeId=(await client.query<{id:string}>(`select id from matrix_nodes where program_id=$1 and position=floor($2/2)::int and status='active' limit 1`,[purchase.program_id,node.position])).rows[0]?.id ?? null;
+      }
       await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`, [req.auth!.userId,purchase.referrer_user_id,node.id]);
       membershipRow=(await client.query<{id:string}>(`
         insert into matrix_memberships(user_id,program_id,node_id,referrer_user_id,level,position,status,package_id,package_tier,parent_node_id)
@@ -296,7 +299,6 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
 
       await client.query(`update package_purchases set direct_amount=$2,matrix_amount=$3,admin_amount=$4 where id=$1`, [purchaseId,directAmount,matrixAmount,adminAmount]);
 
-      let directUnallocated = '0';
       if (purchase.referrer_user_id) {
         await client.query(`
           insert into ledger_transactions(user_id,type,program_code,amount,asset,status,reference,description,metadata)
@@ -308,7 +310,6 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
           JSON.stringify({purchaseId,sourceUserId:req.auth!.userId,percent:economics.direct_percent,tier:packageInfo.tier})
         ]);
       } else {
-        directUnallocated=directAmount;
         await client.query(`update package_purchases set unallocated_direct_amount=$2 where id=$1`,[purchaseId,directAmount]);
         await client.query(`
           insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
