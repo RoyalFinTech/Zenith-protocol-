@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Server } from 'node:http';
 import { issueSession } from '../src/services/jwt.js';
-import { randomUUID } from 'node:crypto';
+import { adminLogin, hashAdminPassword } from '../src/services/admin-auth.js';
+import { randomBytes, randomUUID } from 'node:crypto';
 
 const integrationEnvironmentReady = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
 const describeProduction = integrationEnvironmentReady ? describe : describe.skip;
@@ -59,6 +60,77 @@ describeProduction('production API against a real PostgreSQL test database', () 
   async function request(path: string, init: RequestInit = {}) {
     return fetch(`${baseUrl}${path}`, init);
   }
+
+  it('keeps the admin portal separate from member authentication', async () => {
+    const denied = await request('/api/admin-portal/overview', { headers: { authorization: `Bearer ${token}` } });
+    expect(denied.status).toBe(401);
+  });
+
+  it('supports admin login, wrong-password rejection, lockout, and credential revocation', async () => {
+    const adminEmail = `ci-admin-${randomUUID()}@example.test`;
+    const adminPassword = randomBytes(24).toString('base64url');
+    const replacementPassword = randomBytes(24).toString('base64url');
+    const passwordHash = await hashAdminPassword(adminPassword);
+    const admin = await database.pool.query<{id:string}>(
+      `insert into admin_users(email,password_hash,is_active) values($1,$2,true) returning id`,
+      [adminEmail,passwordHash]
+    );
+    const adminId = admin.rows[0]!.id;
+
+    try {
+      const wrong = await request('/api/admin-portal/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: adminEmail, password: 'definitely-wrong-password' })
+      });
+      expect(wrong.status).toBe(401);
+
+      const login = await request('/api/admin-portal/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: adminEmail, password: adminPassword })
+      });
+      expect(login.status).toBe(200);
+      const loginData = await login.json() as { token:string; admin:{id:string;email:string} };
+      expect(loginData.admin.id).toBe(adminId);
+
+      const me = await request('/api/admin-portal/me', { headers: { authorization: `Bearer ${loginData.token}` } });
+      expect(me.status).toBe(200);
+      expect((await me.json()).admin.email).toBe(adminEmail);
+
+      const overview = await request('/api/admin-portal/overview', { headers: { authorization: `Bearer ${loginData.token}` } });
+      expect(overview.status).toBe(200);
+
+      const credentials = await request('/api/admin-portal/credentials', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${loginData.token}` },
+        body: JSON.stringify({ currentPassword: adminPassword, newEmail: adminEmail, newPassword: replacementPassword })
+      });
+      expect(credentials.status).toBe(204);
+
+      const revoked = await request('/api/admin-portal/me', { headers: { authorization: `Bearer ${loginData.token}` } });
+      expect(revoked.status).toBe(401);
+
+      const relogin = await request('/api/admin-portal/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: adminEmail, password: replacementPassword })
+      });
+      expect(relogin.status).toBe(200);
+
+      await database.pool.query(
+        `update admin_users set failed_attempts=0,locked_until=null where id=$1`,
+        [adminId]
+      );
+      for (let i=0;i<4;i++) {
+        await expect(adminLogin(adminEmail, 'still-wrong', '127.0.0.1', 'vitest')).rejects.toMatchObject({ status: 401 });
+      }
+      await expect(adminLogin(adminEmail, 'still-wrong', '127.0.0.1', 'vitest')).rejects.toMatchObject({ status: 401 });
+      await expect(adminLogin(adminEmail, replacementPassword, '127.0.0.1', 'vitest')).rejects.toMatchObject({ status: 429 });
+    } finally {
+      await database.pool.query('delete from admin_users where id=$1', [adminId]);
+    }
+  });
 
   it('serves health and public configuration', async () => {
     const [health, config] = await Promise.all([request('/health'), request('/config/public')]);

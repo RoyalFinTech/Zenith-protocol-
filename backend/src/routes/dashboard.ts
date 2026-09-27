@@ -36,8 +36,11 @@ router.get('/matrix/:programCode', async(req,res,next)=>{ try {
       n.level,
       n.position,
       n.status,
-      (n.user_id = $2) as is_current_user
+      (n.user_id = $2) as is_current_user,
+      m.package_tier,
+      m.parent_node_id
     from matrix_nodes n
+    left join matrix_memberships m on m.node_id=n.id and m.status in ('active','completed')
     join programs p on p.id=n.program_id
     where p.code=$1
     order by n.level,n.position
