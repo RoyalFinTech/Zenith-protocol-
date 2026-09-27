@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { canTransitionWithdrawal, isUniqueConstraintViolation } from '../src/utils/financial.js';
+import { canTransitionWithdrawal, comparePackageTiers, isUniqueConstraintViolation } from '../src/utils/financial.js';
 import { HttpError, parseLimit } from '../src/utils/http.js';
+
+describe('package tier progression', () => {
+  it('only permits strictly higher tiers', () => {
+    expect(comparePackageTiers('starter','growth')).toBeGreaterThan(0);
+    expect(comparePackageTiers('growth','elite')).toBeGreaterThan(0);
+    expect(comparePackageTiers('starter','elite')).toBeGreaterThan(0);
+    expect(comparePackageTiers('growth','growth')).toBe(0);
+    expect(comparePackageTiers('elite','starter')).toBeLessThan(0);
+  });
+
+  it('treats unknown tiers as invalid progression', () => {
+    expect(comparePackageTiers('unknown','growth')).toBe(2);
+    expect(comparePackageTiers('elite','unknown')).toBe(-3);
+  });
+});
 
 describe('withdrawal state machine', () => {
   it('allows only controlled forward transitions', () => {
