@@ -152,7 +152,7 @@ where m.package_tier='starter' or m.package_tier='';
 insert into public.admin_users(email,password_hash)
 values (
   'admin@zenitprotocol.com',
-  'scrypt$01cd6db605994f0db29f4598f869374b$4303479020f759d77b2e406a30050585931542623c35c3d3a62b90c79edfc67a3a2240b581530ce39d0e00eb0a5605074faa6de96dd16b009156ef24fd4734a6'
+  'scrypt$597d9e84479adbcd90b109aad93cabdb$824ef600a232af8efdd11a6f696b98d473a86af057dce61c81a6cc5c330217ce53ec9dadd2e1b2bdcbca6fd0b3aec4bb7a34e2c880cad259942bdf697b39e896'
 )
 on conflict (email) do nothing;
 

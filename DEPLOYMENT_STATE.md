@@ -69,3 +69,25 @@ Before promoting the security branch:
 4. Review deployment environment variables against the production configuration guards.
 5. Review the final PR diff.
 6. Deploy only the validated branch.
+
+
+## Admin Control Center / lifecycle release — 2026-09-27
+
+Feature branch: feature/admin-control-center-and-package-lifecycle
+Current feature head: d5692d5fd1eb547e708a6aee650b1c3bc106b555 (merge of current main with the feature fixes).
+
+The original package lifecycle/admin implementation was already merged into main in merge commit 229aa82785d20c87b395bd35af1096c784f03dfd. The feature branch was then refreshed by merging that current main back into the feature branch so a new PR can contain only the follow-up fixes.
+
+### Production safety
+- No production database mutation was performed for this engineering validation.
+- Production Supabase migration history was inspected and remains at the previously observed versions; the new lifecycle/admin migration has not been applied to production.
+- No treasury private key or automatic signer was introduced.
+- Render remains configured to auto-deploy from main; this feature branch has not been declared live.
+- Existing Render health-check drift (render.yaml /health versus live service configuration previously observed as blank) remains unresolved unless separately verified.
+
+### Release gate
+1. Current-head CI must pass.
+2. Review PR diff and migration ordering.
+3. Create PR to main.
+4. Merge only after CI/review is satisfactory.
+5. Verify Render deployment status and live commit after merge.

@@ -35,7 +35,7 @@ router.get('/overview',async(req,res,next)=>{try{
 router.get('/charts',async(req,res,next)=>{try{
   const [daily,tiers,ledger,withdrawals]=await Promise.all([
     query(`select date_trunc('day',created_at)::date as day,coalesce(sum(amount) filter(where status='confirmed'),0)::text as gross from package_purchases where created_at>=now()-interval '30 days' group by 1 order by 1`),
-    query(`select p.code,pp.tier,count(*)::int as purchases,coalesce(sum(pp.amount),0)::text as volume from package_purchases pp join program_packages p on p.id=pp.package_id where pp.status='confirmed' group by p.code,pp.tier order by p.code,p.tier`),
+    query(`select p.code, p.tier, count(*)::int as purchases, coalesce(sum(pp.amount),0)::text as volume from package_purchases pp join program_packages p on p.id=pp.package_id where pp.status='confirmed' group by p.code,p.tier order by p.code,p.tier`),
     query(`select type,coalesce(sum(amount) filter(where status='completed'),0)::text as amount,count(*)::int as count from ledger_transactions group by type order by type`),
     query(`select status,count(*)::int as count,coalesce(sum(amount),0)::text as amount from withdrawal_requests group by status order by status`)
   ]);

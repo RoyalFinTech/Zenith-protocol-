@@ -227,33 +227,63 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
             with recursive subtree as (
               select n.id,n.position,n.level
               from matrix_nodes n
-              where n.id=$3 and n.program_id=$1
+              where n.id=$3 and n.program_id=$1 and n.status='active'
               union all
               select c.id,c.position,c.level
               from matrix_nodes c
               join subtree p on c.program_id=$1 and c.position in (p.position*2,p.position*2+1)
+              where c.status in ('active','available')
             )
             select n.id,n.position,n.level
             from matrix_nodes n
             join subtree s on s.id=n.id
             where n.status='available'
               and n.id<>$3
+              and exists (
+                select 1
+                from matrix_nodes parent
+                where parent.program_id=n.program_id
+                  and parent.position=floor(n.position/2)::int
+                  and parent.status='active'
+              )
             order by n.level,n.position
             for update skip locked
             limit 1
           `, [purchase.program_id,purchase.program_id,sponsor.node_id])).rows[0];
-          if (candidate) { node=candidate; parentNodeId=(await client.query<{id:string}>(`select id from matrix_nodes where program_id=$1 and position=floor($2/2)::int limit 1`,[purchase.program_id,candidate.position])).rows[0]?.id ?? sponsor.node_id; }
+          if (candidate) {
+            node=candidate;
+            parentNodeId=(await client.query<{id:string}>(`
+              select id from matrix_nodes
+              where program_id=$1 and position=floor($2/2)::int and status='active'
+              limit 1
+            `,[purchase.program_id,candidate.position])).rows[0]?.id ?? null;
+            if (!parentNodeId) { node=undefined; }
+          }
         }
       }
       if (!node) {
         node=(await client.query<{id:string;position:number;level:number}>(`
-          select id,position,level from matrix_nodes where program_id=$1 and status='available'
-          order by position asc for update skip locked limit 1
+          select n.id,n.position,n.level
+          from matrix_nodes n
+          where n.program_id=$1
+            and n.status='available'
+            and (
+              n.position=1
+              or exists (
+                select 1 from matrix_nodes parent
+                where parent.program_id=n.program_id
+                  and parent.position=floor(n.position/2)::int
+                  and parent.status='active'
+              )
+            )
+          order by n.position asc
+          for update skip locked limit 1
         `, [purchase.program_id])).rows[0];
       }
       if (!node) throw new HttpError(409, 'No available matrix position remains in this program');
       if (!parentNodeId && node.position > 1) {
         parentNodeId=(await client.query<{id:string}>(`select id from matrix_nodes where program_id=$1 and position=floor($2/2)::int and status='active' limit 1`,[purchase.program_id,node.position])).rows[0]?.id ?? null;
+        if (node.position > 1 && !parentNodeId) throw new HttpError(409, 'Matrix parent position is not active');
       }
       await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`, [req.auth!.userId,purchase.referrer_user_id,node.id]);
       membershipRow=(await client.query<{id:string}>(`

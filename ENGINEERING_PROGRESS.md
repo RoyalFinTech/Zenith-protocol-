@@ -210,3 +210,28 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - CI for the release candidate passed: Zenit CI #285 (backend lint/tests + frontend build).
 - Production migration history is reconciled through `20260926174932_webauthn_challenge_user_index`.
 - Production financial integrity checks performed during this cycle remain clean.
+
+
+## Admin Control Center and package lifecycle — 2026-09-27
+
+### Completed
+- Added migration 20260927110000_upgrade_package_lifecycle_and_admin.sql for package tiers, matrix parent tracking, purchase accounting fields, platform revenue ledger, and staff admin sessions.
+- Implemented separate staff email/password authentication with scrypt, timing-safe verification, five-failure/10-minute lockout, server-side sessions, JWT session binding, and credential-change session revocation.
+- Added protected admin portal login, session, credential, analytics, revenue, withdrawal, matrix, and audit endpoints.
+- Added live Admin Control Center UI with staff-only language, KPI cards, charts, tables, accounting views, matrix/audit views, lock/refresh controls, and credential security.
+- Replaced stale package pricing/economics UI with the approved six-package catalog and current member tier state.
+- Added matrix metadata to member state and UI: package tier and explicit explanation of sponsor/referrer versus matrix parent.
+- Corrected admin package-mix SQL and hardened matrix placement so available nodes require valid active binary parents.
+- Rotated the seeded admin credential to a newly generated scrypt hash; plaintext is not stored in source.
+- Added integration coverage for member/admin authentication separation, admin login, wrong-password handling, lockout, credential change, session revocation, and admin overview access.
+
+### Verification
+- Supabase production schema inspection confirms matrix level convention: 2x4 positions 1–2 / 3–6 / 7–14 / 15–30 and 2x6 positions 1–2 / 3–6 / 7–14 / 15–30 / 31–62 / 63–126.
+- Supabase security advisor currently reports the existing backend-only RLS-without-policy informational findings; no public table grants are being added.
+- CI run #373 passed before the latest branch commits. CI run #377 is the current validation run for the latest branch head and must pass before PR creation.
+
+### Remaining release gates
+- Confirm current-head CI run #377 succeeds.
+- Review final PR diff.
+- Create PR from feature/admin-control-center-and-package-lifecycle to main.
+- Do not claim production deployment until Render reports the new commit live.
