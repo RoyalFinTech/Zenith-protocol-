@@ -269,6 +269,13 @@ describeProduction('production API against a real PostgreSQL test database', () 
         body:JSON.stringify({txHash:differentTx})
       });
       expect(differentHash.status).toBe(409);
+
+      await expect(
+        database.pool.query(
+          `update package_purchases set direct_percent=21 where id=$1`,
+          [purchase.rows[0]!.id]
+        )
+      ).rejects.toThrow('Package purchase settlement economics snapshot is immutable');
     } finally {
       await database.pool.query('delete from package_purchases where id=$1',[purchase.rows[0]!.id]);
     }
