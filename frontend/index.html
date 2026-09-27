@@ -389,7 +389,13 @@
     .topbar-right { display: flex; align-items: center; gap: 10px; }
     .network-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 10px; font-weight: 750; }
     .network-chip .status-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
-    .notification-wrap { position: relative; }
+    .notification-wrap { position: relative; }<style>
+    .push-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;margin:0 0 10px;border:1px solid rgba(123,184,255,.2);border-radius:10px;background:rgba(123,184,255,.05)}
+    .push-banner.enabled{border-color:rgba(97,214,163,.22);background:rgba(97,214,163,.05)}
+    .push-banner strong{display:block;font-size:10px}.push-banner span{display:block;margin-top:3px;color:var(--muted);font-size:9px;line-height:1.4}.push-banner .btn{flex:0 0 auto}
+    @media(max-width:560px){.notification-menu{position:fixed;top:72px;right:9px;left:9px;width:auto;max-height:calc(100vh - 90px);overflow:auto}}
+  </style>
+
     .notification-menu { position: absolute; z-index: 40; top: 46px; right: 0; width: 310px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: #171a1e; box-shadow: var(--shadow); }
     .notification-menu h3 { margin: 0 0 10px; font-size: 13px; } .notif-item { padding: 11px 0; border-top: 1px solid var(--line); } .notif-item strong { display: block; font-size: 11px; } .notif-item span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
     .main-content { max-width: 1600px; margin: 0 auto; padding: 34px 30px 70px; }
