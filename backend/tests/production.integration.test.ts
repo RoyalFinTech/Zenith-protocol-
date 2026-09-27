@@ -175,6 +175,10 @@ describeProduction('production API against a real PostgreSQL test database', () 
       });
       expect(approved.status).toBe(409);
 
+      const reservedBefore=await request('/api/dashboard/summary',{headers:authorization});
+      expect(reservedBefore.status).toBe(200);
+      const reservedBeforeData=await reservedBefore.json() as {earnings:{reserved:string}};
+
       const goodApproval=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
         method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
         body:JSON.stringify({status:'approved'})
@@ -182,7 +186,8 @@ describeProduction('production API against a real PostgreSQL test database', () 
       expect(goodApproval.status).toBe(200);
       const reservedSummary=await request('/api/dashboard/summary',{headers:authorization});
       expect(reservedSummary.status).toBe(200);
-      expect((await reservedSummary.json()).earnings.reserved).toBe('0.75');
+      const reservedAfterData=await reservedSummary.json() as {earnings:{reserved:string}};
+      expect(Number(reservedAfterData.earnings.reserved)-Number(reservedBeforeData.earnings.reserved)).toBeCloseTo(0.75,8);
       const doubleSpendAttempt=await request('/api/transactions/withdrawals',{
         method:'POST',headers:{authorization,'content-type':'application/json'},
         body:JSON.stringify({amount:'4.5',address:testAddress})
