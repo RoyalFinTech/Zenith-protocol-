@@ -4,7 +4,7 @@
 create or replace function public.prevent_package_purchase_snapshot_mutation()
 returns trigger
 language plpgsql
-as $$
+as $snap$
 begin
   if
     new.package_tier is distinct from old.package_tier
@@ -17,7 +17,7 @@ begin
   end if;
   return new;
 end
-$;
+$snap$;
 
 revoke all on function public.prevent_package_purchase_snapshot_mutation() from public, anon, authenticated;
 
