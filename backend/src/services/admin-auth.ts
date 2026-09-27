@@ -52,7 +52,7 @@ export async function requireAdminSession(token:string){
   return row;
 }
 export async function changeAdminCredentials(adminId:string,currentPassword:string,newEmail:string,newPassword:string){
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(newEmail)) throw new HttpError(400,'Valid admin email required');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) throw new HttpError(400,'Valid admin email required');
   if(newPassword.length<12) throw new HttpError(400,'Admin password must be at least 12 characters');
   const client=await pool.connect();
   try{
