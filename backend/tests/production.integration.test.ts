@@ -189,7 +189,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
       const reservedAfterData=await reservedSummary.json() as {earnings:{reserved:string}};
       expect(Number(reservedAfterData.earnings.reserved)-Number(reservedBeforeData.earnings.reserved)).toBeCloseTo(0.75,8);
       const doubleSpendAttempt=await request('/api/transactions/withdrawals',{
-        method:'POST',headers:{authorization,'content-type':'application/json'},
+        method:'POST',headers:{...authorization,'content-type':'application/json'},
         body:JSON.stringify({amount:'4.5',address:testAddress})
       });
       expect(doubleSpendAttempt.status).toBe(409);
