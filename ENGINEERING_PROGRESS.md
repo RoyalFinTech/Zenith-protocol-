@@ -269,3 +269,24 @@ Every substantive change should be recorded here under Completed, In Progress, o
 ### Engineering checkpoint
 - Completed: lifecycle/admin implementation, package tier state, matrix parent metadata, accounting fields, protected admin APIs/UI, backend notification read APIs, backend-backed notification UI, reservation-aware balance display, duplicate placement endpoint removal.
 - Pending: administrator provisioning/security handoff, CI validation of current continuation, final withdrawal/accounting/frontend-state review, final release/deployment decision.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:41 UTC
+
+### Validation completed
+- Current continuation CI run **passed**: backend lint, migration application, unit tests, integration tests, frontend build, and frontend login test all succeeded.
+- Package lifecycle preflight was tightened so Starter purchases only proceed when an available node has either a valid root position or an active binary parent, matching the settlement-time placement invariant.
+- Withdrawal lifecycle code was reviewed end-to-end: pending → approved → processing → completed, with rejection/failure reservation release, on-chain payout verification, confirmation checks, treasury sender checks, exact USDT destination/amount matching, duplicate transaction protection, and audit logging.
+- Frontend withdrawal lifecycle UI already represents pending/approved/processing/completed/rejected/failed states and explains reservation release on rejection/failure.
+- Frontend accounting state now includes the backend reservation value when calculating available balance.
+- No production database mutation was performed during this continuation.
+
+### Current production observations
+- Production currently has zero open withdrawals and zero admin users, so withdrawal/admin state could only be validated structurally rather than through live records.
+- Admin Security / first administrator provisioning remains **PENDING** by explicit decision.
+
+### Remaining review gates
+- Continue checking frontend accounting labels and withdrawal history against backend state fields.
+- Continue package lifecycle edge-case review, especially upgrade idempotency and settlement retry behavior.
+- Reconcile stale deployment/documentation timestamps and release-gate references before the next promotion decision.
+- Do not mark Admin Security complete until the operator explicitly authorizes the administrator handoff.
