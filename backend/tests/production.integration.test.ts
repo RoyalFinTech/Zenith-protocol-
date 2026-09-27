@@ -134,6 +134,10 @@ describeProduction('production API against a real PostgreSQL test database', () 
 
   it('supports authenticated notification reads and admin withdrawal transition guards', async () => {
     const authorization = { authorization: `Bearer ${token}` };
+    const reservedBefore=await request('/api/dashboard/summary',{headers:authorization});
+    expect(reservedBefore.status).toBe(200);
+    const reservedBeforeData=await reservedBefore.json() as {earnings:{reserved:string}};
+
     const notificationInsert=await database.pool.query<{id:string}>(`
       insert into notifications(user_id,title,message) values($1,'CI notification','Notification regression test') returning id
     `,[userId]);
@@ -174,10 +178,6 @@ describeProduction('production API against a real PostgreSQL test database', () 
         body:JSON.stringify({status:'approved'})
       });
       expect(approved.status).toBe(409);
-
-      const reservedBefore=await request('/api/dashboard/summary',{headers:authorization});
-      expect(reservedBefore.status).toBe(200);
-      const reservedBeforeData=await reservedBefore.json() as {earnings:{reserved:string}};
 
       const goodApproval=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
         method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
