@@ -301,7 +301,13 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       for update
     `, [purchaseId, req.auth!.userId])).rows[0];
     if (!fresh) throw new HttpError(404, 'Purchase not found');
-    if (fresh.status === 'confirmed') { await client.query('commit'); return res.json({ status:'confirmed', purchase:fresh }); }
+    if (fresh.status === 'confirmed') {
+      await client.query('commit');
+      if (fresh.payment_tx_hash?.toLowerCase() === txHash.toLowerCase()) {
+        return res.json({ status:'confirmed', purchase:fresh });
+      }
+      throw new HttpError(409, 'Purchase is already confirmed with a different transaction');
+    }
     if (fresh.status !== 'pending') throw new HttpError(409, 'Purchase is no longer pending');
 
     const packageInfo = {
