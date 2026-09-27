@@ -388,3 +388,17 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Perform one real device acceptance test on HTTPS: grant notification permission, register a phone subscription, trigger a lifecycle notification, receive it with the app backgrounded, and tap it to return to the member workspace.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
 - Continue the remaining accounting/history and settlement retry review after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:14 UTC
+
+### New correction
+- Fixed member available-balance accounting so withdrawal reservations remain reserved through `pending`, `approved`, `processing`, and `completed` states.
+- This prevents a member from submitting another withdrawal against funds already approved or being paid out.
+- Added regression coverage proving an approved withdrawal remains present in the dashboard `earnings.reserved` amount.
+
+### Validation
+- Previous push/device and withdrawal-history CI head passed.
+- New current-head CI run #454 is in progress for the reservation correction.
+- Render `main` is live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; the feature branch is not yet live.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
