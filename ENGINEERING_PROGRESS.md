@@ -462,3 +462,20 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
 - Real-device Web Push acceptance remains required before production phone delivery can be called validated.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:41 UTC
+
+### Settlement consistency hardening
+- Added `supabase/migrations/20260927134000_snapshot_package_economics.sql`.
+- New package purchases snapshot the package tier, direct/matrix/admin allocation percentages, and matrix distribution rules at creation time.
+- Confirmation now settles from the purchase snapshot instead of re-reading mutable `package_economics` and `matrix_distribution_rules`.
+- Existing purchases are backfilled from the configured economics where present; the member's stored purchase `amount` remains authoritative.
+- Production inspection confirmed the two current pending purchases are 10.00000000 USDT 2×6 Starter purchases while current catalog economics have a 30.00000000 entry amount; no production rows were changed.
+
+### Validation
+- CI run #481 passed all backend and frontend checks, including database migration application and the integration suite.
+- Feature head at this validation point: `d6e618ca360559a166ff85f750c7be250005ad30`.
+- A temporary local clone was not possible because the execution environment cannot resolve github.com; CI is the authoritative validation for the branch.
+- Feature branch remains un-deployed.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
