@@ -1,6 +1,6 @@
 # ZENIT Protocol — Deployment State
 
-Last checked: 2026-09-27 14:02 UTC
+Last checked: 2026-09-27 14:04 UTC
 
 ## Render API
 
@@ -224,17 +224,14 @@ The original package lifecycle/admin implementation was already merged into main
 - Real-device Web Push acceptance remains a release gate. Admin Security / first administrator provisioning remains intentionally **PENDING**.
 
 
-## Deployment / engineering checkpoint — 2026-09-27 14:02 UTC
+## Deployment / engineering checkpoint — 2026-09-27 14:04 UTC
 
-### Purchase settlement snapshot hardening
-- Made new package purchase snapshot creation atomic at the SQL statement level: package price, package tier, allocation percentages, and matrix distribution rules are captured together from the same database statement.
-- If package pricing/tier changes between preflight and insert, or settlement economics are missing, the purchase creation request now fails safely and asks the client to refresh instead of creating a partially or inconsistently snapshotted purchase.
-- Strengthened the snapshot migration so existing purchases must be fully backfilled before the new snapshot columns become NOT NULL; the migration now fails closed rather than leaving a purchase that can never be settled from a complete snapshot.
-
-### Validation / release state
-- Newest feature head: `2e933f287032e7af2ca6e49cb9c36ae88aa36d55`.
-- CI runs #484/#485 are running for the two sequential hardening commits; the previous validated head remains `d8a999601ec80af33c96d194ee4ac948773eef63` with CI #483 green.
-- Production Supabase inspection remains read-only. The two pending 2×6 Starter purchases remain 10.00000000 USDT while current package economics show a 30.00000000 entry amount; no production purchase rows were changed.
-- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Current validated feature head: `c344de45d2fea27f85fb35eb26f890254c765cad`.
+- CI run #488 passed backend lint, database migration application, backend unit tests, integration tests, frontend build, and frontend login tests.
+- The package purchase route now captures the payment amount, package tier, allocation percentages, and matrix distribution rules in one atomic insert statement and rejects a preflight/insert catalog mismatch.
+- The snapshot migration now verifies all existing purchases were backfilled before enforcing NOT NULL snapshot columns; migration validation is fail-closed.
+- Production Supabase remains unchanged by this continuation. The two existing pending 2×6 Starter purchases remain 10.00000000 USDT despite the current 30.00000000 economics entry amount.
+- Feature branch remains un-deployed. Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Live Render Health Check Path is still blank while repository `render.yaml` specifies `/health`; infrastructure reconciliation remains pending.
 - Real-device Web Push acceptance remains a release gate.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
