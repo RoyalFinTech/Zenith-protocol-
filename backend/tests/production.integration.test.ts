@@ -134,9 +134,15 @@ describeProduction('production API against a real PostgreSQL test database', () 
 
   it('supports authenticated notification reads and admin withdrawal transition guards', async () => {
     const authorization = { authorization: `Bearer ${token}` };
+    const notificationInsert=await database.pool.query<{id:string}>(`
+      insert into notifications(user_id,title,message) values($1,'CI notification','Notification regression test') returning id
+    `,[userId]);
     const notifications = await request('/api/me/notifications', { headers: authorization });
     expect(notifications.status).toBe(200);
-    expect(Array.isArray((await notifications.json()).notifications)).toBe(true);
+    expect((await notifications.json()).notifications.some((x:{id:string})=>x.id===notificationInsert.rows[0]!.id)).toBe(true);
+    const marked=await request(`/api/me/notifications/${notificationInsert.rows[0]!.id}/read`,{method:'PATCH',headers:authorization});
+    expect(marked.status).toBe(200);
+    expect((await database.pool.query<{read_at:Date|null}>(`select read_at from notifications where id=$1`,[notificationInsert.rows[0]!.id])).rows[0]?.read_at).not.toBeNull();
 
     const adminEmail = `ci-withdrawal-admin-${randomUUID()}@example.test`;
     const adminPassword = randomBytes(24).toString('base64url');
@@ -148,6 +154,14 @@ describeProduction('production API against a real PostgreSQL test database', () 
         insert into withdrawal_requests(user_id,amount,asset,destination_address,status)
         values($1,1.25,'USDT',$2,'pending') returning id
       `, [userId,testAddress]);
+      const reservedWithdrawal = await database.pool.query<{id:string}>(`
+        insert into withdrawal_requests(user_id,amount,asset,destination_address,status)
+        values($1,0.75,'USDT',$2,'pending') returning id
+      `, [userId,testAddress]);
+      await database.pool.query(`
+        insert into ledger_transactions(user_id,type,amount,asset,status,reference,description)
+        values($1,'withdrawal',0.75,'USDT','pending',$2,'CI reserved withdrawal')
+      `, [userId,`withdrawal:${reservedWithdrawal.rows[0]!.id}`]);
       const login = await request('/api/admin-portal/login', {
         method:'POST', headers:{'content-type':'application/json'},
         body:JSON.stringify({email:adminEmail,password:adminPassword})
@@ -161,6 +175,17 @@ describeProduction('production API against a real PostgreSQL test database', () 
       });
       expect(approved.status).toBe(409);
 
+      const goodApproval=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'approved'})
+      });
+      expect(goodApproval.status).toBe(200);
+      const processing=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'processing'})
+      });
+      expect(processing.status).toBe(200);
+
       const rejected=await request(`/api/admin-portal/withdrawals/${withdrawal.rows[0]!.id}/status`,{
         method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
         body:JSON.stringify({status:'rejected',reason:'CI test rejection'})
@@ -169,6 +194,8 @@ describeProduction('production API against a real PostgreSQL test database', () 
       const final=(await database.pool.query<{status:string}>(`select status from withdrawal_requests where id=$1`,[withdrawal.rows[0]!.id])).rows[0];
       expect(final?.status).toBe('rejected');
     } finally {
+      await database.pool.query('delete from ledger_transactions where user_id=$1 and reference like 'withdrawal:%'',[userId]);
+      await database.pool.query('delete from notifications where user_id=$1',[userId]);
       await database.pool.query('delete from withdrawal_requests where user_id=$1',[userId]);
       await database.pool.query('delete from admin_users where id=$1',[adminId]);
     }
