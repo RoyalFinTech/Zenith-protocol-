@@ -261,3 +261,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Live Render Health Check Path is blank while `render.yaml` declares `/health`; reconciliation remains pending.
 - Real-device Web Push acceptance remains a release gate.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## 2026-09-27 14:38 UTC — Purchase integrity + admin provisioning gate
+- Feature branch purchase settlement integrity is validated through CI #499 and admin bootstrap cleanup through CI #501; both completed successfully.
+- package_purchases now freezes settlement-critical identity and amount/asset fields together with the economics snapshot.
+- Historical seeded administrator bootstrap is removed by a hash-specific cleanup migration; production currently has zero admin_users and zero historical seed email accounts.
+- Production Supabase has not received the feature snapshot/immutability/cleanup migrations.
+- Render production remains on main and was not deployed from this feature branch.
+- Remaining release gates: real-device Web Push acceptance, Render health-check drift reconciliation, and intentional first-admin provisioning by an operator.
