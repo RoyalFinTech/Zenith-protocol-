@@ -133,6 +133,10 @@ async function waitForConnectorReady(address: string, timeoutMs = 6000) {
 }
 
 function clearLocalSession() {
+  const previousToken = authToken || localStorage.getItem('zenitToken') || '';
+  if (previousToken) {
+    void (window as any).zenitForgetPushSubscription?.(previousToken);
+  }
   authToken = '';
   lastAddress = '';
   localStorage.removeItem('zenitToken');
