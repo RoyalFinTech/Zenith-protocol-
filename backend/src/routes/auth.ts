@@ -92,7 +92,7 @@ router.post('/register/request', async (req, res, next) => {
       }
       throw new HttpError(502, 'Verification email service is temporarily unavailable');
     }
-    res.status(202).json({registrationId:id,email});
+    res.status(202).json({email});
   } catch (e) { console.error('ZENIT registration request failed', e instanceof Error ? e.message : String(e)); next(e); }
 });
 
