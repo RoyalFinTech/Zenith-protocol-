@@ -70,6 +70,7 @@ export async function transitionAdminWithdrawal(withdrawalId:string, actorAdminI
 
 export async function completeAdminWithdrawal(withdrawalId:string, actorAdminId:string, txHash:string, actorUserId:string|null=null){
   if(!/^0x[a-fA-F0-9]{64}$/.test(txHash)) throw new HttpError(400,'Valid payout transaction hash required');
+  const normalizedTxHash = txHash as `0x${string}`;
   if(!env.payoutSenderAddress) throw new HttpError(503,'Payout sender is not configured');
   const payoutSender=getAddress(env.payoutSenderAddress);
   const token=getAddress(env.usdtContractAddress);
@@ -84,12 +85,12 @@ export async function completeAdminWithdrawal(withdrawalId:string, actorAdminId:
     if(row.status==='completed') throw new HttpError(409,'Withdrawal is already completed');
     if(row.status!=='processing') throw new HttpError(409,'Only processing withdrawals can be completed');
     if(row.asset!==env.primaryAsset) throw new HttpError(409,'Withdrawal asset is not supported for on-chain verification');
-    const tx=await publicClient.getTransaction({hash:txHash}).catch(()=>null);
+    const tx=await publicClient.getTransaction({hash:normalizedTxHash}).catch(()=>null);
     if(!tx) throw new HttpError(400,'Payout transaction was not found on BNB Smart Chain');
     if(tx.chainId!=null&&Number(tx.chainId)!==env.chainId) throw new HttpError(400,'Payout transaction is on the wrong network');
     if(!tx.from||tx.from.toLowerCase()!==payoutSender.toLowerCase()) throw new HttpError(403,'Payout sender does not match the configured treasury address');
     if(!tx.to||tx.to.toLowerCase()!==token.toLowerCase()) throw new HttpError(400,'Payout transaction is not a USDT token transfer');
-    const receipt=await publicClient.getTransactionReceipt({hash:txHash});
+    const receipt=await publicClient.getTransactionReceipt({hash:normalizedTxHash});
     if(receipt.status!=='success') throw new HttpError(400,'The payout transaction failed on-chain');
     const currentBlock=await publicClient.getBlockNumber();
     const confirmations=Number(currentBlock-receipt.blockNumber+1n);
