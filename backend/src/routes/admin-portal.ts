@@ -3,6 +3,7 @@ import {HttpError,parseLimit,getBearer} from '../utils/http.js';
 import {adminLogin,changeAdminCredentials,revokeAdminSession,requireAdminSession} from '../services/admin-auth.js';
 import {requireAdminPortal} from '../middleware/admin-auth.js';
 import {query} from '../db.js';
+import { transitionAdminWithdrawal, completeAdminWithdrawal } from '../services/admin-withdrawals.js';
 const router=Router();
 router.post('/login',async(req,res,next)=>{try{
   const email=String(req.body?.email??'').trim().toLowerCase(),password=String(req.body?.password??'');
@@ -60,6 +61,17 @@ router.get('/revenue',async(req,res,next)=>{try{
  res.json({revenue:r.rows});
 }catch(e){next(e)}});
 
+router.patch('/withdrawals/:withdrawalId/status',async(req,res,next)=>{try{
+  const status=String(req.body?.status??'').trim().toLowerCase();
+  const reason=req.body?.reason==null?null:String(req.body.reason).trim()||null;
+  const withdrawal=await transitionAdminWithdrawal(String(req.params.withdrawalId),req.admin!.id,status,reason);
+  res.json({withdrawal});
+}catch(e){next(e)}});
+router.post('/withdrawals/:withdrawalId/complete',async(req,res,next)=>{try{
+  const txHash=String(req.body?.txHash??'').trim();
+  const result=await completeAdminWithdrawal(String(req.params.withdrawalId),req.admin!.id,txHash);
+  res.json(result);
+}catch(e){next(e)}});
 router.get('/withdrawals',async(req,res,next)=>{try{
  const limit=parseLimit(req.query.limit,100,500);
  const r=await query(`select w.id,w.created_at,w.updated_at,w.amount,w.asset,w.status,w.destination_address,w.tx_hash,w.rejection_reason,u.username,u.email from withdrawal_requests w join app_users u on u.id=w.user_id order by w.created_at desc limit $1`,[limit]);
