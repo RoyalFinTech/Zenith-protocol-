@@ -366,6 +366,8 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       `,[purchaseId,adminAmount,purchase.asset,JSON.stringify({percent:economics.admin_percent,packageCode:purchase.package_code,tier:packageInfo.tier})]);
     }
 
+    if (!node) throw new HttpError(500, 'Matrix position was not resolved during settlement');
+
     await client.query(`
       insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
       values($1,'package_purchase_confirmed','package_purchase',$2,$3::jsonb)
