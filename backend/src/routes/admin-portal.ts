@@ -12,7 +12,7 @@ router.post('/login',async(req,res,next)=>{try{
 }catch(e){next(e)}});
 router.use(requireAdminPortal);
 router.get('/me',async(req,res,next)=>{try{res.json({admin:req.admin})}catch(e){next(e)}});
-router.post('/logout',async(req,res,next)=>{try{await revokeAdminSession((await requireAdminSession(getBearer(req)!)).id,req.admin!.id);res.status(204).end()}catch(e){next(e)}});
+router.post('/logout',async(req,res,next)=>{try{const token=getBearer(req);if(!token)throw new HttpError(401,'Admin authentication required');const claims=await (await import('../services/admin-jwt.js')).verifyAdminSession(token);await revokeAdminSession(claims.sessionId,req.admin!.id);res.status(204).end()}catch(e){next(e)}});
 router.patch('/credentials',async(req,res,next)=>{try{
   const currentPassword=String(req.body?.currentPassword??''),newEmail=String(req.body?.newEmail??'').trim().toLowerCase(),newPassword=String(req.body?.newPassword??'');
   await changeAdminCredentials(req.admin!.id,currentPassword,newEmail,newPassword);
