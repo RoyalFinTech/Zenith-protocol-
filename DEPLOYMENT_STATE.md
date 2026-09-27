@@ -1,6 +1,6 @@
 # ZENIT Protocol — Deployment State
 
-Last checked: 2026-09-26
+Last checked: 2026-09-27 12:41 UTC
 
 ## Render API
 
@@ -101,3 +101,13 @@ The original package lifecycle/admin implementation was already merged into main
 - Current continuation changes include backend notification read APIs, backend-backed notification UI, reservation-aware member balance display, and removal of the obsolete duplicate matrix placement endpoint.
 - CI for continuation head `0aaf4fd9ddc18d15758a58469f3325679369f982` was in progress at the checkpoint; deployment remains gated on CI and final review.
 - Existing Render health-check configuration drift remains a separate pending infrastructure item.
+
+
+## Current engineering checkpoint — 2026-09-27 12:41 UTC
+
+- Latest continuation CI completed successfully for backend and frontend.
+- Feature branch includes the notification-state, reservation-aware balance, duplicate placement removal, and matrix-capacity preflight fixes.
+- Production deployment is NOT claimed for these continuation changes; Render deploys from main.
+- Admin Security / first administrator provisioning remains PENDING.
+- Production inspection during this cycle was read-only; no admin or financial production rows were created.
+- Next release gates: review upgrade/settlement retry idempotency, reconcile stale deployment documentation, then decide whether the validated branch is ready for PR/release.
