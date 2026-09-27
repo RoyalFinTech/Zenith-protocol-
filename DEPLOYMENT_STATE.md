@@ -270,3 +270,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Production Supabase has not received the feature snapshot/immutability/cleanup migrations.
 - Render production remains on main and was not deployed from this feature branch.
 - Remaining release gates: real-device Web Push acceptance, Render health-check drift reconciliation, and intentional first-admin provisioning by an operator.
+
+
+## 2026-09-27 15:35 UTC — Deployment/email state
+- Render email configuration is live with production Resend sender settings.
+- Resend has two published templates: `zenit-verify-email` and `zenit-welcome`.
+- Resend domain verification is pending because DNS records are not yet present/verified outside the connected Resend account.
+- Required DNS records are recorded in the engineering checkpoint and must be added at the authoritative DNS provider before the first real mailbox delivery test.
+- The feature branch contains the one-time wallet handoff security hardening, branded verification error handling, and email delivery reliability changes; it has not been promoted to production.
+- Remaining release gates: DNS verification + real mailbox delivery test, physical-device Web Push acceptance, health-check drift reconciliation, and operator-controlled first-admin provisioning.
