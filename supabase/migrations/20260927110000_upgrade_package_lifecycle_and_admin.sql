@@ -122,12 +122,8 @@ on conflict (package_id) do update set
 
 -- Approved 2×4 four-level distribution: 30 / 25 / 25 / 20.
 -- Approved 2×6 six-level distribution: 30 / 20 / 15 / 10 / 10 / 15.
-delete from public.matrix_distribution_rules
-where package_id in (
-  select id from public.program_packages
-  where code in ('2x4-starter','2x4-growth','2x4-elite','2x6-starter','2x6-growth','2x6-elite')
-);
-
+-- Use idempotent upserts so this migration can be safely applied to a database
+-- that already contains the earlier 2×4/2×6 Starter distribution rows.
 insert into public.matrix_distribution_rules(package_id,level,percent_of_matrix_pool)
 select pp.id,r.level,r.pct
 from public.program_packages pp
@@ -135,7 +131,9 @@ join (values
   ('2x4',1,30::numeric),('2x4',2,25::numeric),('2x4',3,25::numeric),('2x4',4,20::numeric),
   ('2x6',1,30::numeric),('2x6',2,20::numeric),('2x6',3,15::numeric),('2x6',4,10::numeric),('2x6',5,10::numeric),('2x6',6,15::numeric)
 ) r(program_code,level,pct) on r.program_code=split_part(pp.code,'-',1)
-where pp.code in ('2x4-starter','2x4-growth','2x4-elite','2x6-starter','2x6-growth','2x6-elite');
+where pp.code in ('2x4-starter','2x4-growth','2x4-elite','2x6-starter','2x6-growth','2x6-elite')
+on conflict (package_id,level) do update
+set percent_of_matrix_pool=excluded.percent_of_matrix_pool;
 
 -- Backfill legacy memberships, if any, to Starter tier.
 update public.matrix_memberships m
