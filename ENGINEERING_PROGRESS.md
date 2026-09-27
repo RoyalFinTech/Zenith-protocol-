@@ -290,3 +290,22 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Continue package lifecycle edge-case review, especially upgrade idempotency and settlement retry behavior.
 - Reconcile stale deployment/documentation timestamps and release-gate references before the next promotion decision.
 - Do not mark Admin Security complete until the operator explicitly authorizes the administrator handoff.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:43 UTC
+
+### Completed
+- Reviewed package settlement idempotency constraints: unique payment transaction hash and one pending purchase per user/package are source-controlled; matrix earnings and ledger writes use idempotent references.
+- Tightened package capacity preflight to require a structurally eligible available node with a root or active parent.
+- Identified and closed the Admin Control Center withdrawal operations gap: the queue was previously read-only.
+- Added protected admin withdrawal transitions for approved, processing, rejected, and failed states, including required rejection/failure reasons and reservation checks.
+- Added protected admin withdrawal completion with exact on-chain USDT payout verification: configured treasury sender, correct chain/token, successful receipt, required confirmations, exact destination and amount, and duplicate transaction protection.
+- Added audit records for staff withdrawal operations.
+- Added regression coverage for authenticated notifications and admin withdrawal transition guards.
+- Refreshed `docs/api.md` to document notification APIs and the protected admin portal endpoints, and removed the obsolete manual matrix-placement endpoint from the API contract.
+
+### Pending / release gates
+- Current code changes require CI validation before being called complete.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Production deployment of this continuation is not claimed; Render deploys from `main`.
+- Continue checking accounting/ledger presentation, upgrade idempotency, settlement retries, and frontend state refresh after CI.
