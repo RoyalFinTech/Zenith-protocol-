@@ -148,6 +148,14 @@ set package_tier='starter',
     ))
 where m.package_tier='starter' or m.package_tier='';
 
+-- Initial staff administrator. Password is stored only as a scrypt hash; change it immediately from the Admin Security panel.
+insert into public.admin_users(email,password_hash)
+values (
+  'admin@zenitprotocol.com',
+  'scrypt$f65f6765a429db9f3644ed697b27f884$dae06d4cd30465d07a94e76397865d892d5eab94a04520b2bf83f8862a343ca4820df67dd8a2e67112feb93ca0c7a5d7dcc902e24244641feaa5392d71f3d211'
+)
+on conflict (email) do nothing;
+
 -- Helpful cleanup/indexing for admin and settlement paths.
 create index if not exists idx_package_purchases_program_status
   on public.package_purchases(package_id, status, created_at desc);
