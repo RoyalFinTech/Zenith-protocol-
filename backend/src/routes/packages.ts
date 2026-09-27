@@ -300,7 +300,7 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       id:string;
       status:string;
       payment_tx_hash:string|null;
-      package_tier:string;
+      package_tier:string|null;
       direct_percent:string|null;
       matrix_percent:string|null;
       admin_percent:string|null;
@@ -325,6 +325,7 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       matrix_distribution_rules: fresh.matrix_distribution_rules
     };
     if (
+      packageInfo.tier == null ||
       packageInfo.direct_percent == null ||
       packageInfo.matrix_percent == null ||
       packageInfo.admin_percent == null ||
@@ -533,7 +534,6 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
         insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
         values($1,'admin_revenue',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
       `,[purchaseId,adminAmount,purchase.asset,JSON.stringify({percent:economics.admin_percent,packageCode:purchase.package_code,tier:packageInfo.tier})]);
-    }
 
     if (!node) throw new HttpError(500, 'Matrix position was not resolved during settlement');
 
