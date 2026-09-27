@@ -180,6 +180,9 @@ describeProduction('production API against a real PostgreSQL test database', () 
         body:JSON.stringify({status:'approved'})
       });
       expect(goodApproval.status).toBe(200);
+      const reservedSummary=await request('/api/dashboard/summary',{headers:authorization});
+      expect(reservedSummary.status).toBe(200);
+      expect((await reservedSummary.json()).earnings.reserved).toBe('0.75');
       const processing=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
         method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
         body:JSON.stringify({status:'processing'})
