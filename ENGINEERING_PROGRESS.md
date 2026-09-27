@@ -402,3 +402,18 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - New current-head CI run #454 is in progress for the reservation correction.
 - Render `main` is live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; the feature branch is not yet live.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:16 UTC
+
+### Lifecycle correction
+- Withdrawal reservations now remain counted in available-balance calculations through `pending`, `approved`, `processing`, and `completed` states.
+- Added an API-level regression showing a second withdrawal is rejected when an already-approved reservation would consume the requested funds.
+- Package lifecycle now enforces forward-only tier progression: Starter → Growth → Elite. Same-tier purchases and lower-tier downgrades are blocked during purchase preflight and rechecked while settling the on-chain payment.
+- Added package-tier progression unit coverage.
+
+### Validation
+- Current feature head: `68f5225ec2470230ec901dbec0c2d10e47926504` before the latest double-spend regression commit.
+- CI run #460 is in progress for the tier/reservation changes; the later double-spend regression will trigger a subsequent CI run.
+- Production Render `main` remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
