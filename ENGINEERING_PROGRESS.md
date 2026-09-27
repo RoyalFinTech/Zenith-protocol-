@@ -347,3 +347,22 @@ Every substantive change should be recorded here under Completed, In Progress, o
 ### Pending
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
 - Continue final settlement retry/upgrade review and frontend state reconciliation after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:52 UTC
+
+### Completed
+- Added a shared transactional user-notification helper.
+- Package lifecycle now emits notifications when a new purchase is created and when a confirmed package activates a matrix position.
+- Withdrawal submission now emits a member notification.
+- Staff withdrawal approval/processing/rejection/failure/completion now emits member-facing status notifications.
+- Notification read APIs and the frontend notification center now have real lifecycle events feeding them rather than static placeholder content.
+
+### Validation state
+- CI runs are being triggered for the notification changes; the latest run for the current head is still in progress.
+- No production rows were created or changed by this continuation.
+
+### Pending
+- Confirm current-head CI success after the notification event changes.
+- Continue final frontend/accounting synchronization review.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
