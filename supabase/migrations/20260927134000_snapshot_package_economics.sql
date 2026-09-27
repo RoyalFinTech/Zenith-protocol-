@@ -34,6 +34,28 @@ where e.package_id=pp.package_id
     or pp.matrix_distribution_rules is null
   );
 
+do $
+begin
+  if exists (
+    select 1
+    from public.package_purchases
+    where package_tier is null
+       or direct_percent is null
+       or matrix_percent is null
+       or admin_percent is null
+       or matrix_distribution_rules is null
+  ) then
+    raise exception 'Cannot enforce package purchase economics snapshots: one or more purchases could not be backfilled';
+  end if;
+end $;
+
+alter table public.package_purchases
+  alter column package_tier set not null,
+  alter column direct_percent set not null,
+  alter column matrix_percent set not null,
+  alter column admin_percent set not null,
+  alter column matrix_distribution_rules set not null;
+
 alter table public.package_purchases
   drop constraint if exists package_purchases_snapshot_tier_check;
 
