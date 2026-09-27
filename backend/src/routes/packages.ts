@@ -121,6 +121,35 @@ router.post('/purchases', async (req, res, next) => {
       order by created_at desc limit 1
     `, [req.auth!.userId, packageRow.id])).rows[0];
 
+    let economicsSnapshot:{
+      direct_percent:string;
+      matrix_percent:string;
+      admin_percent:string;
+      matrix_distribution_rules:unknown;
+    }|undefined;
+    if (!pending) {
+      economicsSnapshot=(await query<{
+        direct_percent:string;
+        matrix_percent:string;
+        admin_percent:string;
+        matrix_distribution_rules:unknown;
+      }>(`
+        select e.direct_percent,e.matrix_percent,e.admin_percent,
+               coalesce((
+                 select jsonb_agg(
+                   jsonb_build_object('level',r.level,'percentOfMatrixPool',r.percent_of_matrix_pool)
+                   order by r.level
+                 )
+                 from matrix_distribution_rules r
+                 where r.package_id=e.package_id
+               ),'[]'::jsonb) as matrix_distribution_rules
+        from package_economics e
+        where e.package_id=$1
+        limit 1
+      `, [packageRow.id])).rows[0];
+      if (!economicsSnapshot) throw new HttpError(409, 'Package economics are not configured');
+    }
+
     if (!pending) {
       if (packageRow.tier === 'starter') {
         const capacity = (await query<{available:boolean}>(`
@@ -146,9 +175,17 @@ router.post('/purchases', async (req, res, next) => {
     }
 
     const purchase = pending ?? (await query(`
-      insert into package_purchases(user_id,package_id,referral_code,referrer_user_id,amount,asset,status)
-      values($1,$2,$3,$4,$5,$6,'pending') returning id,created_at
-    `, [req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset])).rows[0];
+      insert into package_purchases(
+        user_id,package_id,referral_code,referrer_user_id,amount,asset,status,
+        direct_percent,matrix_percent,admin_percent,matrix_distribution_rules
+      )
+      values($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,$10::jsonb)
+      returning id,created_at,amount
+    `, [
+      req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset,
+      economicsSnapshot!.direct_percent,economicsSnapshot!.matrix_percent,economicsSnapshot!.admin_percent,
+      JSON.stringify(economicsSnapshot!.matrix_distribution_rules)
+    ])).rows[0];
     if (!purchase) throw new HttpError(500, 'Unable to create package purchase');
     if (!pending) {
       const notifyClient = await pool.connect();
@@ -258,19 +295,43 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
 
     await client.query('begin');
 
-    const fresh = (await client.query(`select id,status,payment_tx_hash from package_purchases where id=$1 and user_id=$2 for update`, [purchaseId, req.auth!.userId])).rows[0];
+    const fresh = (await client.query<{
+      id:string;
+      status:string;
+      payment_tx_hash:string|null;
+      package_tier:string;
+      direct_percent:string|null;
+      matrix_percent:string|null;
+      admin_percent:string|null;
+      matrix_distribution_rules:unknown;
+    }>(`
+      select pp.id,pp.status,pp.payment_tx_hash,
+             ppk.tier as package_tier,
+             pp.direct_percent,pp.matrix_percent,pp.admin_percent,pp.matrix_distribution_rules
+      from package_purchases pp
+      join program_packages ppk on ppk.id=pp.package_id
+      where pp.id=$1 and pp.user_id=$2
+      for update
+    `, [purchaseId, req.auth!.userId])).rows[0];
     if (!fresh) throw new HttpError(404, 'Purchase not found');
     if (fresh.status === 'confirmed') { await client.query('commit'); return res.json({ status:'confirmed', purchase:fresh }); }
     if (fresh.status !== 'pending') throw new HttpError(409, 'Purchase is no longer pending');
 
-    const packageInfo = (await client.query<{tier:string;entry_amount:string;direct_percent:string;matrix_percent:string;admin_percent:string}>(`
-      select pp.tier,e.entry_amount,e.direct_percent,e.matrix_percent,e.admin_percent
-      from program_packages pp
-      join package_economics e on e.package_id=pp.id
-      where pp.id=$1
-      limit 1
-    `, [purchase.package_id])).rows[0];
-    if (!packageInfo) throw new HttpError(409, 'Package economics are not configured');
+    const packageInfo = {
+      tier: fresh.package_tier,
+      direct_percent: fresh.direct_percent,
+      matrix_percent: fresh.matrix_percent,
+      admin_percent: fresh.admin_percent,
+      matrix_distribution_rules: fresh.matrix_distribution_rules
+    };
+    if (
+      packageInfo.direct_percent == null ||
+      packageInfo.matrix_percent == null ||
+      packageInfo.admin_percent == null ||
+      !Array.isArray(packageInfo.matrix_distribution_rules)
+    ) {
+      throw new HttpError(409, 'This purchase does not have a settlement economics snapshot');
+    }
 
     let node: {id:string;position:number;level:number} | undefined;
     let membershipRow: {id:string} | undefined;
@@ -397,15 +458,10 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       JSON.stringify({purchaseId,packageCode:purchase.package_code,receiver,token,confirmations})
     ]);
 
-    const economics = (await client.query<{entry_amount:string;direct_percent:string;matrix_percent:string;admin_percent:string}>(`
-      select entry_amount,direct_percent,matrix_percent,admin_percent
-      from package_economics where package_id=$1 limit 1
-    `, [purchase.package_id])).rows[0];
-
-    if (economics) {
-      const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.direct_percent])).rows[0]?.amount;
-      const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.matrix_percent])).rows[0]?.amount;
-      const adminAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.admin_percent])).rows[0]?.amount;
+    const economics = packageInfo;
+    const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.direct_percent])).rows[0]?.amount;
+    const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.matrix_percent])).rows[0]?.amount;
+    const adminAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.admin_percent])).rows[0]?.amount;
       if (directAmount == null || matrixAmount == null || adminAmount == null) throw new HttpError(500, 'Unable to calculate package allocation');
 
       await client.query(`update package_purchases set direct_amount=$2,matrix_amount=$3,admin_amount=$4 where id=$1`, [purchaseId,directAmount,matrixAmount,adminAmount]);
@@ -429,8 +485,10 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       }
 
       const rules = (await client.query<{level:number;percent_of_matrix_pool:string}>(`
-        select level,percent_of_matrix_pool from matrix_distribution_rules where package_id=$1 order by level
-      `, [purchase.package_id])).rows;
+        select level,percent_of_matrix_pool
+        from jsonb_to_recordset($1::jsonb) as x(level integer, percent_of_matrix_pool numeric)
+        order by level
+      `, [JSON.stringify(economics.matrix_distribution_rules)])).rows;
 
       let currentNodeId = parentNodeId;
       let allocatedMatrix = '0';
