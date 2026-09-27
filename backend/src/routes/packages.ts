@@ -6,7 +6,7 @@ import { env } from '../config.js';
 import { createPublicClient, erc20Abi, getAddress, http, parseEventLogs, parseUnits } from 'viem';
 import { bsc } from 'viem/chains';
 import { isUniqueConstraintViolation } from '../utils/financial.js';
-import { createUserNotification } from '../services/notifications.js';
+import { createUserNotification, sendUserPushNotification } from '../services/notifications.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -131,9 +131,10 @@ router.post('/purchases', async (req, res, next) => {
     if (!purchase) throw new HttpError(500, 'Unable to create package purchase');
     if (!pending) {
       const notifyClient = await pool.connect();
+      let notificationId: string | undefined;
       try {
         await notifyClient.query('begin');
-        await createUserNotification(
+        notificationId = await createUserNotification(
           notifyClient,
           req.auth!.userId,
           'Package purchase created',
@@ -146,6 +147,14 @@ router.post('/purchases', async (req, res, next) => {
         console.warn('package purchase notification failed', notificationError);
       } finally {
         notifyClient.release();
+      }
+      if (notificationId) {
+        void sendUserPushNotification(
+          req.auth!.userId,
+          'Package purchase created',
+          `${packageRow.name} is pending payment confirmation. Complete the USDT transfer and submit its transaction hash.`,
+          notificationId
+        ).catch(error => console.warn('package purchase push notification failed', error));
       }
     }
 
@@ -443,13 +452,21 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       position:node.position,level:node.level,membershipId:membershipRow?.id
     })]);
 
-    await createUserNotification(
+    const notificationId = await createUserNotification(
       client,
       req.auth!.userId,
       'Package activated',
       `${purchase.package_code} payment was verified and your matrix position was activated at position #${node.position}.`
     );
     await client.query('commit');
+    if (notificationId) {
+      void sendUserPushNotification(
+        req.auth!.userId,
+        'Package activated',
+        `${purchase.package_code} payment was verified and your matrix position was activated at position #${node.position}.`,
+        notificationId
+      ).catch(error => console.warn('package activation push notification failed', error));
+    }
     res.json({ status:'confirmed', purchase:{id:purchaseId,packageCode:purchase.package_code,programCode:purchase.program_code,position:node.position,level:node.level,txHash,confirmations} });
   } catch (e) {
     await client.query('rollback').catch(()=>{});
