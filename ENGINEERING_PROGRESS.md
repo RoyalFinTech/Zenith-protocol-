@@ -514,3 +514,22 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Live Render Health Check Path remains blank while repository `render.yaml` declares `/health`; the live health URL could not be verified through the available web retrieval channel.
 - Real-device Web Push acceptance remains a release gate.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 14:23 UTC
+
+### Snapshot immutability hardening
+- Added a database trigger that makes the purchase-time settlement economics snapshot immutable after creation/backfill.
+- Snapshot mutation attempts now fail at the database layer for package tier, direct/matrix/admin percentages, and matrix distribution rules.
+- The trigger function is explicitly revoked from `public`, `anon`, and `authenticated` execution because it is trigger-only infrastructure and not an application RPC.
+- Added an integration regression that attempts to mutate a stored snapshot and requires the database to reject the change.
+
+### Validation / release state
+- Current validated feature head: `6cce8f5bbe2987447315ccc36f836397b9522319`.
+- CI run #496 passed end-to-end: backend lint, migration application, unit tests, integration tests, frontend build, and frontend login tests.
+- Production Supabase remains unchanged. The live `package_purchases` table still does not contain the five economics-snapshot columns, so the snapshot/immutability migrations remain feature-only.
+- The two existing pending 2×6 Starter purchases remain 10.00000000 USDT while current package economics show a 30.00000000 entry amount; no production financial rows were changed.
+- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Render live Health Check Path remains blank while repository `render.yaml` declares `/health`; the live health URL could not be verified through the available retrieval channel.
+- Real-device Web Push acceptance remains a release gate.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.

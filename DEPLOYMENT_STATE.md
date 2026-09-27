@@ -1,6 +1,6 @@
 # ZENIT Protocol — Deployment State
 
-Last checked: 2026-09-27 14:19 UTC
+Last checked: 2026-09-27 14:23 UTC
 
 ## Render API
 
@@ -242,6 +242,19 @@ The original package lifecycle/admin implementation was already merged into main
 - Current validated feature head: `19f6a13089a488d41ddd60680cd0e1fd41c60375`.
 - CI run #491 passed all backend and frontend gates, including the new package confirmation idempotency regression.
 - Package confirmation retries now require the submitted transaction hash to match the transaction already recorded on a confirmed purchase; a different hash is rejected with HTTP 409.
+- Production Supabase remains unchanged and does not yet contain the five economics-snapshot columns from the feature migration.
+- The two existing pending 2×6 Starter purchases remain 10.00000000 USDT; no production financial rows were changed.
+- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Live Render Health Check Path is blank while `render.yaml` declares `/health`; reconciliation remains pending.
+- Real-device Web Push acceptance remains a release gate.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Deployment / engineering checkpoint — 2026-09-27 14:23 UTC
+
+- Current validated feature head: `6cce8f5bbe2987447315ccc36f836397b9522319`.
+- CI run #496 passed all backend and frontend gates, including database migration application and the snapshot immutability regression.
+- Purchase settlement snapshots are now protected by a database trigger against post-creation mutation, and the trigger-only function is not executable by public/anonymous/authenticated Data API roles.
 - Production Supabase remains unchanged and does not yet contain the five economics-snapshot columns from the feature migration.
 - The two existing pending 2×6 Starter purchases remain 10.00000000 USDT; no production financial rows were changed.
 - Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
