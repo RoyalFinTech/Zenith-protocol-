@@ -1,4 +1,4 @@
-import { createHash, createHmac, createPrivateKey, randomBytes, createCipheriv } from 'node:crypto';
+import { createHmac, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, randomBytes, createCipheriv } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { SignJWT } from 'jose';
 import { env } from '../config.js';
@@ -159,23 +159,16 @@ async function createVapidAuthorization(audience: string): Promise<string> {
 }
 
 function deriveEncryptionMaterial(uaPublicKey: Buffer, authSecret: Buffer) {
-  const { publicKey: asPublicKey, privateKey: asPrivateRaw } = (() => {
-    const pair = require('node:crypto').generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
-    const privateJwk = pair.privateKey.export({ format: 'jwk' }) as JsonWebKey;
-    const publicJwk = pair.publicKey.export({ format: 'jwk' }) as JsonWebKey;
-    const rawPublic = Buffer.concat([Buffer.from([0x04]), Buffer.from(String(publicJwk.x), 'base64url'), Buffer.from(String(publicJwk.y), 'base64url')]);
-    const rawPrivate = Buffer.from(String(privateJwk.d), 'base64url');
-    return { publicKey: rawPublic, privateKey: rawPrivate };
-  })();
+  const pair = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  const serverPublicJwk = pair.publicKey.export({ format: 'jwk' }) as { x?: string; y?: string };
+  if (!serverPublicJwk.x || !serverPublicJwk.y) throw new Error('Unable to export the server push public key');
+  const serverPublic = Buffer.concat([
+    Buffer.from([0x04]),
+    Buffer.from(serverPublicJwk.x, 'base64url'),
+    Buffer.from(serverPublicJwk.y, 'base64url')
+  ]);
 
-  const serverPrivate = buildVapidPrivateKey(asPrivateRaw, asPublicKey);
-  const { publicKey: serverPublicJwk } = ((): { publicKey: JsonWebKey } => ({
-    publicKey: serverPrivate.asymmetricKeyType ? serverPrivate.export({ format: 'jwk' }) as JsonWebKey : {}
-  }))();
-
-  const ecdhPrivate = serverPrivate;
-  const ecdhPublicRaw = asPublicKey;
-  const ua = createPrivateKey({
+  const ua = createPublicKey({
     key: {
       kty: 'EC',
       crv: 'P-256',
@@ -185,21 +178,21 @@ function deriveEncryptionMaterial(uaPublicKey: Buffer, authSecret: Buffer) {
     format: 'jwk'
   });
 
-  const ecdhSecret = require('node:crypto').diffieHellman({ privateKey: ecdhPrivate, publicKey: ua });
+  const ecdhSecret = diffieHellman({ privateKey: pair.privateKey, publicKey: ua });
   const keyInfo = Buffer.concat([
     Buffer.from('WebPush: info', 'utf8'),
     Buffer.from([0]),
     uaPublicKey,
-    ecdhPublicRaw
+    serverPublic
   ]);
   const prkKey = createHmac('sha256', authSecret).update(ecdhSecret).digest();
   const ikm = hkdfExpand(prkKey, keyInfo, 32);
   const salt = randomBytes(16);
   const prk = createHmac('sha256', salt).update(ikm).digest();
-  const cek = hkdfExpand(prk, Buffer.from('Content-Encoding: aes128gcm\0', 'utf8'), 16);
-  const nonce = hkdfExpand(prk, Buffer.from('Content-Encoding: nonce\0', 'utf8'), 12);
+  const cek = hkdfExpand(prk, Buffer.from('Content-Encoding: aes128gcm\\0', 'utf8'), 16);
+  const nonce = hkdfExpand(prk, Buffer.from('Content-Encoding: nonce\\0', 'utf8'), 12);
 
-  return { cek, nonce, salt, serverPublic: ecdhPublicRaw, serverPublicJwk };
+  return { cek, nonce, salt, serverPublic };
 }
 
 async function encryptPayload(subscription: PushSubscriptionInput, payload: PushPayload): Promise<Buffer> {
