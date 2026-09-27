@@ -3,7 +3,7 @@ import { lookup } from 'node:dns/promises';
 import { SignJWT } from 'jose';
 import { env } from '../config.js';
 
-type PushSubscriptionInput = {
+export type PushSubscriptionInput = {
   endpoint: string;
   p256dh: string;
   auth: string;
@@ -71,7 +71,7 @@ function assertPushSubscription(subscription: PushSubscriptionInput): {
 function ipv4IsPrivate(host: string): boolean {
   const octets = host.split('.').map(Number);
   if (octets.length !== 4 || octets.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return false;
-  const [a,b,c,d] = octets;
+  const a=octets[0]!, b=octets[1]!, c=octets[2]!;
   if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254)) return true;
   if (a === 172 && b >= 16 && b <= 31) return true;
   if (a === 192 && b === 168) return true;
@@ -245,7 +245,7 @@ export async function sendPushToSubscription(subscription: PushSubscriptionInput
       'Content-Encoding': 'aes128gcm',
       Authorization: authorization
     },
-    body,
+    body: new Uint8Array(body) as unknown as BodyInit,
     redirect: 'error',
     signal: AbortSignal.timeout(10000)
   });
