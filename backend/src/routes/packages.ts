@@ -5,7 +5,7 @@ import { HttpError, parseLimit } from '../utils/http.js';
 import { env } from '../config.js';
 import { createPublicClient, erc20Abi, getAddress, http, parseEventLogs, parseUnits } from 'viem';
 import { bsc } from 'viem/chains';
-import { isUniqueConstraintViolation } from '../utils/financial.js';
+import { comparePackageTiers, isUniqueConstraintViolation } from '../utils/financial.js';
 import { createUserNotification, sendUserPushNotification } from '../services/notifications.js';
 
 const router = Router();
@@ -65,6 +65,27 @@ router.post('/purchases', async (req, res, next) => {
 
     if (!packageRow) throw new HttpError(404, 'Package not found');
     if (!['starter','growth','elite'].includes(packageRow.tier)) throw new HttpError(409, 'Unsupported package tier');
+
+    const currentMembership=(await query<{package_tier:string;status:string}>(`
+      select package_tier,status
+      from matrix_memberships
+      where user_id=$1 and program_id=$2
+      limit 1
+    `,[req.auth!.userId,packageRow.program_id])).rows[0];
+
+    if(currentMembership){
+      if(packageRow.tier==='starter'){
+        throw new HttpError(409,'A position already exists for this program');
+      }
+      if(currentMembership.status!=='active'){
+        throw new HttpError(409,'An active membership is required before upgrading this program');
+      }
+      if(comparePackageTiers(currentMembership.package_tier,packageRow.tier)<=0){
+        throw new HttpError(409,'This package is not a higher tier than your current membership');
+      }
+    } else if(packageRow.tier!=='starter'){
+      throw new HttpError(409,'An existing lower-tier membership is required before this upgrade');
+    }
     if (packageRow.price == null) throw new HttpError(409, 'This package is not priced for purchase yet');
     if (packageRow.asset !== env.primaryAsset) throw new HttpError(409, 'This package uses an unsupported settlement asset');
 
@@ -261,6 +282,20 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       where user_id=$1 and program_id=$2
       for update
     `, [req.auth!.userId,purchase.program_id])).rows[0];
+
+    if (existingMembership) {
+      if (packageInfo.tier === 'starter') {
+        throw new HttpError(409, 'A position already exists for this program');
+      }
+      if (existingMembership.status !== 'active') {
+        throw new HttpError(409, 'An active membership is required before this upgrade');
+      }
+      if (comparePackageTiers(existingMembership.package_tier,packageInfo.tier) <= 0) {
+        throw new HttpError(409, 'Package tier cannot be repeated or downgraded');
+      }
+    } else if (packageInfo.tier !== 'starter') {
+      throw new HttpError(409, 'An existing lower-tier membership is required before this upgrade');
+    }
 
     if (packageInfo.tier === 'starter') {
       if (existingMembership) throw new HttpError(409, 'A position already exists for this program');
