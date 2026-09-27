@@ -12,6 +12,9 @@ const chainId = Number(process.env.CHAIN_ID ?? 56);
 const paymentConfirmations = Number(process.env.PAYMENT_CONFIRMATIONS ?? 2);
 const sessionTtlMinutes = Number(process.env.SESSION_TTL_MINUTES ?? 10080);
 const nonceTtlMinutes = Number(process.env.NONCE_TTL_MINUTES ?? 10);
+const vapidSubject = process.env.VAPID_SUBJECT ?? '';
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY ?? '';
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY ?? '';
 const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map(v => v.trim()).filter(Boolean);
 const appOrigin = required('APP_ORIGIN', 'http://localhost:5173');
 const apiPublicUrl = required('API_PUBLIC_URL', 'http://localhost:8787');
@@ -60,6 +63,10 @@ export const env = {
   sessionTtlMinutes,
   nonceTtlMinutes,
   corsOrigins,
+  vapidSubject,
+  vapidPublicKey,
+  vapidPrivateKey,
+  pushEnabled: Boolean(vapidSubject && vapidPublicKey && vapidPrivateKey),
   resendApiKey: process.env.RESEND_API_KEY ?? '',
   resendFrom: process.env.RESEND_FROM ?? 'ZENIT Protocol <onboarding@resend.dev>'
 };
