@@ -177,12 +177,13 @@ router.post('/purchases', async (req, res, next) => {
     const purchase = pending ?? (await query(`
       insert into package_purchases(
         user_id,package_id,referral_code,referrer_user_id,amount,asset,status,
-        direct_percent,matrix_percent,admin_percent,matrix_distribution_rules
+        package_tier,direct_percent,matrix_percent,admin_percent,matrix_distribution_rules
       )
-      values($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,$10::jsonb)
+      values($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,$10,$11::jsonb)
       returning id,created_at,amount
     `, [
       req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset,
+      packageRow.tier,
       economicsSnapshot!.direct_percent,economicsSnapshot!.matrix_percent,economicsSnapshot!.admin_percent,
       JSON.stringify(economicsSnapshot!.matrix_distribution_rules)
     ])).rows[0];
@@ -306,10 +307,9 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       matrix_distribution_rules:unknown;
     }>(`
       select pp.id,pp.status,pp.payment_tx_hash,
-             ppk.tier as package_tier,
+             pp.package_tier,
              pp.direct_percent,pp.matrix_percent,pp.admin_percent,pp.matrix_distribution_rules
       from package_purchases pp
-      join program_packages ppk on ppk.id=pp.package_id
       where pp.id=$1 and pp.user_id=$2
       for update
     `, [purchaseId, req.auth!.userId])).rows[0];
