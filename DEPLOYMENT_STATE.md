@@ -128,3 +128,11 @@ The original package lifecycle/admin implementation was already merged into main
 - Latest CI run #415 is queued/in progress; no production deployment is claimed for these changes.
 - Production database remains untouched by this continuation.
 - Admin Security / first administrator provisioning remains **PENDING**.
+
+
+## Engineering checkpoint — 2026-09-27 12:50 UTC
+
+- Latest accounting correction: pending earnings exclude withdrawal reservation ledger entries.
+- Newest CI validation is still in progress.
+- No production deployment is claimed for the feature branch.
+- Admin Security / first administrator provisioning remains **PENDING**.
