@@ -7,7 +7,7 @@ import { bsc } from 'viem/chains';
 
 const publicClient = createPublicClient({ chain: bsc, transport: http(env.bscRpcUrl) });
 
-export async function transitionAdminWithdrawal(withdrawalId:string, actorAdminId:string, nextStatus:string, reason:string|null){
+export async function transitionAdminWithdrawal(withdrawalId:string, actorAdminId:string, nextStatus:string, reason:string|null, actorUserId:string|null=null){
   if(!['approved','processing','rejected','failed'].includes(nextStatus)){
     throw new HttpError(400,'Allowed status changes: approved, processing, rejected, failed');
   }
@@ -50,8 +50,8 @@ export async function transitionAdminWithdrawal(withdrawalId:string, actorAdminI
     }
     await client.query(
       `insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
-       values(null,$1,'withdrawal_request',$2,$3::jsonb)`,
-      [`admin_${nextStatus}`,withdrawalId,JSON.stringify({adminId:actorAdminId,previousStatus:current.status,nextStatus,reason})]
+       values($4,$1,'withdrawal_request',$2,$3::jsonb)`,
+      [`admin_${nextStatus}`,withdrawalId,JSON.stringify({adminId:actorAdminId,previousStatus:current.status,nextStatus,reason}),actorUserId]
     );
     await client.query('commit');
     return updated;
@@ -59,7 +59,7 @@ export async function transitionAdminWithdrawal(withdrawalId:string, actorAdminI
   finally{ client.release(); }
 }
 
-export async function completeAdminWithdrawal(withdrawalId:string, actorAdminId:string, txHash:string){
+export async function completeAdminWithdrawal(withdrawalId:string, actorAdminId:string, txHash:string, actorUserId:string|null=null){
   if(!/^0x[a-fA-F0-9]{64}$/.test(txHash)) throw new HttpError(400,'Valid payout transaction hash required');
   if(!env.payoutSenderAddress) throw new HttpError(503,'Payout sender is not configured');
   const payoutSender=getAddress(env.payoutSenderAddress);
@@ -111,8 +111,8 @@ export async function completeAdminWithdrawal(withdrawalId:string, actorAdminId:
     if(!updated) throw new HttpError(409,'Withdrawal is no longer processing');
     await client.query(
       `insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
-       values(null,'withdrawal_completed','withdrawal_request',$1,$2::jsonb)`,
-      [withdrawalId,JSON.stringify({adminId:actorAdminId,txHash,confirmations,payoutSender})]
+       values($3,'withdrawal_completed','withdrawal_request',$1,$2::jsonb)`,
+      [withdrawalId,JSON.stringify({adminId:actorAdminId,txHash,confirmations,payoutSender}),actorUserId]
     );
     await client.query('commit');
     return {withdrawal:updated,confirmations};
