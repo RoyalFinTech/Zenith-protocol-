@@ -63,19 +63,31 @@ router.post('/purchases', async (req, res, next) => {
     `, [packageCode])).rows[0];
 
     if (!packageRow) throw new HttpError(404, 'Package not found');
-    if (packageRow.tier !== 'starter') throw new HttpError(409, 'Only Starter packages can activate a matrix position');
-    if (packageRow.price == null) throw new HttpError(409, 'This Starter package is not priced for purchase yet');
+    if (!['starter','growth','elite'].includes(packageRow.tier)) throw new HttpError(409, 'Unsupported package tier');
+    if (packageRow.price == null) throw new HttpError(409, 'This package is not priced for purchase yet');
     if (packageRow.asset !== env.primaryAsset) throw new HttpError(409, 'This package uses an unsupported settlement asset');
 
-    const membership = (await query(`
-      select 1 from matrix_memberships m join programs p on p.id=m.program_id
-      where m.user_id=$1 and p.code=$2 limit 1
-    `, [req.auth!.userId, packageRow.program_code])).rows[0];
-    if (membership) throw new HttpError(409, 'You already have a position in this program');
+    const membership = (await query<{package_tier:string;referrer_user_id:string|null}>(`
+      select package_tier,referrer_user_id from matrix_memberships m
+      where m.user_id=$1 and m.program_id=$2 and m.status in ('active','completed')
+      limit 1
+    `, [req.auth!.userId, packageRow.program_id])).rows[0];
 
+    if (packageRow.tier === 'starter' && membership) {
+      throw new HttpError(409, 'You already have a position in this program. Use the next package tier to upgrade it.');
+    }
+    if (packageRow.tier === 'growth' && (!membership || membership.package_tier !== 'starter')) {
+      throw new HttpError(409, 'Growth unlocks after a confirmed Starter purchase in this program');
+    }
+    if (packageRow.tier === 'elite' && (!membership || membership.package_tier !== 'growth')) {
+      throw new HttpError(409, 'Elite unlocks after a confirmed Growth purchase in this program');
+    }
 
     let referrerId: string | null = null;
-    if (referralCode) {
+    if (packageRow.tier !== 'starter') {
+      if (referralCode) throw new HttpError(400, 'Referral codes can only be supplied with the Starter purchase');
+      referrerId = membership?.referrer_user_id ?? null;
+    } else if (referralCode) {
       referrerId = (await query<{id:string}>(`select id from app_users where referral_code=$1 limit 1`, [referralCode])).rows[0]?.id ?? null;
       if (!referrerId) throw new HttpError(400, 'Referral code not found');
       if (referrerId === req.auth!.userId) throw new HttpError(400, 'You cannot use your own referral code');
@@ -88,8 +100,10 @@ router.post('/purchases', async (req, res, next) => {
     `, [req.auth!.userId, packageRow.id])).rows[0];
 
     if (!pending) {
-      const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
-      if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
+      if (packageRow.tier === 'starter') {
+        const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
+        if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
+      }
     }
 
     const purchase = pending ?? (await query(`
@@ -182,21 +196,81 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     if (fresh.status === 'confirmed') { await client.query('commit'); return res.json({ status:'confirmed', purchase:fresh }); }
     if (fresh.status !== 'pending') throw new HttpError(409, 'Purchase is no longer pending');
 
-    const membership = (await client.query(`select 1 from matrix_memberships where user_id=$1 and program_id=$2 limit 1`, [req.auth!.userId, purchase.program_id])).rows[0];
-    if (membership) throw new HttpError(409, 'A position already exists for this program');
+    const packageInfo = (await client.query<{tier:string;entry_amount:string;direct_percent:string;matrix_percent:string;admin_percent:string}>(`
+      select pp.tier,e.entry_amount,e.direct_percent,e.matrix_percent,e.admin_percent
+      from program_packages pp
+      join package_economics e on e.package_id=pp.id
+      where pp.id=$1
+      limit 1
+    `, [purchase.package_id])).rows[0];
+    if (!packageInfo) throw new HttpError(409, 'Package economics are not configured');
 
-    const node = (await client.query<{id:string;position:number;level:number}>(`
-      select id,position,level from matrix_nodes where program_id=$1 and status='available'
-      order by position asc for update skip locked limit 1
-    `, [purchase.program_id])).rows[0];
-    if (!node) throw new HttpError(409, 'No available matrix position remains in this program');
+    let node: {id:string;position:number;level:number} | undefined;
+    let membershipRow: {id:string} | undefined;
+    let parentNodeId: string | null = null;
 
-    await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`, [req.auth!.userId,purchase.referrer_user_id,node.id]);
+    const existingMembership = (await client.query<{id:string;node_id:string|null;package_tier:string;referrer_user_id:string|null;status:string}>(`
+      select id,node_id,package_tier,referrer_user_id,status
+      from matrix_memberships
+      where user_id=$1 and program_id=$2
+      for update
+    `, [req.auth!.userId,purchase.program_id])).rows[0];
 
-    const membershipRow = (await client.query<{id:string}>(`
-      insert into matrix_memberships(user_id,program_id,node_id,referrer_user_id,level,position,status)
-      values($1,$2,$3,$4,$5,$6,'active') returning id
-    `, [req.auth!.userId,purchase.program_id,node.id,purchase.referrer_user_id,node.level,node.position])).rows[0];
+    if (packageInfo.tier === 'starter') {
+      if (existingMembership) throw new HttpError(409, 'A position already exists for this program');
+      if (purchase.referrer_user_id) {
+        const sponsor = (await client.query<{node_id:string|null}>(`
+          select node_id from matrix_memberships where user_id=$1 and program_id=$2 and status='active' limit 1
+        `, [purchase.referrer_user_id,purchase.program_id])).rows[0];
+        if (sponsor?.node_id) {
+          const candidate = (await client.query<{id:string;position:number;level:number}>(`
+            with recursive subtree as (
+              select n.id,n.position,n.level
+              from matrix_nodes n
+              where n.id=$3 and n.program_id=$1
+              union all
+              select c.id,c.position,c.level
+              from matrix_nodes c
+              join subtree p on c.program_id=$1 and c.position in (p.position*2,p.position*2+1)
+            )
+            select n.id,n.position,n.level
+            from matrix_nodes n
+            join subtree s on s.id=n.id
+            where n.status='available'
+              and n.id<>$3
+            order by n.level,n.position
+            for update skip locked
+            limit 1
+          `, [purchase.program_id,purchase.program_id,sponsor.node_id])).rows[0];
+          if (candidate) { node=candidate; parentNodeId=(await client.query<{id:string}>(`select id from matrix_nodes where program_id=$1 and position=floor($2/2)::int limit 1`,[purchase.program_id,candidate.position])).rows[0]?.id ?? sponsor.node_id; }
+        }
+      }
+      if (!node) {
+        node=(await client.query<{id:string;position:number;level:number}>(`
+          select id,position,level from matrix_nodes where program_id=$1 and status='available'
+          order by position asc for update skip locked limit 1
+        `, [purchase.program_id])).rows[0];
+      }
+      if (!node) throw new HttpError(409, 'No available matrix position remains in this program');
+      if (!parentNodeId && node.position > 1) {
+        parentNodeId=(await client.query<{id:string}>(`select id from matrix_nodes where program_id=$1 and position=floor($2/2)::int and status='active' limit 1`,[purchase.program_id,node.position])).rows[0]?.id ?? null;
+      }
+      await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`, [req.auth!.userId,purchase.referrer_user_id,node.id]);
+      membershipRow=(await client.query<{id:string}>(`
+        insert into matrix_memberships(user_id,program_id,node_id,referrer_user_id,level,position,status,package_id,package_tier,parent_node_id)
+        values($1,$2,$3,$4,$5,$6,'active',$7,$8,$9) returning id
+      `, [req.auth!.userId,purchase.program_id,node.id,purchase.referrer_user_id,node.level,node.position,purchase.package_id,packageInfo.tier,parentNodeId])).rows[0];
+    } else {
+      if (!existingMembership || existingMembership.status === 'completed') throw new HttpError(409, `A ${packageInfo.tier === 'growth' ? 'Starter' : 'Growth'} membership is required before this upgrade`);
+      const updated=(await client.query<{id:string;node_id:string|null;position:number;level:number}>(`
+        update matrix_memberships set package_id=$2,package_tier=$3,updated_at=now()
+        where id=$1
+        returning id,node_id,position,level
+      `, [existingMembership.id,purchase.package_id,packageInfo.tier])).rows[0];
+      if (!updated) throw new HttpError(409, 'Unable to upgrade matrix membership');
+      membershipRow={id:updated.id};
+      if (updated.node_id) node={id:updated.node_id,position:updated.position,level:updated.level};
+    }
 
     await client.query(`
       update package_purchases set status='confirmed',payment_tx_hash=$2,settlement_error=null,confirmed_at=now(),
@@ -212,14 +286,20 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       JSON.stringify({purchaseId,packageCode:purchase.package_code,receiver,token,confirmations})
     ]);
 
-    const economics = (await client.query<{entry_amount:string;direct_percent:string;matrix_percent:string}>(`
-      select entry_amount,direct_percent,matrix_percent from package_economics where package_id=$1 limit 1
+    const economics = (await client.query<{entry_amount:string;direct_percent:string;matrix_percent:string;admin_percent:string}>(`
+      select entry_amount,direct_percent,matrix_percent,admin_percent
+      from package_economics where package_id=$1 limit 1
     `, [purchase.package_id])).rows[0];
 
     if (economics) {
+      const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.direct_percent])).rows[0]?.amount;
+      const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.matrix_percent])).rows[0]?.amount;
+      const adminAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.admin_percent])).rows[0]?.amount;
+      if (directAmount == null || matrixAmount == null || adminAmount == null) throw new HttpError(500, 'Unable to calculate package allocation');
+
+      await client.query(`update package_purchases set direct_amount=$2,matrix_amount=$3,admin_amount=$4 where id=$1`, [purchaseId,directAmount,matrixAmount,adminAmount]);
+
       if (purchase.referrer_user_id) {
-        const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.direct_percent])).rows[0]?.amount;
-        if (directAmount == null) throw new HttpError(500, 'Unable to calculate direct referral earning');
         await client.query(`
           insert into ledger_transactions(user_id,type,program_code,amount,asset,status,reference,description,metadata)
           values($1,'earned',$2,$3,$4,'completed',$5,$6,$7::jsonb) on conflict (reference) do nothing
@@ -227,37 +307,66 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
           purchase.referrer_user_id,purchase.program_code,directAmount,purchase.asset,
           `package:${purchaseId}:direct:${purchase.referrer_user_id}`,
           'Direct referral earning from confirmed package purchase',
-          JSON.stringify({purchaseId,sourceUserId:req.auth!.userId,percent:economics.direct_percent})
+          JSON.stringify({purchaseId,sourceUserId:req.auth!.userId,percent:economics.direct_percent,tier:packageInfo.tier})
         ]);
+      } else {
+        await client.query(`update package_purchases set unallocated_direct_amount=$2 where id=$1`,[purchaseId,directAmount]);
+        await client.query(`
+          insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
+          values($1,'unallocated_direct',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
+        `,[purchaseId,directAmount,purchase.asset,JSON.stringify({reason:'No sponsor on confirmed purchase'})]);
       }
 
       const rules = (await client.query<{level:number;percent_of_matrix_pool:string}>(`
         select level,percent_of_matrix_pool from matrix_distribution_rules where package_id=$1 order by level
       `, [purchase.package_id])).rows;
 
-      let upline = purchase.referrer_user_id;
+      let currentNodeId = parentNodeId;
+      let allocatedMatrix = '0';
       for (const rule of rules) {
-        if (!upline) break;
-        const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100 * $3::numeric / 100)::text as amount`, [economics.entry_amount, economics.matrix_percent, rule.percent_of_matrix_pool])).rows[0]?.amount;
-        if (matrixAmount == null) throw new HttpError(500, 'Unable to calculate matrix earning');
+        if (!currentNodeId) break;
+        const ancestor = (await client.query<{user_id:string;parent_node_id:string|null}>(`
+          select m.user_id,m.parent_node_id
+          from matrix_memberships m
+          where m.node_id=$1 and m.status='active'
+          limit 1
+        `, [currentNodeId])).rows[0];
+        if (!ancestor) break;
+        const matrixLevelAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [matrixAmount, rule.percent_of_matrix_pool])).rows[0]?.amount;
+        if (matrixLevelAmount == null) throw new HttpError(500, 'Unable to calculate matrix earning');
         await client.query(`
           insert into matrix_earnings(purchase_id,recipient_user_id,source_user_id,level,amount,asset,status)
           values($1,$2,$3,$4,$5,$6,'credited') on conflict (purchase_id,recipient_user_id,level) do nothing
-        `, [purchaseId,upline,req.auth!.userId,rule.level,matrixAmount,purchase.asset]);
+        `, [purchaseId,ancestor.user_id,req.auth!.userId,rule.level,matrixLevelAmount,purchase.asset]);
         await client.query(`
           insert into ledger_transactions(user_id,type,program_code,amount,asset,status,reference,description,metadata)
           values($1,'earned',$2,$3,$4,'completed',$5,$6,$7::jsonb) on conflict (reference) do nothing
         `, [
-          upline,purchase.program_code,matrixAmount,purchase.asset,
-          `package:${purchaseId}:matrix:${rule.level}:${upline}`,
+          ancestor.user_id,purchase.program_code,matrixLevelAmount,purchase.asset,
+          `package:${purchaseId}:matrix:${rule.level}:${ancestor.user_id}`,
           `Matrix level ${rule.level} earning from confirmed package purchase`,
-          JSON.stringify({purchaseId,sourceUserId:req.auth!.userId,level:rule.level,percentOfMatrixPool:rule.percent_of_matrix_pool})
+          JSON.stringify({purchaseId,sourceUserId:req.auth!.userId,level:rule.level,percentOfMatrixPool:rule.percent_of_matrix_pool,tier:packageInfo.tier})
         ]);
-        upline = (await client.query<{referrer_user_id:string|null}>(`
-          select referrer_user_id from matrix_memberships where user_id=$1 and program_id=$2 limit 1
-        `, [upline,purchase.program_id])).rows[0]?.referrer_user_id ?? null;
+        allocatedMatrix=(await client.query<{amount:string}>(`select ($1::numeric + $2::numeric)::text as amount`,[allocatedMatrix,matrixLevelAmount])).rows[0]!.amount;
+        currentNodeId=ancestor.parent_node_id;
       }
+
+      const unallocatedMatrix=(await client.query<{amount:string}>(`select greatest($1::numeric-$2::numeric,0)::text as amount`,[matrixAmount,allocatedMatrix])).rows[0]!.amount;
+      if (Number(unallocatedMatrix)>0) {
+        await client.query(`update package_purchases set unallocated_matrix_amount=$2 where id=$1`,[purchaseId,unallocatedMatrix]);
+        await client.query(`
+          insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
+          values($1,'unallocated_matrix',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
+        `,[purchaseId,unallocatedMatrix,purchase.asset,JSON.stringify({reason:'No eligible matrix ancestor at one or more levels',matrixPool:matrixAmount,allocatedMatrix})]);
+      }
+
+      await client.query(`
+        insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
+        values($1,'admin_revenue',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
+      `,[purchaseId,adminAmount,purchase.asset,JSON.stringify({percent:economics.admin_percent,packageCode:purchase.package_code,tier:packageInfo.tier})]);
     }
+
+    if (!node) throw new HttpError(500, 'Matrix position was not resolved during settlement');
 
     await client.query(`
       insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata)
