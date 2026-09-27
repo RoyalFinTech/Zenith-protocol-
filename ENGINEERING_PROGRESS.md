@@ -417,3 +417,18 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - CI run #460 is in progress for the tier/reservation changes; the later double-spend regression will trigger a subsequent CI run.
 - Production Render `main` remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:17 UTC
+
+### Frontend state correction
+- Replaced the member Earnings page's fixed example chart and fixed activity bars with values derived from the authenticated backend ledger response.
+- Historical earnings now use completed `earned` ledger entries from the last seven calendar days.
+- Activity mix now reflects completed ledger values for earnings, withdrawals, and deposits.
+- Empty accounts explicitly show that no completed earnings have been recorded instead of displaying fabricated performance.
+
+### Release state
+- Feature branch is 72 commits ahead of `main` with no commits behind.
+- Latest feature-head CI run #464 is in progress after the ledger-driven Earnings correction; do not mark the current head validated until it completes successfully.
+- Render `main` remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
