@@ -447,3 +447,18 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - CI run #470 is in progress and is the current validation gate.
 - Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; the feature branch is not deployed.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:28 UTC
+
+### Validation complete
+- Fixed the final CI regression in the withdrawal reservation integration test: the double-spend request now spreads the authenticated header object so the test reaches the authorization-protected withdrawal endpoint correctly.
+- CI run #473 passed end-to-end on feature head `7c9ba098b183b574ad4e61c789a74a63c2eed959`.
+- Backend lint, all backend unit tests, all integration tests, database migration application, frontend build, and frontend login tests are green.
+- Pending package purchase responses now return the purchase's locked `amount`, preventing catalog-price drift while a pending purchase is reused.
+
+### Release state
+- Feature branch is validated but not deployed.
+- Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Real-device Web Push acceptance remains required before production phone delivery can be called validated.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
