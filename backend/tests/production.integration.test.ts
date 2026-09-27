@@ -183,6 +183,11 @@ describeProduction('production API against a real PostgreSQL test database', () 
       const reservedSummary=await request('/api/dashboard/summary',{headers:authorization});
       expect(reservedSummary.status).toBe(200);
       expect((await reservedSummary.json()).earnings.reserved).toBe('0.75');
+      const doubleSpendAttempt=await request('/api/transactions/withdrawals',{
+        method:'POST',headers:{authorization,'content-type':'application/json'},
+        body:JSON.stringify({amount:'4.5',address:testAddress})
+      });
+      expect(doubleSpendAttempt.status).toBe(409);
       const processing=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
         method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
         body:JSON.stringify({status:'processing'})
