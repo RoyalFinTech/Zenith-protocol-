@@ -61,6 +61,13 @@ describeProduction('production API against a real PostgreSQL test database', () 
     return fetch(`${baseUrl}${path}`, init);
   }
 
+  it('does not seed a default administrator account', async () => {
+    const result = await database.pool.query<{count:number}>(
+      `select count(*)::int as count from admin_users where email='admin@zenitprotocol.com'`
+    );
+    expect(result.rows[0]?.count ?? 0).toBe(0);
+  });
+
   it('keeps the admin portal separate from member authentication', async () => {
     const denied = await request('/api/admin-portal/overview', { headers: { authorization: `Bearer ${token}` } });
     expect(denied.status).toBe(401);
