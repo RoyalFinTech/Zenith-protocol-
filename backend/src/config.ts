@@ -61,5 +61,6 @@ export const env = {
   nonceTtlMinutes,
   corsOrigins,
   resendApiKey: process.env.RESEND_API_KEY ?? '',
-  resendFrom: process.env.RESEND_FROM ?? 'ZENIT Protocol <onboarding@resend.dev>'
+  resendFrom: process.env.RESEND_FROM ?? 'ZENIT Protocol <onboarding@resend.dev>',
+  adminBootstrapToken: process.env.ADMIN_BOOTSTRAP_TOKEN ?? ''
 };
