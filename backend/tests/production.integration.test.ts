@@ -236,6 +236,44 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect(unauthenticated.status).toBe(401);
   });
 
+  it('makes package confirmation retries idempotent to the recorded transaction hash', async () => {
+    const packageRow = (await database.pool.query<{id:string}>(
+      `select id from program_packages where code='2x4-starter' limit 1`
+    )).rows[0];
+    expect(packageRow?.id).toBeTruthy();
+
+    const recordedTx = `0x${'1'.repeat(64)}`;
+    const differentTx = `0x${'2'.repeat(64)}`;
+    const purchase = await database.pool.query<{id:string}>(
+      `insert into package_purchases(
+         user_id,package_id,amount,asset,status,payment_tx_hash,confirmed_at,
+         package_tier,direct_percent,matrix_percent,admin_percent,matrix_distribution_rules
+       )
+       values($1,$2,10,'USDT','confirmed',$3,now(),'starter',20,70,10,'[]'::jsonb)
+       returning id`,
+      [userId,packageRow!.id,recordedTx]
+    );
+
+    try {
+      const authorization = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
+      const sameHash = await request(`/api/packages/purchases/${purchase.rows[0]!.id}/confirm`, {
+        method:'POST',
+        headers:authorization,
+        body:JSON.stringify({txHash:recordedTx})
+      });
+      expect(sameHash.status).toBe(200);
+
+      const differentHash = await request(`/api/packages/purchases/${purchase.rows[0]!.id}/confirm`, {
+        method:'POST',
+        headers:authorization,
+        body:JSON.stringify({txHash:differentTx})
+      });
+      expect(differentHash.status).toBe(409);
+    } finally {
+      await database.pool.query('delete from package_purchases where id=$1',[purchase.rows[0]!.id]);
+    }
+  });
+
   it('serves health and public configuration', async () => {
     const [health, config] = await Promise.all([request('/health'), request('/config/public')]);
     expect(health.status).toBe(200);
