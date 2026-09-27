@@ -432,3 +432,18 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Latest feature-head CI run #464 is in progress after the ledger-driven Earnings correction; do not mark the current head validated until it completes successfully.
 - Render `main` remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:25 UTC
+
+### CI regression fix
+- The approved-withdrawal reservation regression test was made independent of earlier suite state by capturing the member's reserved balance before creating its test withdrawals and asserting the 0.75 USDT reservation increase after approval.
+- This corrects the CI failure that began at run #455; later frontend and documentation commits were reporting the same backend test failure because the failing integration test remained in the suite.
+- The package purchase creation response was also corrected to return the locked `package_purchases.amount` when reusing a pending purchase, rather than the current catalog price.
+
+### Validation state
+- Current feature head: `383a8cce1e3cdc035caf84a001658ee3610ea5b5`.
+- Feature branch is 78 commits ahead of `main`, 0 behind.
+- CI run #470 is in progress and is the current validation gate.
+- Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; the feature branch is not deployed.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
