@@ -187,3 +187,25 @@ Repository migrations now include the corresponding settlement/payout history an
 - This architecture/build map: `BUILD_CONCEPT.md`
 - Security branch: `security/atomic-auth-withdrawal`
 - Draft PR: #7
+
+
+## Package lifecycle and staff operations — 2026-09-27
+
+The package model now supports one matrix position per user per program:
+- Starter creates the position.
+- Growth requires confirmed Starter in the same program and upgrades that position.
+- Elite requires confirmed Growth in the same program and upgrades that position.
+- Starter cannot be repurchased once a position exists.
+- Referral codes are accepted only on Starter; later purchases retain the original sponsor.
+
+Every confirmed purchase records 20% direct, 70% matrix, and 10% platform administration. Direct and matrix amounts are member liabilities; admin revenue, unallocated direct, and unallocated matrix are tracked separately in the platform revenue ledger.
+
+Matrix placement uses the sponsor's active position as the search root, traverses binary descendants breadth-first by level/position, requires an active binary parent, and falls back to the first available position with a valid active parent (or the root). parent_node_id is the actual matrix relationship and is not derived from sponsor ancestry.
+
+Staff administration is isolated from member wallet sessions through admin_users / admin_sessions, email/password authentication, lockout, server-side session validation, credential-change revocation, and protected /api/admin-portal/* analytics endpoints.
+
+### Approved package catalog
+- 2x4 Starter 10 USDT; Growth 25 USDT; Elite 50 USDT.
+- 2x6 Starter 30 USDT; Growth 60 USDT; Elite 120 USDT.
+- 2x4 distribution: 30/25/25/20% of the matrix pool by levels 1–4.
+- 2x6 distribution: 30/20/15/10/10/15% of the matrix pool by levels 1–6.
