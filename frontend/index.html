@@ -1267,8 +1267,24 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     }
     function showRegistration(){
       $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.remove("hidden-screen");$("#appShell").classList.add("hidden");
-      const verified=new URLSearchParams(location.search).get("email_verified")==="1";
-      if(verified){showWalletGate();} else {setTimeout(()=>$("#registrationUsername")?.focus(),80);}
+      const params=new URLSearchParams(location.search);
+      const verified=params.get("email_verified")==="1";
+      const verificationError=params.get("email_verification")==="error";
+      if(verified){showWalletGate();return;}
+      if(verificationError){
+        $("#registrationTitle").textContent="Verification link expired";
+        $("#registrationText").textContent="That confirmation link is invalid or has expired. Request a fresh verification email and continue safely.";
+        $("#registrationForm").classList.remove("hidden-screen");
+        $("#registrationForm").innerHTML='<div class="registration-status"><strong>EMAIL VERIFICATION</strong>Your previous link can no longer be used.</div><button class="btn primary registration-submit" id="restartRegistrationButton" type="button">REQUEST NEW VERIFICATION <span>→</span></button>';
+        $("#registrationStatus").classList.add("hidden-screen");
+        $("#restartRegistrationButton")?.addEventListener("click",()=>{
+          history.replaceState({},'',location.pathname);
+          showRegistration();
+          setTimeout(()=>$("#registrationUsername")?.focus(),80);
+        },{once:true});
+        return;
+      }
+      setTimeout(()=>$("#registrationUsername")?.focus(),80);
     }
     const registrationChecks={username:false,email:false,displayName:false};
     let registrationCheckTimer=0;
