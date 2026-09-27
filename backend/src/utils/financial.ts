@@ -1,3 +1,11 @@
+export const packageTierRank = { starter:1, growth:2, elite:3 } as const;
+
+export function comparePackageTiers(current: string, next: string): number {
+  const currentRank = packageTierRank[current as keyof typeof packageTierRank] ?? 0;
+  const nextRank = packageTierRank[next as keyof typeof packageTierRank] ?? 0;
+  return nextRank - currentRank;
+}
+
 export const withdrawalTransitions = {
   pending: ['approved', 'rejected'],
   approved: ['processing', 'rejected'],
