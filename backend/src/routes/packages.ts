@@ -193,21 +193,78 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
     if (fresh.status === 'confirmed') { await client.query('commit'); return res.json({ status:'confirmed', purchase:fresh }); }
     if (fresh.status !== 'pending') throw new HttpError(409, 'Purchase is no longer pending');
 
-    const membership = (await client.query(`select 1 from matrix_memberships where user_id=$1 and program_id=$2 limit 1`, [req.auth!.userId, purchase.program_id])).rows[0];
-    if (membership) throw new HttpError(409, 'A position already exists for this program');
+    const packageInfo = (await client.query<{tier:string;entry_amount:string;direct_percent:string;matrix_percent:string;admin_percent:string}>(`
+      select pp.tier,e.entry_amount,e.direct_percent,e.matrix_percent,e.admin_percent
+      from program_packages pp
+      join package_economics e on e.package_id=pp.id
+      where pp.id=$1
+      limit 1
+    `, [purchase.package_id])).rows[0];
+    if (!packageInfo) throw new HttpError(409, 'Package economics are not configured');
 
-    const node = (await client.query<{id:string;position:number;level:number}>(`
-      select id,position,level from matrix_nodes where program_id=$1 and status='available'
-      order by position asc for update skip locked limit 1
-    `, [purchase.program_id])).rows[0];
-    if (!node) throw new HttpError(409, 'No available matrix position remains in this program');
+    let node: {id:string;position:number;level:number} | undefined;
+    let membershipRow: {id:string} | undefined;
+    let parentNodeId: string | null = null;
 
-    await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`, [req.auth!.userId,purchase.referrer_user_id,node.id]);
+    const existingMembership = (await client.query<{id:string;node_id:string|null;package_tier:string;referrer_user_id:string|null}>(`
+      select id,node_id,package_tier,referrer_user_id
+      from matrix_memberships
+      where user_id=$1 and program_id=$2
+      for update
+    `, [req.auth!.userId,purchase.program_id])).rows[0];
 
-    const membershipRow = (await client.query<{id:string}>(`
-      insert into matrix_memberships(user_id,program_id,node_id,referrer_user_id,level,position,status)
-      values($1,$2,$3,$4,$5,$6,'active') returning id
-    `, [req.auth!.userId,purchase.program_id,node.id,purchase.referrer_user_id,node.level,node.position])).rows[0];
+    if (packageInfo.tier === 'starter') {
+      if (existingMembership) throw new HttpError(409, 'A position already exists for this program');
+      if (purchase.referrer_user_id) {
+        const sponsor = (await client.query<{node_id:string|null}>(`
+          select node_id from matrix_memberships where user_id=$1 and program_id=$2 and status='active' limit 1
+        `, [purchase.referrer_user_id,purchase.program_id])).rows[0];
+        if (sponsor?.node_id) {
+          const candidate = (await client.query<{id:string;position:number;level:number}>(`
+            with recursive subtree as (
+              select n.id,n.position,n.level
+              from matrix_nodes n
+              where n.id=$3 and n.program_id=$1
+              union all
+              select c.id,c.position,c.level
+              from matrix_nodes c
+              join subtree p on c.program_id=$1 and c.position in (p.position*2,p.position*2+1)
+            )
+            select n.id,n.position,n.level
+            from matrix_nodes n
+            join subtree s on s.id=n.id
+            where n.status='available'
+              and n.id<>$3
+            order by n.level,n.position
+            for update skip locked
+            limit 1
+          `, [purchase.program_id,purchase.program_id,sponsor.node_id])).rows[0];
+          if (candidate) { node=candidate; parentNodeId=(await client.query<{id:string}>(`select id from matrix_nodes where program_id=$1 and position=floor($2/2)::int limit 1`,[purchase.program_id,candidate.position])).rows[0]?.id ?? sponsor.node_id; }
+        }
+      }
+      if (!node) {
+        node=(await client.query<{id:string;position:number;level:number}>(`
+          select id,position,level from matrix_nodes where program_id=$1 and status='available'
+          order by position asc for update skip locked limit 1
+        `, [purchase.program_id])).rows[0];
+      }
+      if (!node) throw new HttpError(409, 'No available matrix position remains in this program');
+      await client.query(`update matrix_nodes set status='active',user_id=$1,referrer_user_id=$2,activated_at=now() where id=$3`, [req.auth!.userId,purchase.referrer_user_id,node.id]);
+      membershipRow=(await client.query<{id:string}>(`
+        insert into matrix_memberships(user_id,program_id,node_id,referrer_user_id,level,position,status,package_id,package_tier,parent_node_id)
+        values($1,$2,$3,$4,$5,$6,'active',$7,$8,$9) returning id
+      `, [req.auth!.userId,purchase.program_id,node.id,purchase.referrer_user_id,node.level,node.position,purchase.package_id,packageInfo.tier,parentNodeId])).rows[0];
+    } else {
+      if (!existingMembership || existingMembership.status === 'completed') throw new HttpError(409, `A ${packageInfo.tier === 'growth' ? 'Starter' : 'Growth'} membership is required before this upgrade`);
+      const updated=(await client.query<{id:string;node_id:string|null;position:number;level:number}>(`
+        update matrix_memberships set package_id=$2,package_tier=$3,updated_at=now()
+        where id=$1
+        returning id,node_id,position,level
+      `, [existingMembership.id,purchase.package_id,packageInfo.tier])).rows[0];
+      if (!updated) throw new HttpError(409, 'Unable to upgrade matrix membership');
+      membershipRow={id:updated.id};
+      if (updated.node_id) node={id:updated.node_id,position:updated.position,level:updated.level};
+    }
 
     await client.query(`
       update package_purchases set status='confirmed',payment_tx_hash=$2,settlement_error=null,confirmed_at=now(),
