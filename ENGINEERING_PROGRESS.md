@@ -546,3 +546,20 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Render health-check configuration drift (render.yaml /health vs live blank path) remains pending and was not changed.
 - Admin Security / first administrator provisioning remains intentionally pending.
 - Feature branch remains unmerged and not deployed to production.
+
+
+## 2026-09-27 15:35 UTC — Full email/onboarding/security audit checkpoint
+- Audited the registration, email verification, wallet handoff, Resend, Render, Supabase RLS/grants, public functions, production data state, and CI pipeline.
+- Resend production email infrastructure was provisioned: verified-domain record set created for zenitprotocol.com, least-privileged sending credential stored in Render, and branded Welcome + Verify Email templates published.
+- The production sending domain remains pending DNS verification. No email delivery test can honestly be called complete until those DNS records are present.
+- The application already used the official repository PNG logo; no SVG was generated. Branded verification emails point to the official PNG asset and successful verification redirects to the wallet-connect step.
+- Hardened verification failure UX: invalid/expired links now redirect to the branded registration surface instead of exposing a raw API error.
+- Hardened Resend delivery calls with a 10-second timeout and welcome-email idempotency.
+- Identified and fixed a security weakness in the post-verification wallet handoff: the old reusable registration UUID was replaced with a short-lived, hashed, one-time wallet handoff secret. The raw registration identifier is no longer returned to the browser.
+- Added migration and regression coverage for the one-time wallet handoff.
+- Supabase security advisor review: 26 public tables have RLS enabled with no anon/authenticated table privileges; the only public function is the read-only package economics quote function. Advisor RLS-without-policy findings are consistent with the backend-owned database access model.
+- Production read-only state: 2 pending package purchases, 0 confirmed, 0 admin users, 0 push subscriptions, and 0 active pending registrations. No production purchase rows were altered.
+- Render production environment now contains the least-privileged Resend sender configuration and the resulting environment deployment is live on the existing main commit.
+- Real-device Web Push remains the only physical-device acceptance item; the implementation is complete but cannot be truthfully certified without a browser/device test.
+- Admin provisioning remains intentionally operator-controlled and was not performed.
+- Feature branch remains unmerged; feature code was not deployed to production.
