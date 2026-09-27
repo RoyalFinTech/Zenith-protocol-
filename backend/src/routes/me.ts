@@ -42,6 +42,47 @@ router.patch('/profile', async (req,res,next)=>{
   } catch(e){ next(e); }
 });
 
+router.get('/notifications', async (req,res,next)=>{
+  try{
+    const limit = Math.min(Math.max(Number(req.query.limit ?? 20), 1), 100);
+    const r = await query(
+      `select id,title,message,created_at,read_at
+       from notifications
+       where user_id=$1
+       order by created_at desc
+       limit $2`,
+      [req.auth!.userId, limit]
+    );
+    res.json({notifications:r.rows});
+  } catch(e){ next(e); }
+});
+
+router.patch('/notifications/:id/read', async (req,res,next)=>{
+  try{
+    const r = await query(
+      `update notifications
+       set read_at=coalesce(read_at,now())
+       where id=$1 and user_id=$2
+       returning id,title,message,created_at,read_at`,
+      [req.params.id, req.auth!.userId]
+    );
+    if(!r.rowCount) throw new HttpError(404,'Notification not found');
+    res.json({notification:r.rows[0]});
+  } catch(e){ next(e); }
+});
+
+router.patch('/notifications/read-all', async (req,res,next)=>{
+  try{
+    const r = await query(
+      `update notifications
+       set read_at=now()
+       where user_id=$1 and read_at is null`,
+      [req.auth!.userId]
+    );
+    res.json({updated:r.rowCount ?? 0});
+  } catch(e){ next(e); }
+});
+
 router.patch('/preferences', async (req,res,next)=>{
   try {
     const theme = req.body?.theme;
