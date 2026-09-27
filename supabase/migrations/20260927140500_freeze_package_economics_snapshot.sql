@@ -7,7 +7,11 @@ language plpgsql
 as $snap$
 begin
   if
-    new.package_tier is distinct from old.package_tier
+    new.user_id is distinct from old.user_id
+    or new.package_id is distinct from old.package_id
+    or new.amount is distinct from old.amount
+    or new.asset is distinct from old.asset
+    or new.package_tier is distinct from old.package_tier
     or new.direct_percent is distinct from old.direct_percent
     or new.matrix_percent is distinct from old.matrix_percent
     or new.admin_percent is distinct from old.admin_percent
