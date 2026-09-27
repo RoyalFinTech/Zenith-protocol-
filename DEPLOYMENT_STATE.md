@@ -166,3 +166,13 @@ The original package lifecycle/admin implementation was already merged into main
 - Render `main` deployment `dep-dashbk3bc2fs73f91pig` is confirmed `live` on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
 - The Render VAPID environment configuration is present, but the live `main` code does not yet include the feature-branch push implementation; no live push-delivery claim is made.
 - Admin Security / first administrator provisioning remains **PENDING**.
+
+
+## Engineering checkpoint — 2026-09-27 13:16 UTC
+
+- Withdrawal reservation accounting was hardened so approved/processing payouts remain reserved.
+- Package tier progression was hardened against repeat purchases and downgrades.
+- New API and unit regressions are committed on the feature branch.
+- Latest feature CI is still running; no feature-branch production release is claimed.
+- Render main remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Admin Security / first administrator provisioning remains **PENDING**.
