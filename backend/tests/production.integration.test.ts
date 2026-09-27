@@ -194,7 +194,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
       const final=(await database.pool.query<{status:string}>(`select status from withdrawal_requests where id=$1`,[withdrawal.rows[0]!.id])).rows[0];
       expect(final?.status).toBe('rejected');
     } finally {
-      await database.pool.query('delete from ledger_transactions where user_id=$1 and reference like 'withdrawal:%'',[userId]);
+      await database.pool.query(`delete from ledger_transactions where user_id=$1 and reference like 'withdrawal:%'`,[userId]);
       await database.pool.query('delete from notifications where user_id=$1',[userId]);
       await database.pool.query('delete from withdrawal_requests where user_id=$1',[userId]);
       await database.pool.query('delete from admin_users where id=$1',[adminId]);
