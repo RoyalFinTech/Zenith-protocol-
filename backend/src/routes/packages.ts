@@ -63,16 +63,25 @@ router.post('/purchases', async (req, res, next) => {
     `, [packageCode])).rows[0];
 
     if (!packageRow) throw new HttpError(404, 'Package not found');
-    if (packageRow.tier !== 'starter') throw new HttpError(409, 'Only Starter packages can activate a matrix position');
-    if (packageRow.price == null) throw new HttpError(409, 'This Starter package is not priced for purchase yet');
+    if (!['starter','growth','elite'].includes(packageRow.tier)) throw new HttpError(409, 'Unsupported package tier');
+    if (packageRow.price == null) throw new HttpError(409, 'This package is not priced for purchase yet');
     if (packageRow.asset !== env.primaryAsset) throw new HttpError(409, 'This package uses an unsupported settlement asset');
 
-    const membership = (await query(`
-      select 1 from matrix_memberships m join programs p on p.id=m.program_id
-      where m.user_id=$1 and p.code=$2 limit 1
-    `, [req.auth!.userId, packageRow.program_code])).rows[0];
-    if (membership) throw new HttpError(409, 'You already have a position in this program');
+    const membership = (await query<{package_tier:string}>(`
+      select package_tier from matrix_memberships m
+      where m.user_id=$1 and m.program_id=$2 and m.status in ('active','completed')
+      limit 1
+    `, [req.auth!.userId, packageRow.program_id])).rows[0];
 
+    if (packageRow.tier === 'starter' && membership) {
+      throw new HttpError(409, 'You already have a position in this program. Use the next package tier to upgrade it.');
+    }
+    if (packageRow.tier === 'growth' && (!membership || membership.package_tier !== 'starter')) {
+      throw new HttpError(409, 'Growth unlocks after a confirmed Starter purchase in this program');
+    }
+    if (packageRow.tier === 'elite' && (!membership || membership.package_tier !== 'growth')) {
+      throw new HttpError(409, 'Elite unlocks after a confirmed Growth purchase in this program');
+    }
 
     let referrerId: string | null = null;
     if (referralCode) {
@@ -88,8 +97,10 @@ router.post('/purchases', async (req, res, next) => {
     `, [req.auth!.userId, packageRow.id])).rows[0];
 
     if (!pending) {
-      const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
-      if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
+      if (packageRow.tier === 'starter') {
+        const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
+        if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
+      }
     }
 
     const purchase = pending ?? (await query(`
