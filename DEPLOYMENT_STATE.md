@@ -91,3 +91,13 @@ The original package lifecycle/admin implementation was already merged into main
 3. Create PR to main.
 4. Merge only after CI/review is satisfactory.
 5. Verify Render deployment status and live commit after merge.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:12 UTC
+
+- Feature branch is being used as the working validation branch; production deployment is not being claimed for the continuation changes.
+- Admin Security / first administrator provisioning is intentionally **PENDING**. Production `admin_users` currently has zero rows, and no privileged admin credential has been created by this continuation.
+- Production inspection was read-only during this continuation.
+- Current continuation changes include backend notification read APIs, backend-backed notification UI, reservation-aware member balance display, and removal of the obsolete duplicate matrix placement endpoint.
+- CI for continuation head `0aaf4fd9ddc18d15758a58469f3325679369f982` was in progress at the checkpoint; deployment remains gated on CI and final review.
+- Existing Render health-check configuration drift remains a separate pending infrastructure item.
