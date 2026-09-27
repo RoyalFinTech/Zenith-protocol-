@@ -330,3 +330,20 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Admin Security / first administrator provisioning remains intentionally **PENDING**.
 - Final current-head CI validation for the accounting/admin-route consolidation.
 - Continue frontend accounting/history review and settlement retry edge-case review after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:50 UTC
+
+### Completed
+- Confirmed the previous accounting/consolidation changes are under CI validation.
+- Fixed dashboard pending-balance semantics so only `earned` ledger entries with `pending` status contribute to pending earnings; withdrawal reservations no longer inflate the member's pending earnings display.
+- Added integration coverage asserting that creating a pending withdrawal does not increase pending earnings.
+- Shared admin withdrawal service and legacy admin route consolidation remain in the current feature branch.
+
+### Validation
+- Latest CI runs are still processing the newest commits; do not mark the current head fully validated until the corresponding run completes successfully.
+- Production database remains read-only during this engineering continuation.
+
+### Pending
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Continue final settlement retry/upgrade review and frontend state reconciliation after CI.
