@@ -252,6 +252,9 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect(packages.find(x => x.code === '2x4-starter')?.price).toBe('10.00000000');
     expect(packages.find(x => x.code === '2x6-starter')?.price).toBe('30.00000000');
     expect((await request('/api/transactions/withdrawals', { method: 'POST', headers: authorization, body: JSON.stringify({ amount: '1.5', address: testAccount().address }) })).status).toBe(201);
+    const summaryAfterWithdrawal=await request('/api/dashboard/summary',{headers:authorization});
+    expect(summaryAfterWithdrawal.status).toBe(200);
+    expect((await summaryAfterWithdrawal.json()).earnings.pending).toBe('0');
     await database.pool.query(`update matrix_memberships set status='completed' where user_id=$1 and program_id=(select id from programs where code='2x4')`, [userId]);
     const inactiveWithdrawal = await request('/api/transactions/withdrawals', { method: 'POST', headers: authorization, body: JSON.stringify({ amount: '0.5', address: testAccount().address }) });
     expect(inactiveWithdrawal.status).toBe(409);
