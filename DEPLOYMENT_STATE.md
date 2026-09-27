@@ -144,3 +144,15 @@ The original package lifecycle/admin implementation was already merged into main
 - Latest CI for the notification event changes is still in progress.
 - Production remains untouched by this continuation.
 - Admin Security / first administrator provisioning remains **PENDING**.
+
+
+## Push notification release gate — 2026-09-27 13:10 UTC
+
+- Feature branch: `feature/admin-control-center-and-package-lifecycle`.
+- Production Supabase migration `20260927130000_push_notifications.sql` has been applied successfully.
+- The new `push_subscriptions` table is RLS-protected and backend-owned; no public/anonymous grants were added.
+- Production device delivery is **not yet enabled** because the VAPID subject/public/private key values must be provisioned as Render environment secrets. These values are intentionally not stored in GitHub or chat.
+- The frontend now registers `/sw.js`, requests notification permission only from an explicit Enable action, supports installed iOS/iPadOS web apps, stores subscription material server-side, shows push status in the notification/profile UI, and removes the device registration on wallet logout.
+- Real-device acceptance is still required before calling phone push delivery production-validated.
+- Render continues to deploy from `main`; this feature branch is not being claimed live.
+- Admin Security / first administrator provisioning remains **PENDING**.
