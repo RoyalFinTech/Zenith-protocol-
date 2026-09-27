@@ -201,6 +201,28 @@ describeProduction('production API against a real PostgreSQL test database', () 
     }
   });
 
+  it('exposes authenticated device push capability without allowing unauthenticated subscription writes', async () => {
+    const authorization = { authorization: `Bearer ${token}` };
+    const pushConfig = await request('/api/me/push/config', { headers: authorization });
+    expect(pushConfig.status).toBe(200);
+    const pushData = await pushConfig.json() as { enabled:boolean; publicKey:string|null };
+    expect(typeof pushData.enabled).toBe('boolean');
+    if (!pushData.enabled) {
+      const disabled = await request('/api/me/push/subscriptions', {
+        method:'POST',
+        headers:{...authorization,'content-type':'application/json'},
+        body:JSON.stringify({subscription:{endpoint:'https://push.example.test/subscription',keys:{p256dh:'bad',auth:'bad'}}})
+      });
+      expect(disabled.status).toBe(503);
+    }
+    const unauthenticated = await request('/api/me/push/subscriptions', {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({subscription:{endpoint:'https://push.example.test/subscription',keys:{p256dh:'bad',auth:'bad'}}})
+    });
+    expect(unauthenticated.status).toBe(401);
+  });
+
   it('serves health and public configuration', async () => {
     const [health, config] = await Promise.all([request('/health'), request('/config/public')]);
     expect(health.status).toBe(200);
