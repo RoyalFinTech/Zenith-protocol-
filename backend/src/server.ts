@@ -9,6 +9,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import walletRoutes from './routes/wallet.js';
 import transactionRoutes from './routes/transactions.js';
 import adminRoutes from './routes/admin.js';
+import adminPortalRoutes from './routes/admin-portal.js';
 import mutationRoutes from './routes/mutations.js';
 import packageRoutes from './routes/packages.js';
 import { env } from './config.js';
@@ -23,6 +24,12 @@ const verifyRateLimiter = new RateLimiterMemory({ points: 5, duration: 60 });
 const registrationRateLimiter = new RateLimiterMemory({ points: 6, duration: 60 });
 const availabilityRateLimiter = new RateLimiterMemory({ points: 30, duration: 60 });
 const pinRateLimiter = new RateLimiterMemory({ points: 5, duration: 60 });
+const adminLoginRateLimiter = new RateLimiterMemory({ points: 5, duration: 300 });
+const limitAdminLogin = (limiter: RateLimiterMemory) => async (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+  try { await limiter.consume(req.ip ?? 'unknown'); next(); }
+  catch { next(new HttpError(429, 'Too many admin login attempts; please try again later')); }
+};
+
 const limitAuth = (limiter: RateLimiterMemory) => async (req: express.Request, _res: express.Response, next: express.NextFunction) => {
   try { await limiter.consume(req.ip ?? 'unknown'); next(); }
   catch { next(new HttpError(429, 'Too many authentication attempts; please try again shortly')); }
@@ -50,7 +57,8 @@ app.use('/api/auth/nonce', limitAuth(authRateLimiter));
 app.use('/api/auth/verify', limitAuth(verifyRateLimiter));
 app.use('/api/auth/pin/verify', limitAuth(pinRateLimiter));
 app.use('/api/auth/pin/setup', limitAuth(pinRateLimiter));
-app.use('/api/auth',authRoutes); app.use('/api/me',meRoutes); app.use('/api/dashboard',dashboardRoutes); app.use('/api/wallets',walletRoutes); app.use('/api/transactions',transactionRoutes); app.use('/api/admin',adminRoutes); app.use('/api/packages',packageRoutes); app.use('/api',mutationRoutes);
+app.use('/api/admin-portal/login', limitAdminLogin(adminLoginRateLimiter));
+app.use('/api/auth',authRoutes); app.use('/api/me',meRoutes); app.use('/api/dashboard',dashboardRoutes); app.use('/api/wallets',walletRoutes); app.use('/api/transactions',transactionRoutes); app.use('/api/admin',adminRoutes); app.use('/api/admin-portal',adminPortalRoutes); app.use('/api/packages',packageRoutes); app.use('/api',mutationRoutes);
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const frontend=path.resolve(__dirname,'../frontend-dist');
 app.use(express.static(frontend,{index:'index.html',fallthrough:true}));
