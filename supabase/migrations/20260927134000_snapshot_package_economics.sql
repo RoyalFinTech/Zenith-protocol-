@@ -10,7 +10,7 @@ alter table public.package_purchases
   add column if not exists matrix_distribution_rules jsonb;
 
 update public.package_purchases pp
-set package_tier=ppk.tier,
+set package_tier=(select ppk.tier from public.program_packages ppk where ppk.id=pp.package_id),
     direct_percent=e.direct_percent,
     matrix_percent=e.matrix_percent,
     admin_percent=e.admin_percent,
@@ -26,7 +26,6 @@ set package_tier=ppk.tier,
       where r.package_id=pp.package_id
     ),'[]'::jsonb)
 from public.package_economics e
-join public.program_packages ppk on ppk.id=pp.package_id
 where e.package_id=pp.package_id
   and (
     pp.direct_percent is null
