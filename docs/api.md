@@ -14,6 +14,9 @@ Use `Authorization: Bearer <session-token>`.
 - `GET /me`
 - `PATCH /me/profile` — display name and avatar URL.
 - `PATCH /me/preferences` — `theme`, `compactDensity`, `activityNotifications`, `reducedMotion`.
+- `GET /me/push/config` — authenticated device-push capability/config status.
+- `POST /me/push/subscriptions` — register or refresh the current browser push subscription.
+- `DELETE /me/push/subscriptions` — remove one registered device by endpoint, or all subscriptions for the member.
 - `GET /wallets`
 - `POST /wallets/bind` — bind the already-authenticated EVM address.
 - `DELETE /wallets/:id`
