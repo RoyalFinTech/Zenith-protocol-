@@ -120,3 +120,11 @@ The original package lifecycle/admin implementation was already merged into main
 - No production financial/admin rows were created by this continuation.
 - Admin provisioning remains **PENDING**.
 - Do not promote this continuation to production until CI and final accounting/state review pass.
+
+
+## Engineering checkpoint — 2026-09-27 12:48 UTC
+
+- Latest changes include payment-amount-based settlement accounting, shared admin withdrawal services, and expanded regression tests.
+- Latest CI run #415 is queued/in progress; no production deployment is claimed for these changes.
+- Production database remains untouched by this continuation.
+- Admin Security / first administrator provisioning remains **PENDING**.
