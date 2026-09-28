@@ -11,3 +11,8 @@ assert.match(html, /\.modal-backdrop \{ position: fixed; z-index: 110;/);
 assert.doesNotMatch(html, /event\.stopImmediatePropagation\(\);openReturningLogin\(\);return;/);
 
 console.log('✓ onboarding login wiring regression checks passed');
+
+assert.match(html, /params\.delete\("wallet_handoff"\);/);
+assert.match(html, /params\.delete\("email_verified"\);/);
+assert.match(html, /history\.replaceState\(\{\},'',location\.pathname/);
+assert.match(html, /localStorage\.setItem\("zenitWalletHandoffToken",walletHandoff\)/);
