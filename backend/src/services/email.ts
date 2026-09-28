@@ -10,16 +10,21 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char] ?? char));
 }
 
+function officialLogoUrl(appOrigin: string) {
+  return new URL('/zenit-logo.png?v=zenit-official-20260922', new URL(appOrigin).origin).toString();
+}
+
 export async function sendWelcomeEmail({ to, username, appOrigin }: WelcomeEmailInput) {
   if (!env.resendApiKey || !to) return { sent: false, skipped: true };
 
   const safeUsername = escapeHtml(username);
   const safeOrigin = escapeHtml(appOrigin);
-  const logoUrl = `${new URL(appOrigin).origin}/zenit-logo.png?v=zenit-official-20260922`;
+  const logoUrl = escapeHtml(officialLogoUrl(appOrigin));
+  const logoMarkup = '<div style="margin:0 0 18px"><img src="' + logoUrl + '" alt="ZENIT Protocol" width="210" style="display:block;width:210px;max-width:100%;height:auto;border:0"></div>';
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:32px;color:#111827">
       <div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:36px;box-shadow:0 8px 30px rgba(15,23,42,.08)">
-        <div style="font-size:24px;font-weight:800;letter-spacing:.08em">ZENIT <span style="font-weight:500">PROTOCOL</span></div>
+        ${logoMarkup}
         <p style="color:#64748b;margin-top:6px">Decentralized Wealth Network</p>
         <h1 style="font-size:28px;margin-top:34px">Welcome, @${safeUsername}</h1>
         <p>Your ZENIT Protocol member profile is now connected and synchronized with your wallet.</p>
@@ -53,16 +58,21 @@ export async function sendWelcomeEmail({ to, username, appOrigin }: WelcomeEmail
   return { sent: true, skipped: false };
 }
 
-
-type VerificationEmailInput = { to: string; username: string; verifyUrl: string; registrationId: string; appOrigin: string };
+type VerificationEmailInput = {
+  to: string;
+  username: string;
+  verifyUrl: string;
+  registrationId: string;
+  appOrigin: string;
+};
 
 export async function sendVerificationEmail({ to, username, verifyUrl, registrationId, appOrigin }: VerificationEmailInput) {
   if (!to) throw new Error('Verification recipient is missing');
   if (!env.resendApiKey) throw new Error('RESEND_API_KEY is not configured on the backend');
   const safeUsername = escapeHtml(username);
   const safeUrl = escapeHtml(verifyUrl);
-  const logoUrl = new URL(appOrigin).origin + '/zenit-logo.png';
-  const logoMarkup = '<div style="margin:0 0 18px"><img src="' + escapeHtml(logoUrl) + '" alt="ZENIT Protocol" width="210" style="display:block;width:210px;max-width:100%;height:auto;border:0"></div>';
+  const logoUrl = escapeHtml(officialLogoUrl(appOrigin));
+  const logoMarkup = '<div style="margin:0 0 18px"><img src="' + logoUrl + '" alt="ZENIT Protocol" width="210" style="display:block;width:210px;max-width:100%;height:auto;border:0"></div>';
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:28px;color:#111827">
       <div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:34px;box-shadow:0 8px 30px rgba(15,23,42,.08)">
@@ -81,6 +91,9 @@ export async function sendVerificationEmail({ to, username, verifyUrl, registrat
     body: JSON.stringify({ from: env.resendFrom, to: [to], subject: 'Verify your email for ZENIT Protocol', html }),
     signal: AbortSignal.timeout(10000)
   });
-  if (!response.ok) { const body = await response.text().catch(() => ''); throw new Error(`Resend verification email failed (${response.status}): ${body.slice(0,300)}`); }
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`Resend verification email failed (${response.status}): ${body.slice(0,300)}`);
+  }
   return { sent: true, skipped: false };
 }
