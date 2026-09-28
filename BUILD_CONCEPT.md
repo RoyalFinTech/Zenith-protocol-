@@ -151,6 +151,15 @@ Production integrity checks performed during this engineering cycle found zero v
 - completed withdrawals without completed ledger records
 - active withdrawals without reservation records
 
+## Email delivery model
+
+- The backend generates the transactional Verification and Welcome email HTML and calls the Resend API server-side.
+- Production sending uses `RESEND_API_KEY` + `RESEND_FROM`; a production sender must be an address on an operator-controlled, Resend-verified domain.
+- The Render `onrender.com` hostname is the web application origin and can be used for links/assets such as verification redirects and `/zenit-logo.png`; it is not the operator's email-sender domain.
+- During development, Resend provides provider-owned test mode. The repository includes `npm run test:resend` in `backend/`, which is guarded against `NODE_ENV=production` and can simulate delivered, bounced, and spam/complaint events using Resend's documented test recipients.
+- The Resend test recipient `complained@resend.dev` simulates a message being marked as spam/complained; it does not prove that a message will physically land in a Gmail/Outlook Spam folder.
+- The existing `zenitprotocol.com` Resend configuration is currently failed/unverified and is not treated as an owned production domain.
+
 ## Deployment model
 
 ### Render
