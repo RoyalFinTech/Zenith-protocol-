@@ -6,11 +6,7 @@ The existing Supabase project can be used for PostgreSQL. The project URL is a p
 
 In the Supabase Dashboard, open **Connect** and copy the PostgreSQL connection string. For an IPv4-only deployment such as a hosted container, Supabase documents the **Session pooler** as the compatible alternative to a direct IPv6 connection. Replace the password placeholder with the database password and URL-encode reserved password characters. See: https://supabase.com/docs/guides/database/connecting-to-postgres
 
-Run the canonical migration:
-
-`supabase/migrations/20260913000000_zenit_production.sql`
-
-Run it in the Supabase SQL Editor, or through your normal Supabase migration workflow. Do not run the old 20260912 ZENIT migrations from previous revisions of this repository.
+For a new or explicitly reset database, use the repository's current Supabase migration chain in order through your normal Supabase migration workflow. For the existing production project, inspect the applied migration history before proposing any migration; do not replay the initial production migration over existing data, and do not run the obsolete 20260912 ZENIT migrations from previous revisions of this repository.
 
 ## 2. Render backend
 
@@ -64,9 +60,11 @@ Admin authentication is separate from member wallet authentication. The `admin_u
 
 After the admin schema migration has been explicitly promoted, provision the first administrator through the repository's operator-controlled utility:
 
-`ADMIN_EMAIL=<operator-controlled-admin-email> ADMIN_PASSWORD=<secure-password> DATABASE_URL=<server-only-database-url> npm run provision:admin`
+`ADMIN_EMAIL=<operator-controlled-admin-email> ADMIN_PASSWORD=<secure-password> DATABASE_URL=<server-only-database-url> npm run provision:admin
 
-Run this only from a trusted operator environment with the secret values supplied through a secure secret mechanism. Do not commit credentials, place them in frontend configuration, or put them into migrations.
+For production, the utility also requires `NODE_ENV=production ALLOW_PRODUCTION_ADMIN_PROVISIONING=YES`.`
+
+Run this only from a trusted operator environment with the secret values supplied through a secure secret mechanism. The production acknowledgment is deliberately explicit; it does not deploy code or create credentials automatically. Do not commit credentials, place them in frontend configuration, or put them into migrations.
 
 After provisioning, use the Admin Portal login. Credential changes are handled from the Admin Security flow and revoke existing admin sessions.
 
