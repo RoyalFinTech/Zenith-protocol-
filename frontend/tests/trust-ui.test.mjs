@@ -50,4 +50,36 @@ assert.match(html, /data-action="motion-toggle"/);
 assert.match(html, /data-density="compact"/);
 assert.match(html, /data-reduced-motion="true"/);
 
+
+const inlineScripts = [...html.matchAll(/<script\\b(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi)]
+  .map(match => match[1])
+  .filter(Boolean);
+
+assert.ok(inlineScripts.length >= 3, "Expected the application inline scripts to be present");
+for (const [index, script] of inlineScripts.entries()) {
+  assert.doesNotThrow(() => new Function(script), "Inline frontend script "+index+" must parse");
+}
+
+const expectedBackendPaths = [
+  "/config/public",
+  "/api/dashboard/summary",
+  "/api/dashboard/team",
+  "/api/dashboard/matrix/2x4",
+  "/api/dashboard/matrix/2x6",
+  "/api/dashboard/leaderboard",
+  "/api/dashboard/referrals",
+  "/api/me",
+  "/api/me/profile",
+  "/api/me/notifications",
+  "/api/me/notifications/read-all",
+  "/api/me/preferences",
+  "/api/me/push/subscriptions",
+  "/api/packages/catalog",
+  "/api/transactions",
+  "/api/transactions/withdrawals"
+];
+for (const route of expectedBackendPaths) {
+  assert.match(html, new RegExp(route.replaceAll("/", "\\/")), "Frontend must retain backend route "+route);
+}
+
 console.log('✓ trust UI regression checks passed');
