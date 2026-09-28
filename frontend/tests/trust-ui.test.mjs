@@ -35,6 +35,7 @@ assert.doesNotMatch(html, /images\.unsplash\.com/);
 
 
 assert.match(html, /aria-expanded="false" aria-controls="sidebar"/);
+assert.match(html, /@media \(max-width:820px\)\s*\{\s*\.mobile-menu \{ display:grid; flex:0 0 auto; \}/);
 assert.match(html, /if\(e\.key==="Escape"&&window\.innerWidth<=820/);
 
 assert.match(html, /data-action="compact-toggle"/);
