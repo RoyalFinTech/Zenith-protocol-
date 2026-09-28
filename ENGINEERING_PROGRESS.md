@@ -275,6 +275,16 @@ These production counts are observations only; no records were changed as part o
 - Repository-wide frontend scan found no remaining hardcoded package-price strings, static 20/70/10 allocation text, Unsplash references, full wallet-address rendering template, or legacy blue hex accents in the main application HTML.
 - The latest successful CI before the current Wallet visual cycle is #609. CI #610–#612 are validating the Wallet visual, styling and regression-test updates; they are not treated as complete until GitHub reports a final conclusion.
 
+
+## Gold lifecycle / wallet continuation — 2026-09-28
+
+- Added a premium gold 3D Wallet command-center surface using the official ZENIT PNG logo.
+- Preserved clear separation between wallet connection state, account identity and masked wallet-address presentation.
+- Confirmed the package-review modal reads current package prices/codes from the authenticated backend catalog and enforces Starter → Growth → Elite lifecycle messaging in the UI.
+- Aligned real-time withdrawal and package-payment status docks with the gold-first brand system; green remains reserved for completed/positive states and red for failure/rejection.
+- Performed a current-head source scan: all six inline frontend script blocks parse; the main application HTML contains no hardcoded package prices, no static 20/70/10 allocation copy, no Unsplash/stock imagery, no full wallet-address template, and no legacy blue accent hex values.
+- CI #610, #611 and #612 passed for the Wallet implementation/styling/regression checks. The newest documentation and lifecycle-accent commits are still subject to their current-head CI result.
+
 ## Engineering rule going forward
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
