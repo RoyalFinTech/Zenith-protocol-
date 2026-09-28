@@ -1387,8 +1387,15 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       }
     }
     function showWalletGate(){
-      const walletHandoff=new URLSearchParams(location.search).get("wallet_handoff")||"";
-      if(walletHandoff)localStorage.setItem("zenitWalletHandoffToken",walletHandoff);
+      const params=new URLSearchParams(location.search);
+      const walletHandoff=params.get("wallet_handoff")||"";
+      if(walletHandoff){
+        localStorage.setItem("zenitWalletHandoffToken",walletHandoff);
+        params.delete("wallet_handoff");
+      }
+      params.delete("email_verified");
+      const cleanQuery=params.toString();
+      history.replaceState({},'',location.pathname+(cleanQuery?("?"+cleanQuery):""));
       localStorage.setItem("zenitRegistrationVerified","1");
       localStorage.setItem("zenitAuthMode","onboarding");
       $("#registrationTitle").textContent="Email confirmed";
