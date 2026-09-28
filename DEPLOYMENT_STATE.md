@@ -350,3 +350,5 @@ The original package lifecycle/admin implementation was already merged into main
 - These frontend changes are feature-branch only. Render production remains on `main` and has not been promoted to this design.
 - No production database mutation was performed for the redesign.
 - Current-head CI remains the release gate for this continuation; successful earlier runs do not certify commits made afterward.
+
+- The current feature branch also contains the premium gold 3D Wallet command-center surface and gold-aligned package/withdrawal lifecycle status docks; these remain feature-only and are not in production.
