@@ -27,6 +27,11 @@ assert.match(html, /if\(e\.key==="Escape"&&window\.innerWidth<=820/);
 
 assert.match(html, /data-action="compact-toggle"/);
 assert.match(html, /data-action="activity-toggle"/);
+const staticActions = [...html.matchAll(/data-action="([a-z0-9-]+)"/g)].map(match => match[1]);
+const handledActions = new Set([...html.matchAll(/action===["']([a-z0-9-]+)["']/g)].map(match => match[1]));
+for (const action of staticActions) {
+  assert.ok(handledActions.has(action), "No click handler branch found for data-action="+action);
+}
 assert.match(html, /data-action="motion-toggle"/);
 assert.match(html, /data-density="compact"/);
 assert.match(html, /data-reduced-motion="true"/);
