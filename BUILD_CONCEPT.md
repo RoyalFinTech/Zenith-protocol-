@@ -124,7 +124,7 @@ The canonical package catalog is:
 
 The authenticated purchase flow sends the selected package code to the backend. Settlement verifies the exact on-chain USDT transfer, then atomically activates the first available node in the selected program and creates the matching active membership.
 
-Both Starter packages use the established 20/70/10 allocation model. The 2x6 level distribution is configured. The 2x4 level-by-level distribution remains intentionally unset pending approved business rules; this does not block package payment verification or matrix-position activation.
+Both Starter packages use the established 20/70/10 allocation model. The configured matrix distributions are 2x4 = 30/25/25/20% across levels 1–4 and 2x6 = 30/20/15/10/10/15% across levels 1–6. Growth and Elite upgrades retain the existing matrix position and sponsor/referrer.
 
 ## Database integrity strategy
 
