@@ -795,3 +795,12 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - No waiting locks were present during final verification.
 - No application deployment, PR merge, admin provisioning, or treasury operation was performed by this migration work.
 - Source migration filenames still use the planned `20260927134000`–`20260927150000` versions while production history uses generated 20260928 timestamps. This migration-history drift must be reconciled before relying on automated source-to-production migration synchronization.
+
+
+## Release audit — 2026-09-28 22:17 UTC
+
+- Merged `main` commit `e0c4b687324b92793f5c38295b7b1ef1f063021d` has GitHub Actions Zenit CI run #618 in `success` state. Backend and frontend jobs both passed, including migration application, unit/integration tests, automatic-admin provisioning guard, frontend build, login tests, and trust-UI tests.
+- Supabase project status is `ACTIVE_HEALTHY` on PostgreSQL 17.6.1.
+- Supabase security advisors currently report the established backend-only RLS/no-policy pattern as INFO across 26 tables. A new WARN is present for `public.prevent_package_purchase_snapshot_mutation`: mutable function `search_path`. This is a source/security-hardening follow-up, not evidence of financial-data corruption.
+- Supabase performance advisors report unused-index INFO findings, including the newly created snapshot and wallet-handoff indexes. With current production data volumes these are observational; no indexes were removed.
+- No production purchase/admin/financial mutation was performed in this audit pass.
