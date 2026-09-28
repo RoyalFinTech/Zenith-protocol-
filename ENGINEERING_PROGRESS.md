@@ -216,6 +216,7 @@ These production counts are observations only; no records were changed as part o
 - Newer commits after #573 are undergoing current-head CI validation; they are not treated as fully validated until that run succeeds.
 
 ### Final gold palette pass
+- Updated the PWA manifest `theme_color` and `background_color` to the ZENIT dark-gold shell while retaining `frontend/public/zenit-logo.png` as the only app icon.
 - Final brand pass: converted remaining literal blue admin chart/tab accents to the ZENIT gold family; semantic green/red status colors remain intentionally unchanged.
 ### Current release boundary
 - All work in this section remains on `feature/admin-control-center-and-package-lifecycle`.
