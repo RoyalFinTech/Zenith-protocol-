@@ -248,6 +248,18 @@ These production counts are observations only; no records were changed as part o
 - Kept light mode functional with matching light page-stage treatment.
 - No backend behavior or production data was changed by this visual-only continuation.
 
+
+## Premium withdrawal UX continuation — 2026-09-28
+
+- Replaced the Wallet withdrawal browser `prompt()` flow with a branded ZENIT modal.
+- The modal previews the currently loaded available earnings and whether an active matrix membership is detected before the request is submitted.
+- Client validation mirrors the backend request constraints: positive decimal amount with up to 8 decimal places, amount cannot exceed currently available earnings, and destination must be a valid EVM address.
+- Submission still goes through the backend `POST /api/transactions/withdrawals`, where the authoritative active-membership, balance, reservation and audit checks remain enforced.
+- Added regression coverage preventing the old prompt-based withdrawal flow from returning.
+- CI #602/#603 exposed malformed HTML from the initial string-based modal implementation; that was replaced with a template literal.
+- Current source-level validation confirms all six inline frontend script blocks parse successfully and no legacy withdrawal prompts remain.
+- No production data or deployment configuration was changed.
+
 ## Engineering rule going forward
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
