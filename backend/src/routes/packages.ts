@@ -537,9 +537,12 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
         currentNodeId=ancestor.parent_node_id;
       }
 
-      const unallocatedMatrix=(await client.query<{amount:string}>(`select greatest($1::numeric-$2::numeric,0)::text as amount`,[matrixAmount,allocatedMatrix])).rows[0]!.amount;
-      if (Number(unallocatedMatrix)>0) {
-        await client.query(`update package_purchases set unallocated_matrix_amount=$2 where id=$1`,[purchaseId,unallocatedMatrix]);
+      const unallocatedMatrix=(await client.query<{amount:string;positive:boolean}>(`
+        select greatest($1::numeric-$2::numeric,0)::text as amount,
+               greatest($1::numeric-$2::numeric,0) > 0 as positive
+      `,[matrixAmount,allocatedMatrix])).rows[0]!;
+      if (unallocatedMatrix.positive) {
+        await client.query(`update package_purchases set unallocated_matrix_amount=$2 where id=$1`,[purchaseId,unallocatedMatrix.amount]);
         await client.query(`
           insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
           values($1,'unallocated_matrix',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
