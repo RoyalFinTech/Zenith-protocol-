@@ -1,4 +1,4 @@
-## Release gate audit — 2026-09-28 23:xx UTC
+## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - `main` is now at merge commit `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; CI #629 passed.
 - Supabase production security hardening is complete for the snapshot trigger search path. The production function reports `search_path=""`, and the corresponding Supabase security WARN is cleared.
