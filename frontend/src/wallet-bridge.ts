@@ -69,12 +69,12 @@ async function init() {
 
       if (!state?.isConnected || !address) {
         if (authToken || lastAddress) clearLocalSession();
-        (window as any).zenitSetWallet?.(false, 'Not connected');
+        (window as any).zenitSetWallet?.(false, '', 'Not connected');
         return;
       }
 
       if (chainId && chainId !== BSC_CHAIN_ID) {
-        (window as any).zenitSetWallet?.(false, 'Wrong network');
+        (window as any).zenitSetWallet?.(false, address || '', 'Wrong network');
         (window as any).zenitToast?.(
           'Wrong network',
           'Please switch your wallet to BNB Smart Chain (BSC) before authenticating.',
