@@ -1,3 +1,15 @@
+## Release gate audit — 2026-09-28 23:xx UTC
+
+- PR #11 was merged into `main` as `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; GitHub Actions CI #629 passed.
+- Supabase production function `public.prevent_package_purchase_snapshot_mutation()` now has `search_path = ''`; the prior mutable-search-path WARN is cleared.
+- Production security advisors now show only the established 26 RLS-without-policy INFO findings; no new function-search-path warning remains.
+- Read-only production financial audit: 2 `package_purchases` (both pending), 0 withdrawals, 0 ledger transactions, 0 matrix memberships, 156 matrix nodes, 0 admins, 0 push subscriptions, 0 notifications, and 0 active pending registrations.
+- Both historical pending purchases still carry their original 10 USDT amount while the current 2x6 Starter catalog price is 30 USDT; they were not rewritten and are intentionally treated as historical pending records.
+- Snapshot completeness is 100% for existing purchases, and the snapshot immutability trigger is present.
+- Render live service still reports a blank health-check path while repository `render.yaml` declares `/health`. The available Render MCP surface has no update operation for this field; no unrelated production settings were changed.
+- Real-device Web Push acceptance remains unverified; production `push_subscriptions` remains at 0. Source `frontend/public/sw.js` is present and handles push display, click routing, and subscription-change signaling.
+- Resend currently exposes one failed/unverified sender-domain configuration; no operator-controlled sender domain has been independently verified, so mailbox delivery certification remains gated.
+- First-admin provisioning remains intentionally operator-controlled.
 # Zenith Protocol — Engineering Progress
 
 Last updated: 2026-09-28 (continued)
