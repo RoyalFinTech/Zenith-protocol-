@@ -1,3 +1,13 @@
+## Release audit — 2026-09-28 — post-PR #13
+
+- `main` is at `aa817feaa7c38550ca910f07448a5be37df4fc91` after PR #13; CI #641 passed on its source head before merge.
+- Primary engineering branch synchronization PR #14 was merged into `feature/admin-control-center-and-package-lifecycle`. The branch had no unique commits before synchronization.
+- Latest Render deployment observed: `dep-datf9iff3r2c73dmf3r0`, triggered by `aa817feaa7c38550ca910f07448a5be37df4fc91`, status `build_in_progress` at the audit checkpoint. No live claim is made until Render reports `live`.
+- Live Render service configuration still reports an empty `healthCheckPath`, while repository `render.yaml` declares `/health`. The application source exposes `GET /health`.
+- Supabase production security hardening is verified; no purchase, withdrawal, membership, ledger, or admin data mutation was performed.
+- Push delivery remains unverified on a real device; production subscription count remains zero.
+- Resend sender-domain verification remains failed/unverified for the existing domain configuration; no mailbox delivery test was sent.
+
 ## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - `main` is now at merge commit `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; CI #629 passed.
