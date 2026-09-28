@@ -175,6 +175,9 @@ These production counts are observations only; no records were changed as part o
 - The 2x4 Starter **level-by-level matrix distribution is intentionally not invented** because no approved split was supplied. The package can be purchased and the matrix position activated; matrix-level earning allocation for 2x4 remains pending an explicit approved distribution.
 
 ### Verification
+- Source-level frontend verification caught and fixed an Admin withdrawal-rendering parser defect and an async delegated-action-listener defect; all six inline script blocks now parse successfully at the current feature head.
+- The frontend trust regression suite now asserts the delegated action listener is async so protected admin operations using `await` remain valid.
+
 - Production currently has 30 available 2x4 positions and 126 available 2x6 positions.
 - Production currently has zero memberships and zero active nodes in either program, so no existing member position was altered by this change.
 - Production migration history now includes `enable_dual_starter_matrix_packages`.
