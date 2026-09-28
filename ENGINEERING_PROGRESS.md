@@ -227,6 +227,18 @@ These production counts are observations only; no records were changed as part o
 - No production deployment.
 - Production database remains untouched by these frontend changes.
 
+
+## Frontend endpoint / runtime consistency checkpoint — 2026-09-28
+
+- Audited frontend `backendFetch()` paths against the actual Express route registrations on the feature branch; the Dashboard, Matrix, Leaderboard, Referrals, Member Profile, Notifications, Preferences, Push Subscriptions, Package Catalog, Transactions and Withdrawals calls all map to existing backend routes.
+- Added frontend regression coverage for the expected backend route inventory.
+- Added inline-frontend-script syntax validation to the trust UI regression suite.
+- Fixed the Admin withdrawal renderer's nested action expression so the page parses cleanly.
+- Fixed the delegated frontend action listener to be asynchronous because protected admin actions use awaited backend calls.
+- Independently re-ran a full inline-script syntax check after those fixes; all six application script blocks now parse successfully.
+- Current feature-head CI validation is green through **CI #595** after the runtime-safety fixes.
+- No production deployment, production database mutation, or merge into `main` was performed.
+
 ## Engineering rule going forward
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
