@@ -184,6 +184,43 @@ These production counts are observations only; no records were changed as part o
 - Add/verify integration coverage for the new active-membership withdrawal gate and both Starter package codes.
 - Define the approved 2x4 level distribution before crediting 2x4 matrix-level earnings.
 
+
+## Frontend visual trust / official-brand redesign — 2026-09-28
+
+### Completed
+- Reworked the authenticated Dashboard toward the approved premium reference layout while keeping backend-sourced member state and package data.
+- Standardized the member workspace around the official ZENIT gold visual language rather than introducing a separate blue primary brand.
+- Kept green reserved for real positive/connected status indicators.
+- Shared the visual treatment across Dashboard, Programs, Matrix, Team, Wallet, Profile, Earnings, Transactions, Security and Help.
+- Kept the official logo source as `frontend/public/zenit-logo.png`; no substitute logo asset was introduced.
+- Added gold 3D-style visual treatments for the Dashboard hero, settlement flow, onboarding finance visualization, Matrix preview and Profile identity surface.
+- Added backend-driven package cards and removed frontend purchase-price fallback values.
+- Removed hardcoded Starter pricing and distribution calculations from the Matrix page; it now reads the selected program package catalog and `matrix_distribution` returned by the backend.
+- Removed legacy stock/Unsplash imagery from branded frontend surfaces.
+- Removed static claims that a separate ZENIT smart contract is deployed or that projected earnings are live activity.
+- Wallet UI masks the full address and provides a copy action; connection/network state is shown separately.
+- Username UX visibly supplies the `@` prefix and normalizes the stored username to lowercase letters, numbers and underscores.
+- Profile photo upload now persists through the authenticated backend `avatar_url` field rather than device-only storage.
+- Fixed the mobile hamburger breakpoint so the navigation control is visible on screens at or below 820px; Escape and outside-click close behavior remains wired.
+- Preserved the existing day/night preference with an explicit light-mode treatment for the new gold visual system.
+- Expanded frontend regression checks for the official logo, dynamic package economics, Matrix catalog sourcing, masked wallet behavior, mobile navigation, frontend action handlers and the new Matrix pricing guard.
+- Escaped backend-provided member content in Programs and Team before inserting it into the UI.
+
+### Verification
+- CI run #568: success — Matrix UI hardcoded-pricing removal.
+- CI run #569: success — shared official-brand visual system across member pages.
+- CI run #570: success — real program active state in program cards.
+- CI run #571: success — Matrix UI regression guard against hardcoded package economics.
+- CI run #572: success — gold-compatible light-mode treatment.
+- CI run #573: success — backend member-content escaping in Programs and Team.
+- Newer commits after #573 are undergoing current-head CI validation; they are not treated as fully validated until that run succeeds.
+
+### Current release boundary
+- All work in this section remains on `feature/admin-control-center-and-package-lifecycle`.
+- No merge into `main`.
+- No production deployment.
+- Production database remains untouched by these frontend changes.
+
 ## Engineering rule going forward
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
