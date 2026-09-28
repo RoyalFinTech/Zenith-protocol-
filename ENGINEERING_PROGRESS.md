@@ -1,7 +1,7 @@
 # Zenith Protocol — Engineering Progress
 
-Last updated: 2026-09-26 (continued)
-Branch: `main`
+Last updated: 2026-09-28 (continued)
+Active validation branch: `feature/admin-control-center-and-package-lifecycle`
 
 ## Completed
 
@@ -592,3 +592,18 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Added a frontend regression assertion covering token storage and query-string scrubbing.
 - CI run #518 passed for the official-logo email change; the new security/test commits are awaiting their current-head CI result.
 - Feature branch remains unmerged and not deployed to production.
+
+
+## 2026-09-28 16:55 UTC — Full audit continuation / security and configuration hardening
+- Revalidated the active feature branch at `92f58496d2fdbf254a1423018a7075d9dd715afc`; the branch remains unmerged and is not deployed to production.
+- GitHub Actions CI run #527 passed both backend and frontend jobs, including lint, migration application, unit tests, integration tests, frontend build, frontend login tests, and the new automatic-admin provisioning guard. Earlier runs #525/#526 failed before the final migration edit; the current head is green.
+- Removed the automatic `admin_users` seed insert from `20260927110000_upgrade_package_lifecycle_and_admin.sql`. Administrator provisioning remains operator-controlled.
+- Added a CI gate that rejects future migration files containing an `INSERT` into `admin_users`.
+- Hardened production configuration defaults: `API_PUBLIC_URL` now falls back to `APP_ORIGIN`; production rejects partially configured Resend credentials; and `RESEND_FROM` no longer defaults to an unowned/fake sender domain.
+- The feature environment example no longer names `zenitprotocol.com` as a sender domain.
+- Production Render remains on main commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`. The live service is healthy and listening on port 10000; the configured Render health-check path is still blank while repository `render.yaml` declares `/health`. No production health-check mutation was performed.
+- Production Supabase remains unchanged. Current migration history ends at `20260927130737`; the four feature-only migrations `20260927134000`, `20260927140500`, `20260927143000`, and `20260927150000` are still not applied. Read-only production state is 2 pending purchases, 0 confirmed purchases, 0 admin users, 0 push subscriptions, and 0 active pending registrations.
+- Production schema confirms the pre-snapshot purchase/economics fields exist, while the new purchase-time snapshot fields and wallet-handoff fields are not yet present.
+- Resend currently has two published templates, but both template sender metadata still references the pending/unverified `zenitprotocol.com` domain. The application runtime currently sends its own HTML and does not consume those published templates. No Resend emails are recorded, and no real delivery test was performed.
+- The remaining email release gate is an operator-owned sender domain verified in Resend; a real mailbox address is also required for the final external delivery test.
+- Supabase currently reports PostgreSQL 17.6.1. Supabase announced PostgreSQL 17.11 on 2026-09-25 with security fixes; upgrading production is an operator maintenance action and was not performed during this feature audit.
