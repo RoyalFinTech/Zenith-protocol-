@@ -63,6 +63,8 @@ async function init() {
     // AppKit is the authoritative source for wallet connection state.
     // This is important on mobile because WalletConnect can finish the
     // connection after the browser returns from the wallet app.
+    (window as any).zenitWalletBridgeReady = true;
+    window.dispatchEvent(new CustomEvent('zenit:wallet-ready'));
     appKit.subscribeAccount((state: any) => {
       const address = state?.address as string | undefined;
       const chainId = state?.chainId == null ? undefined : Number(state.chainId);
@@ -324,9 +326,12 @@ async function openWallet() {
     await init();
     setupWatchers();
 
-    // Use AppKit's normal Connect view. The previous production build used
-    // this path successfully on mobile; do not force a provider-specific view.
-    appKit?.open();
+    if (!appKit) throw new Error('Wallet connection interface is unavailable');
+
+    // Always open the standard AppKit Connect view. This keeps desktop
+    // injected wallets and mobile WalletConnect flows on the same backend
+    // authentication path without inventing provider-specific behavior.
+    await (appKit as any).open({ view: 'Connect' });
 
     for (let attempt = 0; attempt < 20; attempt += 1) {
       await new Promise(resolve => setTimeout(resolve, 500));
