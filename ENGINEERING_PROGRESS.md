@@ -239,6 +239,14 @@ These production counts are observations only; no records were changed as part o
 - Current feature-head CI validation is green through **CI #595** after the runtime-safety fixes.
 - No production deployment, production database mutation, or merge into `main` was performed.
 
+
+## Shared gold visual stage / chart continuation — 2026-09-28
+
+- Added a consistent premium gold 3D-style visual stage behind page headers so Programs, Matrix, Team, Earnings, Transactions, Wallet, Profile, Security, Help and related member pages share the same visual language as the Dashboard.
+- Converted shared earnings/ledger chart lines, fills and bar treatments to the ZENIT gold family; green remains reserved for semantic status states.
+- Kept light mode functional with matching light page-stage treatment.
+- No backend behavior or production data was changed by this visual-only continuation.
+
 ## Engineering rule going forward
 
 Every substantive change should be recorded here under Completed, In Progress, or Pending/Intentionally not implemented, with verification status noted separately from implementation status.
