@@ -1,7 +1,7 @@
 # Zenith Protocol — Engineering Progress
 
-Last updated: 2026-09-26 (continued)
-Branch: `main`
+Last updated: 2026-09-28 (continued)
+Active validation branch: `feature/admin-control-center-and-package-lifecycle`
 
 ## Completed
 
@@ -175,6 +175,9 @@ These production counts are observations only; no records were changed as part o
 - The 2x4 Starter **level-by-level matrix distribution is intentionally not invented** because no approved split was supplied. The package can be purchased and the matrix position activated; matrix-level earning allocation for 2x4 remains pending an explicit approved distribution.
 
 ### Verification
+- Source-level frontend verification caught and fixed an Admin withdrawal-rendering parser defect and an async delegated-action-listener defect; all six inline script blocks now parse successfully at the current feature head.
+- The frontend trust regression suite now asserts the delegated action listener is async so protected admin operations using `await` remain valid.
+
 - Production currently has 30 available 2x4 positions and 126 available 2x6 positions.
 - Production currently has zero memberships and zero active nodes in either program, so no existing member position was altered by this change.
 - Production migration history now includes `enable_dual_starter_matrix_packages`.
@@ -183,6 +186,104 @@ These production counts are observations only; no records were changed as part o
 ### Pending
 - Add/verify integration coverage for the new active-membership withdrawal gate and both Starter package codes.
 - Define the approved 2x4 level distribution before crediting 2x4 matrix-level earnings.
+
+
+## Frontend visual trust / official-brand redesign — 2026-09-28
+
+### Completed
+- Reworked the authenticated Dashboard toward the approved premium reference layout while keeping backend-sourced member state and package data.
+- Standardized the member workspace around the official ZENIT gold visual language rather than introducing a separate blue primary brand.
+- Kept green reserved for real positive/connected status indicators.
+- Shared the visual treatment across Dashboard, Programs, Matrix, Team, Wallet, Profile, Earnings, Transactions, Security and Help.
+- Kept the official logo source as `frontend/public/zenit-logo.png`; no substitute logo asset was introduced.
+- Added gold 3D-style visual treatments for the Dashboard hero, settlement flow, onboarding finance visualization, Matrix preview and Profile identity surface.
+- Added backend-driven package cards and removed frontend purchase-price fallback values.
+- Removed hardcoded Starter pricing and distribution calculations from the Matrix page; it now reads the selected program package catalog and `matrix_distribution` returned by the backend.
+- Removed legacy stock/Unsplash imagery from branded frontend surfaces.
+- Removed static claims that a separate ZENIT smart contract is deployed or that projected earnings are live activity.
+- Wallet UI masks the full address and provides a copy action; connection/network state is shown separately.
+- Username UX visibly supplies the `@` prefix and normalizes the stored username to lowercase letters, numbers and underscores.
+- Profile photo upload now persists through the authenticated backend `avatar_url` field rather than device-only storage.
+- Fixed the mobile hamburger breakpoint so the navigation control is visible on screens at or below 820px; Escape and outside-click close behavior remains wired.
+- Preserved the existing day/night preference with an explicit light-mode treatment for the new gold visual system.
+- Expanded frontend regression checks for the official logo, dynamic package economics, Matrix catalog sourcing, masked wallet behavior, mobile navigation, frontend action handlers and the new Matrix pricing guard.
+- Escaped backend-provided member content in Programs and Team before inserting it into the UI.
+
+### Verification
+- CI run #568: success — Matrix UI hardcoded-pricing removal.
+- CI run #569: success — shared official-brand visual system across member pages.
+- CI run #570: success — real program active state in program cards.
+- CI run #571: success — Matrix UI regression guard against hardcoded package economics.
+- CI run #572: success — gold-compatible light-mode treatment.
+- CI run #573: success — backend member-content escaping in Programs and Team.
+- Newer commits after #573 are undergoing current-head CI validation; they are not treated as fully validated until that run succeeds.
+
+### Final gold palette pass
+- Updated the PWA manifest `theme_color` and `background_color` to the ZENIT dark-gold shell while retaining `frontend/public/zenit-logo.png` as the only app icon.
+- Final brand pass: converted remaining literal blue admin chart/tab accents to the ZENIT gold family; semantic green/red status colors remain intentionally unchanged.
+### Current release boundary
+- All work in this section remains on `feature/admin-control-center-and-package-lifecycle`.
+- No merge into `main`.
+- No production deployment.
+- Production database remains untouched by these frontend changes.
+
+
+## Frontend endpoint / runtime consistency checkpoint — 2026-09-28
+
+- Audited frontend `backendFetch()` paths against the actual Express route registrations on the feature branch; the Dashboard, Matrix, Leaderboard, Referrals, Member Profile, Notifications, Preferences, Push Subscriptions, Package Catalog, Transactions and Withdrawals calls all map to existing backend routes.
+- Added frontend regression coverage for the expected backend route inventory.
+- Added inline-frontend-script syntax validation to the trust UI regression suite.
+- Fixed the Admin withdrawal renderer's nested action expression so the page parses cleanly.
+- Fixed the delegated frontend action listener to be asynchronous because protected admin actions use awaited backend calls.
+- Independently re-ran a full inline-script syntax check after those fixes; all six application script blocks now parse successfully.
+- Current feature-head CI validation is green through **CI #595** after the runtime-safety fixes.
+- CI #596 exposed an over-escaped regular expression in the new inline-script regression test; the frontend production build and login regression still passed. The test harness was corrected in commit `766c706123f1b602c0860fa4fcb3f22896c0da01` and is being revalidated by CI #600.
+- No production deployment, production database mutation, or merge into `main` was performed.
+
+
+## Shared gold visual stage / chart continuation — 2026-09-28
+
+- Added a consistent premium gold 3D-style visual stage behind page headers so Programs, Matrix, Team, Earnings, Transactions, Wallet, Profile, Security, Help and related member pages share the same visual language as the Dashboard.
+- Converted shared earnings/ledger chart lines, fills and bar treatments to the ZENIT gold family; green remains reserved for semantic status states.
+- Kept light mode functional with matching light page-stage treatment.
+- No backend behavior or production data was changed by this visual-only continuation.
+
+
+## Premium withdrawal UX continuation — 2026-09-28
+
+- Replaced the Wallet withdrawal browser `prompt()` flow with a branded ZENIT modal.
+- The modal previews the currently loaded available earnings and whether an active matrix membership is detected before the request is submitted.
+- Client validation mirrors the backend request constraints: positive decimal amount with up to 8 decimal places, amount cannot exceed currently available earnings, and destination must be a valid EVM address.
+- Submission still goes through the backend `POST /api/transactions/withdrawals`, where the authoritative active-membership, balance, reservation and audit checks remain enforced.
+- Added regression coverage preventing the old prompt-based withdrawal flow from returning.
+- CI #602/#603 exposed malformed HTML from the initial string-based modal implementation; that was replaced with a template literal.
+- Current source-level validation confirms all six inline frontend script blocks parse successfully and no legacy withdrawal prompts remain.
+- CI #604 exposed the then-current withdrawal-prompt regression assertion against a branch snapshot that still contained the legacy prompt handler; later cleanup removed that stale path.
+- CI #605 exposed the malformed withdrawal modal HTML in that same intermediate snapshot; the modal was rewritten as a template literal.
+- CI #606 exposed the trust-test matcher issue from the earlier snapshot; the inline-script extractor was simplified to a parser-safe regex.
+- CI #607 passed the stale-handler cleanup with backend and frontend jobs green.
+- CI #608 passed the premium withdrawal UX/parser-hardening checkpoint with backend and frontend jobs green.
+
+- No production data or deployment configuration was changed.
+
+
+## Premium Wallet / endpoint audit continuation — 2026-09-28
+
+- Added a gold 3D Wallet command-center surface using the official ZENIT PNG logo and the same gold-first visual language as Dashboard, onboarding and Profile.
+- Wallet status, network, asset, masked address and earnings values remain sourced from authenticated frontend state/backend data; the 3D card is decorative only.
+- Audited every `backendFetch()` path in the frontend against the actual Express route registrations on the feature branch. The expected member routes are present for Dashboard, Matrix, Leaderboard, Referrals, Profile, Notifications, Preferences, Push, Packages, Transactions and Withdrawals.
+- Repository-wide frontend scan found no remaining hardcoded package-price strings, static 20/70/10 allocation text, Unsplash references, full wallet-address rendering template, or legacy blue hex accents in the main application HTML.
+- The latest successful CI before the current Wallet visual cycle is #609. CI #610–#612 are validating the Wallet visual, styling and regression-test updates; they are not treated as complete until GitHub reports a final conclusion.
+
+
+## Gold lifecycle / wallet continuation — 2026-09-28
+
+- Added a premium gold 3D Wallet command-center surface using the official ZENIT PNG logo.
+- Preserved clear separation between wallet connection state, account identity and masked wallet-address presentation.
+- Confirmed the package-review modal reads current package prices/codes from the authenticated backend catalog and enforces Starter → Growth → Elite lifecycle messaging in the UI.
+- Aligned real-time withdrawal and package-payment status docks with the gold-first brand system; green remains reserved for completed/positive states and red for failure/rejection.
+- Performed a current-head source scan: all six inline frontend script blocks parse; the main application HTML contains no hardcoded package prices, no static 20/70/10 allocation copy, no Unsplash/stock imagery, no full wallet-address template, and no legacy blue accent hex values.
+- CI #610, #611 and #612 passed for the Wallet implementation/styling/regression checks. The newest documentation and lifecycle-accent commits are still subject to their current-head CI result.
 
 ## Engineering rule going forward
 
@@ -235,3 +336,428 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Review final PR diff.
 - Create PR from feature/admin-control-center-and-package-lifecycle to main.
 - Do not claim production deployment until Render reports the new commit live.
+
+
+## Lifecycle / frontend state continuation — 2026-09-27 12:12 UTC
+
+### Completed in this continuation
+- Repository documentation is now being treated as the engineering checkpoint/source of truth rather than relying on conversation history.
+- Feature branch was refreshed to the latest main commit before continuing inspection.
+- Removed the obsolete duplicate manual matrix-placement endpoint from backend/src/routes/mutations.ts; package confirmation remains the authoritative lifecycle path for paid package activation and placement.
+- Added authenticated notification APIs: GET /api/me/notifications, PATCH /api/me/notifications/:id/read, and PATCH /api/me/notifications/read-all.
+- Replaced the frontend's hard-coded notification list/badge with backend-backed notification state, unread count, individual read handling, and mark-all-read handling.
+- Dashboard balance state now consumes the backend withdrawal reservation amount so the displayed available balance does not ignore funds already reserved by pending/completed withdrawal requests.
+- Production inspection confirmed the notification table exists with id, user_id, title, message, created_at, and nullable read_at fields.
+
+### Production observations recorded during this continuation
+- notifications: 0 rows; unread notifications: 0.
+- activity_events: 0 rows.
+- package_purchases: 2 rows; confirmed purchases: 0.
+- withdrawal_requests: 0 rows; open withdrawals: 0.
+- platform_revenue_ledger: 0 rows.
+- admin_users: 0 rows. Admin provisioning remains intentionally pending.
+
+### Pending / intentionally incomplete
+- Admin Security / first administrator provisioning: intentionally pending until the operator is ready to provision the administrator. No claim of completed admin access is made.
+- Admin bootstrap must remain an operator-controlled credential-provisioning step; no plaintext password is committed to the repository.
+- Current frontend/backend notification and balance changes are awaiting current-head CI verification.
+- Continue review of withdrawal drawer/status behavior, accounting/ledger presentation, package lifecycle edge cases, and frontend state synchronization after CI returns.
+
+### Current verification
+- CI for current continuation head 0aaf4fd9ddc18d15758a58469f3325679369f982 is currently IN PROGRESS for both backend and frontend jobs.
+- Production database inspection was read-only for this continuation; no production rows were modified.
+
+### Engineering checkpoint
+- Completed: lifecycle/admin implementation, package tier state, matrix parent metadata, accounting fields, protected admin APIs/UI, backend notification read APIs, backend-backed notification UI, reservation-aware balance display, duplicate placement endpoint removal.
+- Pending: administrator provisioning/security handoff, CI validation of current continuation, final withdrawal/accounting/frontend-state review, final release/deployment decision.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:41 UTC
+
+### Validation completed
+- Current continuation CI run **passed**: backend lint, migration application, unit tests, integration tests, frontend build, and frontend login test all succeeded.
+- Package lifecycle preflight was tightened so Starter purchases only proceed when an available node has either a valid root position or an active binary parent, matching the settlement-time placement invariant.
+- Withdrawal lifecycle code was reviewed end-to-end: pending → approved → processing → completed, with rejection/failure reservation release, on-chain payout verification, confirmation checks, treasury sender checks, exact USDT destination/amount matching, duplicate transaction protection, and audit logging.
+- Frontend withdrawal lifecycle UI already represents pending/approved/processing/completed/rejected/failed states and explains reservation release on rejection/failure.
+- Frontend accounting state now includes the backend reservation value when calculating available balance.
+- No production database mutation was performed during this continuation.
+
+### Current production observations
+- Production currently has zero open withdrawals and zero admin users, so withdrawal/admin state could only be validated structurally rather than through live records.
+- Admin Security / first administrator provisioning remains **PENDING** by explicit decision.
+
+### Remaining review gates
+- Continue checking frontend accounting labels and withdrawal history against backend state fields.
+- Continue package lifecycle edge-case review, especially upgrade idempotency and settlement retry behavior.
+- Reconcile stale deployment/documentation timestamps and release-gate references before the next promotion decision.
+- Do not mark Admin Security complete until the operator explicitly authorizes the administrator handoff.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:43 UTC
+
+### Completed
+- Reviewed package settlement idempotency constraints: unique payment transaction hash and one pending purchase per user/package are source-controlled; matrix earnings and ledger writes use idempotent references.
+- Tightened package capacity preflight to require a structurally eligible available node with a root or active parent.
+- Identified and closed the Admin Control Center withdrawal operations gap: the queue was previously read-only.
+- Added protected admin withdrawal transitions for approved, processing, rejected, and failed states, including required rejection/failure reasons and reservation checks.
+- Added protected admin withdrawal completion with exact on-chain USDT payout verification: configured treasury sender, correct chain/token, successful receipt, required confirmations, exact destination and amount, and duplicate transaction protection.
+- Added audit records for staff withdrawal operations.
+- Added regression coverage for authenticated notifications and admin withdrawal transition guards.
+- Refreshed `docs/api.md` to document notification APIs and the protected admin portal endpoints, and removed the obsolete manual matrix-placement endpoint from the API contract.
+
+### Pending / release gates
+- Current code changes require CI validation before being called complete.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Production deployment of this continuation is not claimed; Render deploys from `main`.
+- Continue checking accounting/ledger presentation, upgrade idempotency, settlement retries, and frontend state refresh after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:48 UTC
+
+### Completed
+- Settlement allocation now uses the actual `package_purchases.amount` that the member's confirmed payment was verified against, instead of re-reading `package_economics.entry_amount` during settlement. This prevents catalog-price changes between purchase creation and confirmation from changing the financial split.
+- Direct, matrix, and admin allocation calculations still use the configured 20/70/10 percentages and PostgreSQL numeric arithmetic.
+- Withdrawal transition/completion logic was consolidated into `backend/src/services/admin-withdrawals.ts` so the separate staff portal and legacy admin authorization path share the same transition and payout-verification rules.
+- Legacy app-user admin routes now reuse the shared withdrawal service instead of maintaining a second copy of payout logic.
+- Extended integration coverage for notification read behavior and both blocked/valid admin withdrawal transitions.
+- Fixed the frontend delegated action handler so Admin withdrawal controls have a defined event target.
+
+### Validation state
+- Prior continuation CI passed completely before this accounting/consolidation pass.
+- Current latest CI run #415 is queued/in progress for the newest test cleanup commit; this commit must pass before these newest changes are marked validated.
+- Production inspection remains read-only; no financial or admin production rows were created.
+
+### Pending
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Final current-head CI validation for the accounting/admin-route consolidation.
+- Continue frontend accounting/history review and settlement retry edge-case review after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:50 UTC
+
+### Completed
+- Confirmed the previous accounting/consolidation changes are under CI validation.
+- Fixed dashboard pending-balance semantics so only `earned` ledger entries with `pending` status contribute to pending earnings; withdrawal reservations no longer inflate the member's pending earnings display.
+- Added integration coverage asserting that creating a pending withdrawal does not increase pending earnings.
+- Shared admin withdrawal service and legacy admin route consolidation remain in the current feature branch.
+
+### Validation
+- Latest CI runs are still processing the newest commits; do not mark the current head fully validated until the corresponding run completes successfully.
+- Production database remains read-only during this engineering continuation.
+
+### Pending
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Continue final settlement retry/upgrade review and frontend state reconciliation after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 12:52 UTC
+
+### Completed
+- Added a shared transactional user-notification helper.
+- Package lifecycle now emits notifications when a new purchase is created and when a confirmed package activates a matrix position.
+- Withdrawal submission now emits a member notification.
+- Staff withdrawal approval/processing/rejection/failure/completion now emits member-facing status notifications.
+- Notification read APIs and the frontend notification center now have real lifecycle events feeding them rather than static placeholder content.
+
+### Validation state
+- CI runs are being triggered for the notification changes; the latest run for the current head is still in progress.
+- No production rows were created or changed by this continuation.
+
+### Pending
+- Confirm current-head CI success after the notification event changes.
+- Continue final frontend/accounting synchronization review.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:10 UTC
+
+### Completed
+- Added server-backed browser/device push subscriptions in `push_subscriptions`, with per-user ownership, endpoint uniqueness, delivery timestamps, failure counters, RLS enabled, and public/anonymous Data API access revoked.
+- Added native Web Push `aes128gcm` encryption and VAPID authorization without introducing a third-party push dependency.
+- Added authenticated push subscription registration/removal endpoints.
+- Added post-commit push dispatch for package purchase creation, package activation, withdrawal submission, withdrawal status changes, and withdrawal completion.
+- Added a root service worker, installable web-app manifest, phone-notification permission flow, push status controls in Notifications/Profile, notification deep links, foreground refresh, and push cleanup on wallet logout.
+- Fixed an existing frontend notification-state destructuring defect so backend notifications are loaded into the correct state slot.
+
+### Production verification
+- Supabase push subscription migration was applied successfully to production and verified: expected columns exist, RLS is enabled, and no `anon`/`authenticated` table grants were found.
+- Supabase security advisor now shows the expected backend-owned `push_subscriptions` RLS/no-policy informational finding; no elevated security finding was reported for the new table.
+- VAPID credentials have not been placed in source control and must be provisioned as Render environment secrets before production device delivery can be enabled.
+
+### Pending / release gates
+- Run and pass current-head backend/frontend CI after the push changes.
+- Perform one real device acceptance test on HTTPS: grant notification permission, register a phone subscription, trigger a lifecycle notification, receive it with the app backgrounded, and tap it to return to the member workspace.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+- Continue the remaining accounting/history and settlement retry review after CI.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:14 UTC
+
+### New correction
+- Fixed member available-balance accounting so withdrawal reservations remain reserved through `pending`, `approved`, `processing`, and `completed` states.
+- This prevents a member from submitting another withdrawal against funds already approved or being paid out.
+- Added regression coverage proving an approved withdrawal remains present in the dashboard `earnings.reserved` amount.
+
+### Validation
+- Previous push/device and withdrawal-history CI head passed.
+- New current-head CI run #454 is in progress for the reservation correction.
+- Render `main` is live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; the feature branch is not yet live.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:16 UTC
+
+### Lifecycle correction
+- Withdrawal reservations now remain counted in available-balance calculations through `pending`, `approved`, `processing`, and `completed` states.
+- Added an API-level regression showing a second withdrawal is rejected when an already-approved reservation would consume the requested funds.
+- Package lifecycle now enforces forward-only tier progression: Starter → Growth → Elite. Same-tier purchases and lower-tier downgrades are blocked during purchase preflight and rechecked while settling the on-chain payment.
+- Added package-tier progression unit coverage.
+
+### Validation
+- Current feature head: `68f5225ec2470230ec901dbec0c2d10e47926504` before the latest double-spend regression commit.
+- CI run #460 is in progress for the tier/reservation changes; the later double-spend regression will trigger a subsequent CI run.
+- Production Render `main` remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:17 UTC
+
+### Frontend state correction
+- Replaced the member Earnings page's fixed example chart and fixed activity bars with values derived from the authenticated backend ledger response.
+- Historical earnings now use completed `earned` ledger entries from the last seven calendar days.
+- Activity mix now reflects completed ledger values for earnings, withdrawals, and deposits.
+- Empty accounts explicitly show that no completed earnings have been recorded instead of displaying fabricated performance.
+
+### Release state
+- Feature branch is 72 commits ahead of `main` with no commits behind.
+- Latest feature-head CI run #464 is in progress after the ledger-driven Earnings correction; do not mark the current head validated until it completes successfully.
+- Render `main` remains live on commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:25 UTC
+
+### CI regression fix
+- The approved-withdrawal reservation regression test was made independent of earlier suite state by capturing the member's reserved balance before creating its test withdrawals and asserting the 0.75 USDT reservation increase after approval.
+- This corrects the CI failure that began at run #455; later frontend and documentation commits were reporting the same backend test failure because the failing integration test remained in the suite.
+- The package purchase creation response was also corrected to return the locked `package_purchases.amount` when reusing a pending purchase, rather than the current catalog price.
+
+### Validation state
+- Current feature head: `383a8cce1e3cdc035caf84a001658ee3610ea5b5`.
+- Feature branch is 78 commits ahead of `main`, 0 behind.
+- CI run #470 is in progress and is the current validation gate.
+- Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; the feature branch is not deployed.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:28 UTC
+
+### Validation complete
+- Fixed the final CI regression in the withdrawal reservation integration test: the double-spend request now spreads the authenticated header object so the test reaches the authorization-protected withdrawal endpoint correctly.
+- CI run #473 passed end-to-end on feature head `7c9ba098b183b574ad4e61c789a74a63c2eed959`.
+- Backend lint, all backend unit tests, all integration tests, database migration application, frontend build, and frontend login tests are green.
+- Pending package purchase responses now return the purchase's locked `amount`, preventing catalog-price drift while a pending purchase is reused.
+
+### Release state
+- Feature branch is validated but not deployed.
+- Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Real-device Web Push acceptance remains required before production phone delivery can be called validated.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 13:41 UTC
+
+### Settlement consistency hardening
+- Added `supabase/migrations/20260927134000_snapshot_package_economics.sql`.
+- New package purchases snapshot the package tier, direct/matrix/admin allocation percentages, and matrix distribution rules at creation time.
+- Confirmation now settles from the purchase snapshot instead of re-reading mutable `package_economics` and `matrix_distribution_rules`.
+- Existing purchases are backfilled from the configured economics where present; the member's stored purchase `amount` remains authoritative.
+- Production inspection confirmed the two current pending purchases are 10.00000000 USDT 2×6 Starter purchases while current catalog economics have a 30.00000000 entry amount; no production rows were changed.
+
+### Validation
+- CI run #481 passed all backend and frontend checks, including database migration application and the integration suite.
+- Feature head at this validation point: `d6e618ca360559a166ff85f750c7be250005ad30`.
+- A temporary local clone was not possible because the execution environment cannot resolve github.com; CI is the authoritative validation for the branch.
+- Feature branch remains un-deployed.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 14:04 UTC
+
+### Purchase settlement snapshot hardening
+- Made new package purchase snapshot creation atomic at the SQL statement level: package price, package tier, allocation percentages, and matrix distribution rules are captured together from the same database statement.
+- If package pricing/tier changes between preflight and insert, or settlement economics are missing, purchase creation now fails safely instead of creating a partially or inconsistently snapshotted purchase.
+- Strengthened the snapshot migration so existing purchases must be fully backfilled before the snapshot columns become NOT NULL; the migration now fails closed rather than leaving a purchase that cannot be settled from a complete snapshot.
+- Corrected the migration's anonymous-block delimiter before final validation.
+
+### Validation / release state
+- Current validated feature head: `c344de45d2fea27f85fb35eb26f890254c765cad`.
+- CI run #488 passed end-to-end: backend lint, database migrations, backend unit/integration tests, frontend build, and frontend login tests.
+- Production Supabase inspection remains read-only. The two pending 2×6 Starter purchases remain 10.00000000 USDT while current package economics show a 30.00000000 entry amount; no production purchase rows were changed.
+- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Render service configuration was rechecked: the live Health Check Path remains blank while repository `render.yaml` declares `/health`; this is still a separate infrastructure-drift item.
+- Real-device Web Push acceptance remains a release gate.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 14:19 UTC
+
+### Settlement retry/idempotency hardening
+- Tightened package confirmation retry handling so a request that reaches a row already confirmed with a different transaction hash now returns HTTP 409 instead of reporting a generic confirmed response.
+- Added an integration regression that verifies the recorded transaction hash is idempotent while a different hash is rejected for the same confirmed purchase.
+
+### Validation / release state
+- Current validated feature head: `19f6a13089a488d41ddd60680cd0e1fd41c60375`.
+- CI run #491 passed end-to-end: backend lint, migration application, unit tests, integration tests, frontend build, and frontend login tests.
+- Production Supabase remains unchanged. The live `package_purchases` table still does not contain the new economics-snapshot columns; the feature migration remains unpromoted.
+- The two existing pending 2×6 Starter purchases remain 10.00000000 USDT while current package economics show a 30.00000000 entry amount; no production purchase rows were changed.
+- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Live Render Health Check Path remains blank while repository `render.yaml` declares `/health`; the live health URL could not be verified through the available web retrieval channel.
+- Real-device Web Push acceptance remains a release gate.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## Engineering continuation checkpoint — 2026-09-27 14:23 UTC
+
+### Snapshot immutability hardening
+- Added a database trigger that makes the purchase-time settlement economics snapshot immutable after creation/backfill.
+- Snapshot mutation attempts now fail at the database layer for package tier, direct/matrix/admin percentages, and matrix distribution rules.
+- The trigger function is explicitly revoked from `public`, `anon`, and `authenticated` execution because it is trigger-only infrastructure and not an application RPC.
+- Added an integration regression that attempts to mutate a stored snapshot and requires the database to reject the change.
+
+### Validation / release state
+- Current validated feature head: `6cce8f5bbe2987447315ccc36f836397b9522319`.
+- CI run #496 passed end-to-end: backend lint, migration application, unit tests, integration tests, frontend build, and frontend login tests.
+- Production Supabase remains unchanged. The live `package_purchases` table still does not contain the five economics-snapshot columns, so the snapshot/immutability migrations remain feature-only.
+- The two existing pending 2×6 Starter purchases remain 10.00000000 USDT while current package economics show a 30.00000000 entry amount; no production financial rows were changed.
+- Feature branch remains un-deployed; Render `main` remains live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`.
+- Render live Health Check Path remains blank while repository `render.yaml` declares `/health`; the live health URL could not be verified through the available retrieval channel.
+- Real-device Web Push acceptance remains a release gate.
+- Admin Security / first administrator provisioning remains intentionally **PENDING**.
+
+
+## 2026-09-27 14:38 UTC — Purchase integrity + admin provisioning gate
+- Confirmed CI #497 passed for the prior snapshot-immutability documentation checkpoint.
+- Hardened package_purchases immutability: settlement-critical user_id, package_id, amount, and asset are now frozen alongside the purchase-time economics snapshot fields.
+- Added an integration regression proving a purchase amount mutation is rejected by the database trigger; CI #499 passed fully (backend lint, migrations, unit/integration tests, frontend build/login).
+- Removed the historical seeded admin@zenitprotocol.com bootstrap via an idempotent, hash-specific cleanup migration; administrator provisioning remains an explicit operator-controlled step.
+- Added an integration regression asserting the default administrator email is absent after migrations; CI #501 passed fully.
+- Production Supabase remains unchanged by these feature migrations. Current production read-only check reports admin_users=0 and no historical seed email.
+- Real-device Web Push acceptance remains pending; live Render main still does not contain the feature branch push implementation.
+- Render health-check configuration drift (render.yaml /health vs live blank path) remains pending and was not changed.
+- Admin Security / first administrator provisioning remains intentionally pending.
+- Feature branch remains unmerged and not deployed to production.
+
+
+## 2026-09-27 15:35 UTC — Full email/onboarding/security audit checkpoint
+- Audited the registration, email verification, wallet handoff, Resend, Render, Supabase RLS/grants, public functions, production data state, and CI pipeline.
+- Resend production email infrastructure was provisioned: verified-domain record set created for zenitprotocol.com, least-privileged sending credential stored in Render, and branded Welcome + Verify Email templates published.
+- The production sending domain remains pending DNS verification. No email delivery test can honestly be called complete until those DNS records are present.
+- The application already used the official repository PNG logo; no SVG was generated. Branded verification emails point to the official PNG asset and successful verification redirects to the wallet-connect step.
+- Hardened verification failure UX: invalid/expired links now redirect to the branded registration surface instead of exposing a raw API error.
+- Hardened Resend delivery calls with a 10-second timeout and welcome-email idempotency.
+- Identified and fixed a security weakness in the post-verification wallet handoff: the old reusable registration UUID was replaced with a short-lived, hashed, one-time wallet handoff secret. The raw registration identifier is no longer returned to the browser.
+- Added migration and regression coverage for the one-time wallet handoff.
+- Supabase security advisor review: 26 public tables have RLS enabled with no anon/authenticated table privileges; the only public function is the read-only package economics quote function. Advisor RLS-without-policy findings are consistent with the backend-owned database access model.
+- Production read-only state: 2 pending package purchases, 0 confirmed, 0 admin users, 0 push subscriptions, and 0 active pending registrations. No production purchase rows were altered.
+- Render production environment now contains the least-privileged Resend sender configuration and the resulting environment deployment is live on the existing main commit.
+- Real-device Web Push remains the only physical-device acceptance item; the implementation is complete but cannot be truthfully certified without a browser/device test.
+- Admin provisioning remains intentionally operator-controlled and was not performed.
+- Feature branch remains unmerged; feature code was not deployed to production.
+
+
+## 2026-09-28 15:30 UTC — Correct production app origin / email-domain correction
+- Confirmed the live Render application URL is `https://zenith-protocol-qvfe.onrender.com`; this URL is the application origin and the appropriate base for verification-link redirects and wallet handoff navigation.
+- Updated Render production environment values for `APP_ORIGIN`, `CORS_ORIGINS`, and `WALLETCONNECT_METADATA_URL` to the live Render URL. Render automatically triggered deploy `dep-dat8glu0tbcc73aaefr0` on the existing `main` commit; at checkpoint time it was still `build_in_progress`.
+- Corrected an earlier engineering assumption: `zenitprotocol.com` was not provided by the operator as an owned domain. It must not be treated as the production email domain, and no DNS changes should be requested for it.
+- Resend domain `zenitprotocol.com` remains an isolated/unverified configuration and has not been used as evidence of production domain ownership. No domain removal was performed because Resend removal is irreversible and requires explicit operator confirmation.
+- The Render `onrender.com` application URL can be used for web links/origin, but it is not a domain controlled by the operator and therefore is not being treated as the sender domain for production email verification.
+- Production email remains gated on a sender domain that the operator actually controls and can verify in Resend. Resend's current Free tier supports 3 verified domains at no monthly cost; no paid upgrade is required for verification itself.
+- Official logo usage remains unchanged; no SVG or replacement logo has been introduced.
+- All future environment/domain records must distinguish **application origin** from **email sending domain** before configuration is applied.
+
+
+## 2026-09-28 15:40 UTC — Transactional email branding continuation
+- Confirmed the live Render application origin is `https://zenith-protocol-qvfe.onrender.com`; it is used for verification redirects and for the official `/zenit-logo.png` asset URL.
+- Corrected the transactional email implementation so both Verification and Welcome emails render the official repository PNG logo rather than relying on text-only branding.
+- No SVG, generated logo, or replacement artwork was introduced.
+- The Resend configuration for `zenitprotocol.com` remains isolated and unverified; it is not treated as an operator-owned sender domain.
+- Current feature-head CI run #518 is in progress for this change. Previous origin/domain-correction run #517 passed successfully.
+- Feature branch remains unmerged and not deployed to production.
+- Remaining email release gate: an operator-owned sender domain must be verified in Resend before arbitrary member mailbox delivery can be certified.
+
+
+## 2026-09-28 15:45 UTC — Wallet handoff URL hardening
+- Hardened the email-confirmation browser flow so the short-lived wallet handoff token is copied into local storage and immediately removed from the browser query string.
+- The `email_verified` marker is also removed with `history.replaceState`, reducing exposure through browser history, screenshots, copied URLs, and referrer propagation.
+- Added a frontend regression assertion covering token storage and query-string scrubbing.
+- CI run #518 passed for the official-logo email change; the new security/test commits are awaiting their current-head CI result.
+- Feature branch remains unmerged and not deployed to production.
+
+
+## 2026-09-28 16:55 UTC — Full audit continuation / security and configuration hardening
+- Revalidated the active feature branch at `92f58496d2fdbf254a1423018a7075d9dd715afc`; the branch remains unmerged and is not deployed to production.
+- GitHub Actions CI run #527 passed both backend and frontend jobs, including lint, migration application, unit tests, integration tests, frontend build, frontend login tests, and the new automatic-admin provisioning guard. Earlier runs #525/#526 failed before the final migration edit; the current head is green.
+- Removed the automatic `admin_users` seed insert from `20260927110000_upgrade_package_lifecycle_and_admin.sql`. Administrator provisioning remains operator-controlled.
+- Added a CI gate that rejects future migration files containing an `INSERT` into `admin_users`.
+- Hardened production configuration defaults: `API_PUBLIC_URL` now falls back to `APP_ORIGIN`; production rejects partially configured Resend credentials; and `RESEND_FROM` no longer defaults to an unowned/fake sender domain.
+- The feature environment example no longer names `zenitprotocol.com` as a sender domain.
+- Production Render remains on main commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`. The live service is healthy and listening on port 10000; the configured Render health-check path is still blank while repository `render.yaml` declares `/health`. No production health-check mutation was performed.
+- Production Supabase remains unchanged. Current migration history ends at `20260927130737`; the four feature-only migrations `20260927134000`, `20260927140500`, `20260927143000`, and `20260927150000` are still not applied. Read-only production state is 2 pending purchases, 0 confirmed purchases, 0 admin users, 0 push subscriptions, and 0 active pending registrations.
+- Production schema confirms the pre-snapshot purchase/economics fields exist, while the new purchase-time snapshot fields and wallet-handoff fields are not yet present.
+- Resend currently has two published templates, but both template sender metadata still references the pending/unverified `zenitprotocol.com` domain. The application runtime currently sends its own HTML and does not consume those published templates. No Resend emails are recorded, and no real delivery test was performed.
+- The remaining email release gate is an operator-owned sender domain verified in Resend; a real mailbox address is also required for the final external delivery test.
+- Supabase currently reports PostgreSQL 17.6.1. Supabase announced PostgreSQL 17.11 on 2026-09-25 with security fixes; upgrading production is an operator maintenance action and was not performed during this feature audit.
+
+
+## 2026-09-28 16:57 UTC — Audit validation finalized
+- Current feature branch head is `e7aeed9491266793390ed35691b6e681cdee2895`; it remains unmerged and undeployed.
+- CI run #529 passed on the current documentation-inclusive head. The immediately preceding feature-code validation run #527 also passed all backend and frontend gates.
+- No production mutation, feature deployment, merge, admin provisioning, or irreversible Resend deletion was performed during this continuation.
+
+
+## 2026-09-28 — Canonical package pricing and economics checkpoint
+
+### Operator-confirmed source of truth
+The canonical package catalog is now documented in `docs/PACKAGE_ECONOMICS.md` and is the value future engineering work must preserve unless the operator explicitly approves a price change:
+
+- 2x4 Starter: **10 USDT**
+- 2x4 Growth: **25 USDT**
+- 2x4 Elite: **50 USDT**
+- 2x6 Starter: **30 USDT**
+- 2x6 Growth: **60 USDT**
+- 2x6 Elite: **120 USDT**
+
+Every confirmed purchase uses **20% direct / 70% matrix / 10% platform administration**.
+
+Matrix distribution:
+- 2x4: **30% / 25% / 25% / 20%** across levels 1–4.
+- 2x6: **30% / 20% / 15% / 10% / 10% / 15%** across levels 1–6.
+
+### Production verification
+Read-only production checks on 2026-09-28 confirmed that `program_packages.price` and `package_economics.entry_amount` currently match the canonical six-package catalog, with 20/70/10 economics configured for all six packages and the expected matrix-level rules present.
+
+Two historical pending 2x6 Starter purchase intents remain at **10 USDT**. They were not modified. They are historical pending records and must not be used as evidence that the current 2x6 Starter price is 10 USDT.
+
+### Code hardening
+- New purchase intent creation now requires `package_economics.entry_amount = program_packages.price` in the atomic insert guard.
+- A stale pending purchase whose recorded amount differs from the current package catalog price is no longer silently reused; the API returns HTTP 409 and leaves the historical pending purchase unchanged.
+- Added regression coverage locking the six-package catalog, price/economics equality, 20/70/10 allocation, and both matrix distribution patterns.
+
+### Validation / release impact
+- Changes are confined to the feature branch.
+- No production rows were modified.
+- The production catalog itself was verified read-only; no price correction was required.
+- Current feature head before this checkpoint: `630da77f375edce7134eb8136c13e2926804a907`.
+- New CI must pass before this checkpoint is treated as validated.
+
+### Historical migration note
+An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` contains the historical 2x6 Starter 10 USDT configuration. It is intentionally preserved as migration history. It is superseded by `20260926210000_enable_dual_starter_matrix_packages.sql` and the later package-lifecycle catalog reconciliation. Future work must use `docs/PACKAGE_ECONOMICS.md` plus the current catalog, not the historical migration value.
+
+
+## 2026-09-28 — Pricing hardening validation completed
+- Commit `46e67f1117e5d221b317a338088ea5dfb44932ec` completed GitHub Actions CI #532 successfully.
+- Backend: lint, disposable PostgreSQL migration application, unit tests, integration tests, and automatic-admin provisioning guard all passed.
+- Frontend: production build and login regression test passed.
+- The canonical six-package pricing/economics regression passed, including price/economics equality, 20/70/10 allocation, and both matrix distribution patterns.
+- Feature branch remains unmerged and was not deployed to production.

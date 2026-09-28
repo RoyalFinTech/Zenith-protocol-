@@ -146,13 +146,8 @@ set package_tier='starter',
     ))
 where m.package_tier='starter' or m.package_tier='';
 
--- Initial staff administrator. Password is stored only as a scrypt hash; change it immediately from the Admin Security panel.
-insert into public.admin_users(email,password_hash)
-values (
-  'admin@zenitprotocol.com',
-  'scrypt$597d9e84479adbcd90b109aad93cabdb$824ef600a232af8efdd11a6f696b98d473a86af057dce61c81a6cc5c330217ce53ec9dadd2e1b2bdcbca6fd0b3aec4bb7a34e2c880cad259942bdf697b39e896'
-)
-on conflict (email) do nothing;
+
+-- Administrator provisioning is intentionally operator-controlled and is never performed by migrations.
 
 -- Helpful cleanup/indexing for admin and settlement paths.
 create index if not exists idx_package_purchases_program_status

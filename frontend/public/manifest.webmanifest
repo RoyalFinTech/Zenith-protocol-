@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "Zenit Protocol",
+  "short_name": "Zenit",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0b0d0f",
+  "background_color": "#0b0d0f",
+  "icons": [
+    {
+      "src": "/zenit-logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

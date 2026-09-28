@@ -14,6 +14,9 @@ Use `Authorization: Bearer <session-token>`.
 - `GET /me`
 - `PATCH /me/profile` — display name and avatar URL.
 - `PATCH /me/preferences` — `theme`, `compactDensity`, `activityNotifications`, `reducedMotion`.
+- `GET /me/push/config` — authenticated device-push capability/config status.
+- `POST /me/push/subscriptions` — register or refresh the current browser push subscription.
+- `DELETE /me/push/subscriptions` — remove one registered device by endpoint, or all subscriptions for the member.
 - `GET /wallets`
 - `POST /wallets/bind` — bind the already-authenticated EVM address.
 - `DELETE /wallets/:id`
@@ -23,11 +26,25 @@ Use `Authorization: Bearer <session-token>`.
 - `GET /dashboard/referrals`
 - `GET /transactions`
 - `POST /transactions/withdrawals`
+- `GET /me/notifications`
+- `PATCH /me/notifications/:id/read`
+- `PATCH /me/notifications/read-all`
 
-### Admin
-Admin role only:
-- `GET /admin/summary`
-- `GET /admin/audit-logs`
+### Admin portal
+Admin session only:
+- `POST /admin-portal/login`
+- `GET /admin-portal/me`
+- `POST /admin-portal/logout`
+- `PATCH /admin-portal/credentials`
+- `GET /admin-portal/overview`
+- `GET /admin-portal/charts`
+- `GET /admin-portal/users`
+- `GET /admin-portal/purchases`
+- `GET /admin-portal/revenue`
+- `GET /admin-portal/withdrawals`
+- `PATCH /admin-portal/withdrawals/:withdrawalId/status`
+- `POST /admin-portal/withdrawals/:withdrawalId/complete`
+- `GET /admin-portal/matrix`
+- `GET /admin-portal/audit`
 
 - `POST /referral/regenerate` — rotate the signed-in member's unique referral code.
-- `POST /programs/:programCode/place` — atomically claim the next available matrix node; optional `referralCode` records the referrer. It does not initiate, settle, or represent an on-chain payment.

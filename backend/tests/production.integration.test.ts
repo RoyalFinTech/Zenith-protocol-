@@ -61,6 +61,50 @@ describeProduction('production API against a real PostgreSQL test database', () 
     return fetch(`${baseUrl}${path}`, init);
   }
 
+  it('does not seed a default administrator account', async () => {
+    const result = await database.pool.query<{count:number}>(
+      `select count(*)::int as count from admin_users where email='admin@zenitprotocol.com'`
+    );
+    expect(result.rows[0]?.count ?? 0).toBe(0);
+  });
+
+  it('stores email wallet handoffs as short-lived one-time secrets', async () => {
+    const id = randomUUID();
+    const handoff = randomBytes(32).toString('base64url');
+    const hash = (await import('node:crypto')).createHash('sha256').update(handoff).digest('hex');
+    try {
+      await database.pool.query(
+        `insert into pending_registrations(
+          id,username,email,display_name,token_hash,expires_at,verified_at,
+          wallet_handoff_token_hash,wallet_handoff_expires_at
+        ) values($1,'ci_handoff','ci-handoff@example.test','CI Handoff',$2,now()+interval '30 minutes',now(),$3,now()+interval '10 minutes')`,
+        [id, randomBytes(32).toString('hex'), hash]
+      );
+      const first = await database.pool.query(
+        `select id from pending_registrations
+         where wallet_handoff_token_hash=$1
+           and verified_at is not null
+           and wallet_handoff_expires_at > now()
+           and consumed_at is null
+         for update`,
+        [hash]
+      );
+      expect(first.rows[0]?.id).toBe(id);
+      await database.pool.query(`update pending_registrations set consumed_at=now() where id=$1`, [id]);
+      const second = await database.pool.query(
+        `select id from pending_registrations
+         where wallet_handoff_token_hash=$1
+           and verified_at is not null
+           and wallet_handoff_expires_at > now()
+           and consumed_at is null`,
+        [hash]
+      );
+      expect(second.rows).toHaveLength(0);
+    } finally {
+      await database.pool.query('delete from pending_registrations where id=$1', [id]);
+    }
+  });
+
   it('keeps the admin portal separate from member authentication', async () => {
     const denied = await request('/api/admin-portal/overview', { headers: { authorization: `Bearer ${token}` } });
     expect(denied.status).toBe(401);
@@ -132,6 +176,208 @@ describeProduction('production API against a real PostgreSQL test database', () 
     }
   });
 
+  it('supports authenticated notification reads and admin withdrawal transition guards', async () => {
+    const authorization = { authorization: `Bearer ${token}` };
+    const reservedBefore=await request('/api/dashboard/summary',{headers:authorization});
+    expect(reservedBefore.status).toBe(200);
+    const reservedBeforeData=await reservedBefore.json() as {earnings:{reserved:string}};
+
+    const notificationInsert=await database.pool.query<{id:string}>(`
+      insert into notifications(user_id,title,message) values($1,'CI notification','Notification regression test') returning id
+    `,[userId]);
+    const notifications = await request('/api/me/notifications', { headers: authorization });
+    expect(notifications.status).toBe(200);
+    expect((await notifications.json()).notifications.some((x:{id:string})=>x.id===notificationInsert.rows[0]!.id)).toBe(true);
+    const marked=await request(`/api/me/notifications/${notificationInsert.rows[0]!.id}/read`,{method:'PATCH',headers:authorization});
+    expect(marked.status).toBe(200);
+    expect((await database.pool.query<{read_at:Date|null}>(`select read_at from notifications where id=$1`,[notificationInsert.rows[0]!.id])).rows[0]?.read_at).not.toBeNull();
+
+    const adminEmail = `ci-withdrawal-admin-${randomUUID()}@example.test`;
+    const adminPassword = randomBytes(24).toString('base64url');
+    const passwordHash = await hashAdminPassword(adminPassword);
+    const admin = await database.pool.query<{id:string}>(`insert into admin_users(email,password_hash,is_active) values($1,$2,true) returning id`, [adminEmail,passwordHash]);
+    const adminId = admin.rows[0]!.id;
+    try {
+      const withdrawal = await database.pool.query<{id:string}>(`
+        insert into withdrawal_requests(user_id,amount,asset,destination_address,status)
+        values($1,1.25,'USDT',$2,'pending') returning id
+      `, [userId,testAddress]);
+      const reservedWithdrawal = await database.pool.query<{id:string}>(`
+        insert into withdrawal_requests(user_id,amount,asset,destination_address,status)
+        values($1,0.75,'USDT',$2,'pending') returning id
+      `, [userId,testAddress]);
+      await database.pool.query(`
+        insert into ledger_transactions(user_id,type,amount,asset,status,reference,description)
+        values($1,'withdrawal',0.75,'USDT','pending',$2,'CI reserved withdrawal')
+      `, [userId,`withdrawal:${reservedWithdrawal.rows[0]!.id}`]);
+      const login = await request('/api/admin-portal/login', {
+        method:'POST', headers:{'content-type':'application/json'},
+        body:JSON.stringify({email:adminEmail,password:adminPassword})
+      });
+      expect(login.status).toBe(200);
+      const adminToken=(await login.json()).token as string;
+
+      const approved=await request(`/api/admin-portal/withdrawals/${withdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'approved'})
+      });
+      expect(approved.status).toBe(409);
+
+      const goodApproval=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'approved'})
+      });
+      expect(goodApproval.status).toBe(200);
+      const reservedSummary=await request('/api/dashboard/summary',{headers:authorization});
+      expect(reservedSummary.status).toBe(200);
+      const reservedAfterData=await reservedSummary.json() as {earnings:{reserved:string}};
+      expect(Number(reservedAfterData.earnings.reserved)-Number(reservedBeforeData.earnings.reserved)).toBeCloseTo(0.75,8);
+      const doubleSpendAttempt=await request('/api/transactions/withdrawals',{
+        method:'POST',headers:{...authorization,'content-type':'application/json'},
+        body:JSON.stringify({amount:'4.5',address:testAddress})
+      });
+      expect(doubleSpendAttempt.status).toBe(409);
+      const processing=await request(`/api/admin-portal/withdrawals/${reservedWithdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'processing'})
+      });
+      expect(processing.status).toBe(200);
+
+      const rejected=await request(`/api/admin-portal/withdrawals/${withdrawal.rows[0]!.id}/status`,{
+        method:'PATCH',headers:{authorization:`Bearer ${adminToken}`,'content-type':'application/json'},
+        body:JSON.stringify({status:'rejected',reason:'CI test rejection'})
+      });
+      expect(rejected.status).toBe(200);
+      const final=(await database.pool.query<{status:string}>(`select status from withdrawal_requests where id=$1`,[withdrawal.rows[0]!.id])).rows[0];
+      expect(final?.status).toBe('rejected');
+    } finally {
+      await database.pool.query(`delete from ledger_transactions where user_id=$1 and reference like 'withdrawal:%'`,[userId]);
+      await database.pool.query('delete from notifications where user_id=$1',[userId]);
+      await database.pool.query('delete from withdrawal_requests where user_id=$1',[userId]);
+      await database.pool.query('delete from admin_users where id=$1',[adminId]);
+    }
+  });
+
+  it('exposes authenticated device push capability without allowing unauthenticated subscription writes', async () => {
+    const authorization = { authorization: `Bearer ${token}` };
+    const pushConfig = await request('/api/me/push/config', { headers: authorization });
+    expect(pushConfig.status).toBe(200);
+    const pushData = await pushConfig.json() as { enabled:boolean; publicKey:string|null };
+    expect(typeof pushData.enabled).toBe('boolean');
+    if (!pushData.enabled) {
+      const disabled = await request('/api/me/push/subscriptions', {
+        method:'POST',
+        headers:{...authorization,'content-type':'application/json'},
+        body:JSON.stringify({subscription:{endpoint:'https://push.example.test/subscription',keys:{p256dh:'bad',auth:'bad'}}})
+      });
+      expect(disabled.status).toBe(503);
+    }
+    const unauthenticated = await request('/api/me/push/subscriptions', {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({subscription:{endpoint:'https://push.example.test/subscription',keys:{p256dh:'bad',auth:'bad'}}})
+    });
+    expect(unauthenticated.status).toBe(401);
+  });
+
+  it('locks the canonical package catalog and 20/70/10 settlement economics', async () => {
+    const expected = {
+      '2x4-starter': { price:'10.00000000', tier:'starter', direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,25,25,20] },
+      '2x4-growth':  { price:'25.00000000', tier:'growth',  direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,25,25,20] },
+      '2x4-elite':   { price:'50.00000000', tier:'elite',   direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,25,25,20] },
+      '2x6-starter': { price:'30.00000000', tier:'starter', direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,20,15,10,10,15] },
+      '2x6-growth':  { price:'60.00000000', tier:'growth',  direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,20,15,10,10,15] },
+      '2x6-elite':   { price:'120.00000000',tier:'elite',   direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,20,15,10,10,15] }
+    } as const;
+
+    const result = await database.pool.query<{
+      code:string;
+      tier:string;
+      price:string|null;
+      entry_amount:string;
+      direct_percent:string;
+      matrix_percent:string;
+      admin_percent:string;
+      distribution:number[];
+    }>(`
+      select pp.code,pp.tier,pp.price::text,pe.entry_amount::text,
+             pe.direct_percent::text,pe.matrix_percent::text,pe.admin_percent::text,
+             coalesce(array_agg(r.percent_of_matrix_pool order by r.level), '{}'::numeric[])::numeric[] as distribution
+      from program_packages pp
+      join package_economics pe on pe.package_id=pp.id
+      left join matrix_distribution_rules r on r.package_id=pp.id
+      where pp.code = any($1::text[])
+      group by pp.code,pp.tier,pp.price,pe.entry_amount,pe.direct_percent,pe.matrix_percent,pe.admin_percent
+      order by pp.code
+    `, [Object.keys(expected)]);
+
+    expect(result.rows).toHaveLength(6);
+    for (const row of result.rows) {
+      const item = expected[row.code as keyof typeof expected];
+      expect(item).toBeTruthy();
+      expect(row.tier).toBe(item.tier);
+      expect(row.price).toBe(item.price);
+      expect(row.entry_amount).toBe(item.price);
+      expect(row.direct_percent).toBe(item.direct);
+      expect(row.matrix_percent).toBe(item.matrix);
+      expect(row.admin_percent).toBe(item.admin);
+      expect(row.distribution.map(Number)).toEqual(item.distribution);
+      expect(row.distribution.reduce((sum, value) => sum + Number(value), 0)).toBe(100);
+    }
+  });
+
+  it('makes package confirmation retries idempotent to the recorded transaction hash', async () => {
+    const packageRow = (await database.pool.query<{id:string}>(
+      `select id from program_packages where code='2x4-starter' limit 1`
+    )).rows[0];
+    expect(packageRow?.id).toBeTruthy();
+
+    const recordedTx = `0x${'1'.repeat(64)}`;
+    const differentTx = `0x${'2'.repeat(64)}`;
+    const purchase = await database.pool.query<{id:string}>(
+      `insert into package_purchases(
+         user_id,package_id,amount,asset,status,payment_tx_hash,confirmed_at,
+         package_tier,direct_percent,matrix_percent,admin_percent,matrix_distribution_rules
+       )
+       values($1,$2,10,'USDT','confirmed',$3,now(),'starter',20,70,10,'[]'::jsonb)
+       returning id`,
+      [userId,packageRow!.id,recordedTx]
+    );
+
+    try {
+      const authorization = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
+      const sameHash = await request(`/api/packages/purchases/${purchase.rows[0]!.id}/confirm`, {
+        method:'POST',
+        headers:authorization,
+        body:JSON.stringify({txHash:recordedTx})
+      });
+      expect(sameHash.status).toBe(200);
+
+      const differentHash = await request(`/api/packages/purchases/${purchase.rows[0]!.id}/confirm`, {
+        method:'POST',
+        headers:authorization,
+        body:JSON.stringify({txHash:differentTx})
+      });
+      expect(differentHash.status).toBe(409);
+
+      await expect(
+        database.pool.query(
+          `update package_purchases set amount=11 where id=$1`,
+          [purchase.rows[0]!.id]
+        )
+      ).rejects.toThrow('Package purchase settlement economics snapshot is immutable');
+
+      await expect(
+        database.pool.query(
+          `update package_purchases set direct_percent=21 where id=$1`,
+          [purchase.rows[0]!.id]
+        )
+      ).rejects.toThrow('Package purchase settlement economics snapshot is immutable');
+    } finally {
+      await database.pool.query('delete from package_purchases where id=$1',[purchase.rows[0]!.id]);
+    }
+  });
+
   it('serves health and public configuration', async () => {
     const [health, config] = await Promise.all([request('/health'), request('/config/public')]);
     expect(health.status).toBe(200);
@@ -183,6 +429,9 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect(packages.find(x => x.code === '2x4-starter')?.price).toBe('10.00000000');
     expect(packages.find(x => x.code === '2x6-starter')?.price).toBe('30.00000000');
     expect((await request('/api/transactions/withdrawals', { method: 'POST', headers: authorization, body: JSON.stringify({ amount: '1.5', address: testAccount().address }) })).status).toBe(201);
+    const summaryAfterWithdrawal=await request('/api/dashboard/summary',{headers:authorization});
+    expect(summaryAfterWithdrawal.status).toBe(200);
+    expect((await summaryAfterWithdrawal.json()).earnings.pending).toBe('0');
     await database.pool.query(`update matrix_memberships set status='completed' where user_id=$1 and program_id=(select id from programs where code='2x4')`, [userId]);
     const inactiveWithdrawal = await request('/api/transactions/withdrawals', { method: 'POST', headers: authorization, body: JSON.stringify({ amount: '0.5', address: testAccount().address }) });
     expect(inactiveWithdrawal.status).toBe(409);

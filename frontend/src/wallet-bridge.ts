@@ -69,12 +69,12 @@ async function init() {
 
       if (!state?.isConnected || !address) {
         if (authToken || lastAddress) clearLocalSession();
-        (window as any).zenitSetWallet?.(false, 'Not connected');
+        (window as any).zenitSetWallet?.(false, '', 'Not connected');
         return;
       }
 
       if (chainId && chainId !== BSC_CHAIN_ID) {
-        (window as any).zenitSetWallet?.(false, 'Wrong network');
+        (window as any).zenitSetWallet?.(false, address || '', 'Wrong network');
         (window as any).zenitToast?.(
           'Wrong network',
           'Please switch your wallet to BNB Smart Chain (BSC) before authenticating.',
@@ -133,6 +133,10 @@ async function waitForConnectorReady(address: string, timeoutMs = 6000) {
 }
 
 function clearLocalSession() {
+  const previousToken = authToken || localStorage.getItem('zenitToken') || '';
+  if (previousToken) {
+    void (window as any).zenitForgetPushSubscription?.(previousToken);
+  }
   authToken = '';
   lastAddress = '';
   localStorage.removeItem('zenitToken');
@@ -182,12 +186,12 @@ async function authenticate(address: `0x${string}`) {
 
   const signature = await signMessage(adapter.wagmiConfig, { message });
   const authMode = localStorage.getItem('zenitAuthMode') || (localStorage.getItem('zenitRegistrationVerified') === '1' ? 'onboarding' : 'existing');
-  const registrationId = authMode === 'onboarding' ? (localStorage.getItem('zenitRegistrationId') || '') : '';
+  const walletHandoffToken = authMode === 'onboarding' ? (localStorage.getItem('zenitWalletHandoffToken') || '') : '';
 
   const verifyR = await fetch(`${base}/api/auth/verify`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ address, nonce, signature, registrationId: registrationId || undefined })
+    body: JSON.stringify({ address, nonce, signature, walletHandoffToken: walletHandoffToken || undefined })
   });
   const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string; pinRequired?: boolean; pinSetupRequired?: boolean; challengeId?: string };
   if ((data.pinRequired || data.pinSetupRequired) && data.challengeId) {
@@ -199,7 +203,7 @@ async function authenticate(address: `0x${string}`) {
 
   authToken = data.token;
   localStorage.setItem('zenitToken', authToken);
-  localStorage.removeItem('zenitRegistrationId');
+  localStorage.removeItem('zenitWalletHandoffToken');
   localStorage.removeItem('zenitRegistrationVerified');
   localStorage.removeItem('zenitAuthMode');
 

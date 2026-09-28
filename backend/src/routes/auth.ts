@@ -92,7 +92,7 @@ router.post('/register/request', async (req, res, next) => {
       }
       throw new HttpError(502, 'Verification email service is temporarily unavailable');
     }
-    res.status(202).json({registrationId:id,email});
+    res.status(202).json({email});
   } catch (e) { console.error('ZENIT registration request failed', e instanceof Error ? e.message : String(e)); next(e); }
 });
 
@@ -101,10 +101,27 @@ router.get('/register/verify', async (req, res, next) => {
     const token = String(req.query?.token ?? '');
     if (!token) throw new HttpError(400, 'Verification token is required');
     const tokenHash = createHash('sha256').update(token).digest('hex');
-    const row = (await query<{id:string}>(`update pending_registrations set verified_at=now(),updated_at=now() where token_hash=$1 and verified_at is null and expires_at > now() returning id`, [tokenHash])).rows[0];
-    if (!row) throw new HttpError(400, 'This verification link is invalid or expired');
+    const handoffToken = randomNonce() + randomNonce();
+    const handoffHash = createHash('sha256').update(handoffToken).digest('hex');
+    const row = (await query<{id:string}>(`
+      update pending_registrations
+      set verified_at=now(),
+          wallet_handoff_token_hash=$2,
+          wallet_handoff_expires_at=now()+interval '10 minutes',
+          updated_at=now()
+      where token_hash=$1
+        and verified_at is null
+        and expires_at > now()
+      returning id
+    `, [tokenHash, handoffHash])).rows[0];
     const target = new URL(env.appOrigin);
-    target.searchParams.set('registration', row.id);
+    if (!row) {
+      target.searchParams.set('email_verification', 'error');
+      target.searchParams.set('reason', 'invalid_or_expired');
+      res.redirect(target.toString());
+      return;
+    }
+    target.searchParams.set('wallet_handoff', handoffToken);
     target.searchParams.set('email_verified', '1');
     res.redirect(target.toString());
   } catch (e) { next(e); }
@@ -129,8 +146,9 @@ router.post('/verify', async (req, res, next) => {
     const raw = String(req.body?.address ?? '');
     const signature = String(req.body?.signature ?? '');
     const nonce = String(req.body?.nonce ?? '');
-    const registrationId = String(req.body?.registrationId ?? '');
+    const walletHandoffToken = String(req.body?.walletHandoffToken ?? '');
     if (!/^0x[a-fA-F0-9]{40}$/.test(raw) || !/^0x[0-9a-fA-F]+$/.test(signature) || !nonce) throw new HttpError(400, 'address, signature and nonce are required');
+    if (walletHandoffToken && walletHandoffToken.length > 256) throw new HttpError(400, 'Invalid email verification handoff');
     const address = getAddress(raw);
     await client.query('begin');
     const nonceResult = await client.query<{ id: string; message: string; expires_at: Date; used_at: Date | null }>(`select id,message,expires_at,used_at from auth_nonces where nonce=$1 and address=$2 for update`, [nonce,address]);
@@ -143,8 +161,17 @@ router.post('/verify', async (req, res, next) => {
 
     let user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`select u.id,u.role,u.username,u.email,u.display_name,u.pin_hash from app_users u where u.wallet_address=$1 or exists (select 1 from wallet_accounts wa where wa.user_id=u.id and lower(wa.address)=lower($1) and wa.chain_id=$2) limit 1`, [address, env.chainId])).rows[0];
     let registration: { id:string; username:string; email:string; display_name:string; pin_hash:string|null } | undefined;
-    if (registrationId) {
-      registration = (await client.query<{ id:string; username:string; email:string; display_name:string; pin_hash:string|null }>(`select id,username,email,display_name,pin_hash from pending_registrations where id=$1 and verified_at is not null and expires_at > now() and consumed_at is null for update`, [registrationId])).rows[0];
+    if (walletHandoffToken) {
+      const handoffHash = createHash('sha256').update(walletHandoffToken).digest('hex');
+      registration = (await client.query<{ id:string; username:string; email:string; display_name:string; pin_hash:string|null }>(`
+        select id,username,email,display_name,pin_hash
+        from pending_registrations
+        where wallet_handoff_token_hash=$1
+          and verified_at is not null
+          and wallet_handoff_expires_at > now()
+          and consumed_at is null
+        for update
+      `, [handoffHash])).rows[0];
       if (!registration) throw new HttpError(400, 'Email verification is required before wallet authentication');
     }
     if (!user) {

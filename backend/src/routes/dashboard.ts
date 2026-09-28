@@ -19,7 +19,7 @@ router.get('/summary', async(req,res,next)=>{
           'sortOrder',pp.sort_order
         ) order by pp.sort_order) from program_packages pp where pp.program_id=p.id and pp.active=true),'[]'::json) as packages
         from programs p where p.active=true order by p.sort_order`),
-      query(`select coalesce(sum(case when type='earned' and status='completed' then amount else 0 end),0) total,coalesce(sum(case when status='pending' then amount else 0 end),0) pending,coalesce(sum(case when type='withdrawal' and status='completed' then amount else 0 end),0) withdrawn from ledger_transactions where user_id=$1`,[req.auth!.userId]),
+      query(`select coalesce(sum(case when type='earned' and status='completed' then amount else 0 end),0) total,coalesce(sum(case when type='earned' and status='pending' then amount else 0 end),0) pending,coalesce(sum(case when type='withdrawal' and status='completed' then amount else 0 end),0) withdrawn,coalesce(sum(case when type='withdrawal' and status in ('pending','approved','processing','completed') then amount else 0 end),0) reserved from ledger_transactions where user_id=$1`,[req.auth!.userId]),
       query(`select occurred_at,type,program_code,amount,asset,status,reference from ledger_transactions where user_id=$1 order by occurred_at desc limit 50`,[req.auth!.userId]),
       query(`select icon,title,description,occurred_at,status from activity_events where user_id=$1 order by occurred_at desc limit 10`,[req.auth!.userId]),
       query(`select id,title,message,created_at,read_at from notifications where user_id=$1 order by created_at desc limit 20`,[req.auth!.userId])

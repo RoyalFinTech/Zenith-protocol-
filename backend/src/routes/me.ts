@@ -3,6 +3,8 @@ import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../utils/http.js';
 import { sendWelcomeEmail } from '../services/email.js';
+import { env } from '../config.js';
+import { validatePushSubscriptionInput } from '../services/web-push.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -40,6 +42,84 @@ router.patch('/profile', async (req,res,next)=>{
     }
     res.json({user});
   } catch(e){ next(e); }
+});
+
+router.get('/notifications', async (req,res,next)=>{
+  try{
+    const limit = Math.min(Math.max(Number(req.query.limit ?? 20), 1), 100);
+    const r = await query(
+      `select id,title,message,created_at,read_at
+       from notifications
+       where user_id=$1
+       order by created_at desc
+       limit $2`,
+      [req.auth!.userId, limit]
+    );
+    res.json({notifications:r.rows});
+  } catch(e){ next(e); }
+});
+
+router.patch('/notifications/:id/read', async (req,res,next)=>{
+  try{
+    const r = await query(
+      `update notifications
+       set read_at=coalesce(read_at,now())
+       where id=$1 and user_id=$2
+       returning id,title,message,created_at,read_at`,
+      [req.params.id, req.auth!.userId]
+    );
+    if(!r.rowCount) throw new HttpError(404,'Notification not found');
+    res.json({notification:r.rows[0]});
+  } catch(e){ next(e); }
+});
+
+router.patch('/notifications/read-all', async (req,res,next)=>{
+  try{
+    const r = await query(
+      `update notifications
+       set read_at=now()
+       where user_id=$1 and read_at is null`,
+      [req.auth!.userId]
+    );
+    res.json({updated:r.rowCount ?? 0});
+  } catch(e){ next(e); }
+});
+
+router.get('/push/config', async (_req,res)=>{
+  res.json({enabled:env.pushEnabled,publicKey:env.pushEnabled?env.vapidPublicKey:null});
+});
+
+router.post('/push/subscriptions', async (req,res,next)=>{
+  try{
+    if(!env.pushEnabled) throw new HttpError(503,'Device push notifications are not configured');
+    let subscription;
+    try { subscription=validatePushSubscriptionInput(req.body?.subscription); }
+    catch(e){ throw new HttpError(400,e instanceof Error?e.message:'Invalid push subscription'); }
+    const expirationTime=req.body?.subscription?.expirationTime == null ? null : Number(req.body.subscription.expirationTime);
+    if(expirationTime!==null && (!Number.isSafeInteger(expirationTime) || expirationTime<0)) throw new HttpError(400,'Invalid push subscription expiration time');
+    const userAgent=String(req.get('user-agent')||'').slice(0,500)||null;
+    const r=await query(
+      `insert into push_subscriptions(user_id,endpoint,p256dh,auth,expiration_time,user_agent,updated_at)
+       values($1,$2,$3,$4,$5,$6,now())
+       on conflict(endpoint) do update set
+         user_id=excluded.user_id,p256dh=excluded.p256dh,auth=excluded.auth,
+         expiration_time=excluded.expiration_time,user_agent=excluded.user_agent,
+         updated_at=now(),last_failure_at=null,failure_count=0
+       returning id,created_at,updated_at`,
+      [req.auth!.userId,subscription.endpoint,subscription.p256dh,subscription.auth,expirationTime,userAgent]
+    );
+    res.status(201).json({subscription:r.rows[0]});
+  }catch(e){ next(e); }
+});
+
+router.delete('/push/subscriptions', async (req,res,next)=>{
+  try{
+    const endpoint=typeof req.body?.endpoint==='string'?req.body.endpoint.trim():'';
+    const r=endpoint
+      ? await query(`delete from push_subscriptions where user_id=$1 and endpoint=$2`,[req.auth!.userId,endpoint])
+      : await query(`delete from push_subscriptions where user_id=$1`,[req.auth!.userId]);
+    res.json({removed:r.rowCount??0});
+  }catch(e){next(e);}
 });
 
 router.patch('/preferences', async (req,res,next)=>{

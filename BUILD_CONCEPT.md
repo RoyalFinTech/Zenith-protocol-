@@ -116,11 +116,15 @@ Members choose one of two Starter entry paths:
 - **2x4 Starter:** 10 USDT, 30 matrix positions, 4 levels.
 - **2x6 Starter:** 30 USDT, 126 matrix positions, 6 levels.
 
-Only Starter packages may activate a matrix position. Growth and Elite catalog entries remain unpriced until separately approved.
+The canonical package catalog is:
+- 2x4 Starter: 10 USDT; Growth: 25 USDT; Elite: 50 USDT.
+- 2x6 Starter: 30 USDT; Growth: 60 USDT; Elite: 120 USDT.
+- Every confirmed purchase allocates 20% direct, 70% matrix, and 10% platform administration.
+- Starter creates one matrix position; Growth upgrades the same position; Elite upgrades the same position.
 
 The authenticated purchase flow sends the selected package code to the backend. Settlement verifies the exact on-chain USDT transfer, then atomically activates the first available node in the selected program and creates the matching active membership.
 
-Both Starter packages use the established 20/70/10 allocation model. The 2x6 level distribution is configured. The 2x4 level-by-level distribution remains intentionally unset pending approved business rules; this does not block package payment verification or matrix-position activation.
+Both Starter packages use the established 20/70/10 allocation model. The configured matrix distributions are 2x4 = 30/25/25/20% across levels 1–4 and 2x6 = 30/20/15/10/10/15% across levels 1–6. Growth and Elite upgrades retain the existing matrix position and sponsor/referrer.
 
 ## Database integrity strategy
 
@@ -160,16 +164,16 @@ The repository Blueprint defines:
 
 The live Render service should still be treated as a separate deployment state from this security branch until an explicit merge/deploy.
 
-### Vercel
-Frontend deploys independently from `frontend/` using Vite output in `dist/`.
+### Frontend delivery
+The current Render web service builds the frontend with the backend and serves the resulting production frontend from the Node service. Vite remains the frontend build tool, with output bundled into the backend's `frontend-dist` during the Render build.
 
 ### Supabase migrations
-Production currently contains migration records through:
-- `20260926145028 package_payment_settlement_hardening_constraints`
-- `20260926145451 withdrawal_payout_idempotency`
-- `20260926175500 webauthn_challenge_user_index`
+Production migration records were last verified through:
+- `20260927114925 upgrade_package_lifecycle_and_admin`
+- `20260927130432 push_notifications`
+- `20260927130737 add_matrix_memberships_package_index`
 
-Repository migrations now include the corresponding settlement/payout history and the new WebAuthn index migration.
+The feature branch additionally contains the purchase-snapshot, snapshot-immutability, admin-bootstrap cleanup, and wallet-handoff hardening migrations that remain unpromoted to production.
 
 ## Engineering workflow
 
@@ -185,8 +189,8 @@ Repository migrations now include the corresponding settlement/payout history an
 
 - Engineering progress: `ENGINEERING_PROGRESS.md`
 - This architecture/build map: `BUILD_CONCEPT.md`
-- Security branch: `security/atomic-auth-withdrawal`
-- Draft PR: #7
+- Active engineering branch: `feature/admin-control-center-and-package-lifecycle`
+- Current feature PR: #9
 
 
 ## Package lifecycle and staff operations — 2026-09-27

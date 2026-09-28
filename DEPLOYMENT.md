@@ -6,11 +6,7 @@ The existing Supabase project can be used for PostgreSQL. The project URL is a p
 
 In the Supabase Dashboard, open **Connect** and copy the PostgreSQL connection string. For an IPv4-only deployment such as a hosted container, Supabase documents the **Session pooler** as the compatible alternative to a direct IPv6 connection. Replace the password placeholder with the database password and URL-encode reserved password characters. See: https://supabase.com/docs/guides/database/connecting-to-postgres
 
-Run the canonical migration:
-
-`supabase/migrations/20260913000000_zenit_production.sql`
-
-Run it in the Supabase SQL Editor, or through your normal Supabase migration workflow. Do not run the old 20260912 ZENIT migrations from previous revisions of this repository.
+For a new or explicitly reset database, use the repository's current Supabase migration chain in order through your normal Supabase migration workflow. For the existing production project, inspect the applied migration history before proposing any migration; do not replay the initial production migration over existing data, and do not run the obsolete 20260912 ZENIT migrations from previous revisions of this repository.
 
 ## 2. Render backend
 
@@ -48,36 +44,29 @@ Add these environment variables in Render:
 - `WALLETCONNECT_METADATA_ICON=<public icon URL>`
 - `SESSION_TTL_MINUTES=10080`
 - `NONCE_TTL_MINUTES=10`
-- `CORS_ORIGINS=<Vercel frontend URL>`
+- `CORS_ORIGINS=<application origin URL>`
 
 Never put `DATABASE_URL` or `JWT_SECRET` into Vercel.
 
-## 3. Vercel frontend
+## 3. Frontend delivery
 
-Create a Vercel project from the same repository and set its root directory to `frontend`.
+The current Render web service builds the frontend from `frontend/` as part of the repository build and serves the resulting Vite production bundle through the backend service. No separate Vercel deployment is required by the current production deployment model.
 
-Build command:
-
-`npm install --no-audit --no-fund && npm run build`
-
-Output directory:
-
-`dist`
-
-Add:
-
-- `VITE_API_BASE_URL=<Render backend URL>`
-- `VITE_REOWN_PROJECT_ID=<Reown project ID>`
-
-These are client-side values. Do not add a database password, JWT secret, seed phrase, or private key.
+Client-side values such as the Reown project identifier may be configured through the frontend build environment when needed. Never add a database password, JWT secret, seed phrase, or private key.
 
 ## 4. First admin account
 
-Connect a wallet once so the backend creates the member row. Then, from the Supabase SQL Editor, promote that exact wallet address:
+Admin authentication is separate from member wallet authentication. The `admin_users` table is backend-owned and migrations never create credentials automatically.
 
-`update public.app_users set role='Admin', updated_at=now() where wallet_address=lower('0xYOUR_WALLET_ADDRESS');`
+After the admin schema migration has been explicitly promoted, provision the first administrator through the repository's operator-controlled utility:
 
-Use the exact address you intend to administer from. Do not create an admin through an unauthenticated API route.
+`ADMIN_EMAIL=<operator-controlled-admin-email> ADMIN_PASSWORD=<secure-password> DATABASE_URL=<server-only-database-url> npm run provision:admin
+
+For production, the utility also requires `NODE_ENV=production ALLOW_PRODUCTION_ADMIN_PROVISIONING=YES`.`
+
+Run this only from a trusted operator environment with the secret values supplied through a secure secret mechanism. The production acknowledgment is deliberately explicit; it does not deploy code or create credentials automatically. Do not commit credentials, place them in frontend configuration, or put them into migrations.
+
+After provisioning, use the Admin Portal login. Credential changes are handled from the Admin Security flow and revoke existing admin sessions.
 
 ## 5. First test
 

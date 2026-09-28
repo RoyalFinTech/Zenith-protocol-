@@ -5,7 +5,8 @@ import { HttpError, parseLimit } from '../utils/http.js';
 import { env } from '../config.js';
 import { createPublicClient, erc20Abi, getAddress, http, parseEventLogs, parseUnits } from 'viem';
 import { bsc } from 'viem/chains';
-import { isUniqueConstraintViolation } from '../utils/financial.js';
+import { comparePackageTiers, isUniqueConstraintViolation } from '../utils/financial.js';
+import { createUserNotification, sendUserPushNotification } from '../services/notifications.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -31,9 +32,21 @@ router.get('/catalog', async (_req, res, next) => {
   try {
     const r = await query(`
       select pp.id, pp.code, pp.name, pp.tier, pp.description, pp.price, pp.asset,
-             p.code as program_code, p.name as program_name, p.levels, p.capacity
+             p.code as program_code, p.name as program_name, p.levels, p.capacity,
+             e.direct_percent, e.matrix_percent, e.admin_percent,
+             coalesce((
+               select json_agg(
+                 json_build_object(
+                   'level', r.level,
+                   'percentOfMatrixPool', r.percent_of_matrix_pool
+                 ) order by r.level
+               )
+               from matrix_distribution_rules r
+               where r.package_id=pp.id
+             ), '[]'::json) as matrix_distribution
       from program_packages pp
       join programs p on p.id=pp.program_id
+      left join package_economics e on e.package_id=pp.id
       where pp.active=true and p.active=true
       order by p.sort_order, pp.sort_order
     `);
@@ -64,6 +77,27 @@ router.post('/purchases', async (req, res, next) => {
 
     if (!packageRow) throw new HttpError(404, 'Package not found');
     if (!['starter','growth','elite'].includes(packageRow.tier)) throw new HttpError(409, 'Unsupported package tier');
+
+    const currentMembership=(await query<{package_tier:string;status:string}>(`
+      select package_tier,status
+      from matrix_memberships
+      where user_id=$1 and program_id=$2
+      limit 1
+    `,[req.auth!.userId,packageRow.program_id])).rows[0];
+
+    if(currentMembership){
+      if(packageRow.tier==='starter'){
+        throw new HttpError(409,'A position already exists for this program');
+      }
+      if(currentMembership.status!=='active'){
+        throw new HttpError(409,'An active membership is required before upgrading this program');
+      }
+      if(comparePackageTiers(currentMembership.package_tier,packageRow.tier)<=0){
+        throw new HttpError(409,'This package is not a higher tier than your current membership');
+      }
+    } else if(packageRow.tier!=='starter'){
+      throw new HttpError(409,'An existing lower-tier membership is required before this upgrade');
+    }
     if (packageRow.price == null) throw new HttpError(409, 'This package is not priced for purchase yet');
     if (packageRow.asset !== env.primaryAsset) throw new HttpError(409, 'This package uses an unsupported settlement asset');
 
@@ -93,30 +127,111 @@ router.post('/purchases', async (req, res, next) => {
       if (referrerId === req.auth!.userId) throw new HttpError(400, 'You cannot use your own referral code');
     }
 
-    const pending = (await query(`
-      select id,created_at from package_purchases
+    const pending = (await query<{id:string;created_at:string;amount:string}>(`
+      select id,created_at,amount from package_purchases
       where user_id=$1 and package_id=$2 and status='pending'
       order by created_at desc limit 1
     `, [req.auth!.userId, packageRow.id])).rows[0];
 
+    // Never silently reuse a stale pending intent at a historical price.
+    // Existing pending purchases remain unchanged; a mismatched intent requires
+    // explicit operational resolution instead of being presented as a current purchase.
+    if (pending && pending.amount !== packageRow.price) {
+      throw new HttpError(
+        409,
+        `A previous pending purchase for ${packageRow.code} was created at ${pending.amount} ${packageRow.asset}; the current catalog price is ${packageRow.price} ${packageRow.asset}. Resolve the existing pending purchase before starting a new one.`
+      );
+    }
+
     if (!pending) {
       if (packageRow.tier === 'starter') {
-        const capacity = (await query<{available:boolean}>(`select exists(select 1 from matrix_nodes where program_id=$1 and status='available') as available`, [packageRow.program_id])).rows[0]?.available;
-        if (!capacity) throw new HttpError(409, 'No available matrix position remains in this program');
+        const capacity = (await query<{available:boolean}>(`
+          select exists(
+            select 1
+            from matrix_nodes n
+            where n.program_id=$1
+              and n.status='available'
+              and (
+                n.position=1
+                or exists (
+                  select 1
+                  from matrix_nodes parent
+                  where parent.program_id=n.program_id
+                    and parent.position=floor(n.position/2)::int
+                    and parent.status='active'
+                )
+              )
+          ) as available
+        `, [packageRow.program_id])).rows[0]?.available;
+        if (!capacity) throw new HttpError(409, 'No eligible matrix position remains in this program');
       }
     }
 
     const purchase = pending ?? (await query(`
-      insert into package_purchases(user_id,package_id,referral_code,referrer_user_id,amount,asset,status)
-      values($1,$2,$3,$4,$5,$6,'pending') returning id,created_at
-    `, [req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset])).rows[0];
+      insert into package_purchases(
+        user_id,package_id,referral_code,referrer_user_id,amount,asset,status,
+        package_tier,direct_percent,matrix_percent,admin_percent,matrix_distribution_rules
+      )
+      select $1,$2,$3,$4,pp.price,pp.asset,'pending',
+             pp.tier,e.direct_percent,e.matrix_percent,e.admin_percent,
+             coalesce((
+               select jsonb_agg(
+                 jsonb_build_object('level',r.level,'percentOfMatrixPool',r.percent_of_matrix_pool)
+                 order by r.level
+               )
+               from matrix_distribution_rules r
+               where r.package_id=pp.id
+             ),'[]'::jsonb)
+      from program_packages pp
+      join package_economics e on e.package_id=pp.id
+      where pp.id=$2
+        and pp.active=true
+        and pp.tier=$7
+        and pp.price=$5
+        and pp.asset=$6
+        and e.entry_amount=$5
+      returning id,created_at,amount
+    `, [
+      req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset, packageRow.tier
+    ])).rows[0];
+    if (!purchase && !pending) {
+      throw new HttpError(409, 'Package pricing or settlement economics changed; refresh and retry');
+    }
     if (!purchase) throw new HttpError(500, 'Unable to create package purchase');
+    if (!pending) {
+      const notifyClient = await pool.connect();
+      let notificationId: string | undefined;
+      try {
+        await notifyClient.query('begin');
+        notificationId = await createUserNotification(
+          notifyClient,
+          req.auth!.userId,
+          'Package purchase created',
+          `${packageRow.name} is pending payment confirmation. Complete the USDT transfer and submit its transaction hash.`
+        );
+        await notifyClient.query('commit');
+      } catch (notificationError) {
+        await notifyClient.query('rollback').catch(()=>{});
+        // The purchase itself is valid even if the informational notification cannot be written.
+        console.warn('package purchase notification failed', notificationError);
+      } finally {
+        notifyClient.release();
+      }
+      if (notificationId) {
+        void sendUserPushNotification(
+          req.auth!.userId,
+          'Package purchase created',
+          `${packageRow.name} is pending payment confirmation. Complete the USDT transfer and submit its transaction hash.`,
+          notificationId
+        ).catch(error => console.warn('package purchase push notification failed', error));
+      }
+    }
 
     res.status(pending ? 200 : 201).json({
       purchase: {
         id: purchase.id, packageCode: packageRow.code, packageName: packageRow.name,
         programCode: packageRow.program_code, programName: packageRow.program_name,
-        amount: packageRow.price, asset: packageRow.asset, chainId: env.chainId,
+        amount: purchase.amount, asset: packageRow.asset, chainId: env.chainId,
         receiver, token: tokenInfo.token, decimals: tokenInfo.decimals
       }
     });
@@ -191,19 +306,49 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
 
     await client.query('begin');
 
-    const fresh = (await client.query(`select id,status,payment_tx_hash from package_purchases where id=$1 and user_id=$2 for update`, [purchaseId, req.auth!.userId])).rows[0];
+    const fresh = (await client.query<{
+      id:string;
+      status:string;
+      payment_tx_hash:string|null;
+      package_tier:string|null;
+      direct_percent:string|null;
+      matrix_percent:string|null;
+      admin_percent:string|null;
+      matrix_distribution_rules:unknown;
+    }>(`
+      select pp.id,pp.status,pp.payment_tx_hash,
+             pp.package_tier,
+             pp.direct_percent,pp.matrix_percent,pp.admin_percent,pp.matrix_distribution_rules
+      from package_purchases pp
+      where pp.id=$1 and pp.user_id=$2
+      for update
+    `, [purchaseId, req.auth!.userId])).rows[0];
     if (!fresh) throw new HttpError(404, 'Purchase not found');
-    if (fresh.status === 'confirmed') { await client.query('commit'); return res.json({ status:'confirmed', purchase:fresh }); }
+    if (fresh.status === 'confirmed') {
+      await client.query('commit');
+      if (fresh.payment_tx_hash?.toLowerCase() === txHash.toLowerCase()) {
+        return res.json({ status:'confirmed', purchase:fresh });
+      }
+      throw new HttpError(409, 'Purchase is already confirmed with a different transaction');
+    }
     if (fresh.status !== 'pending') throw new HttpError(409, 'Purchase is no longer pending');
 
-    const packageInfo = (await client.query<{tier:string;entry_amount:string;direct_percent:string;matrix_percent:string;admin_percent:string}>(`
-      select pp.tier,e.entry_amount,e.direct_percent,e.matrix_percent,e.admin_percent
-      from program_packages pp
-      join package_economics e on e.package_id=pp.id
-      where pp.id=$1
-      limit 1
-    `, [purchase.package_id])).rows[0];
-    if (!packageInfo) throw new HttpError(409, 'Package economics are not configured');
+    const packageInfo = {
+      tier: fresh.package_tier,
+      direct_percent: fresh.direct_percent,
+      matrix_percent: fresh.matrix_percent,
+      admin_percent: fresh.admin_percent,
+      matrix_distribution_rules: fresh.matrix_distribution_rules
+    };
+    if (
+      packageInfo.tier == null ||
+      packageInfo.direct_percent == null ||
+      packageInfo.matrix_percent == null ||
+      packageInfo.admin_percent == null ||
+      !Array.isArray(packageInfo.matrix_distribution_rules)
+    ) {
+      throw new HttpError(409, 'This purchase does not have a settlement economics snapshot');
+    }
 
     let node: {id:string;position:number;level:number} | undefined;
     let membershipRow: {id:string} | undefined;
@@ -215,6 +360,20 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       where user_id=$1 and program_id=$2
       for update
     `, [req.auth!.userId,purchase.program_id])).rows[0];
+
+    if (existingMembership) {
+      if (packageInfo.tier === 'starter') {
+        throw new HttpError(409, 'A position already exists for this program');
+      }
+      if (existingMembership.status !== 'active') {
+        throw new HttpError(409, 'An active membership is required before this upgrade');
+      }
+      if (comparePackageTiers(existingMembership.package_tier,packageInfo.tier) <= 0) {
+        throw new HttpError(409, 'Package tier cannot be repeated or downgraded');
+      }
+    } else if (packageInfo.tier !== 'starter') {
+      throw new HttpError(409, 'An existing lower-tier membership is required before this upgrade');
+    }
 
     if (packageInfo.tier === 'starter') {
       if (existingMembership) throw new HttpError(409, 'A position already exists for this program');
@@ -316,15 +475,10 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       JSON.stringify({purchaseId,packageCode:purchase.package_code,receiver,token,confirmations})
     ]);
 
-    const economics = (await client.query<{entry_amount:string;direct_percent:string;matrix_percent:string;admin_percent:string}>(`
-      select entry_amount,direct_percent,matrix_percent,admin_percent
-      from package_economics where package_id=$1 limit 1
-    `, [purchase.package_id])).rows[0];
-
-    if (economics) {
-      const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.direct_percent])).rows[0]?.amount;
-      const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.matrix_percent])).rows[0]?.amount;
-      const adminAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [economics.entry_amount, economics.admin_percent])).rows[0]?.amount;
+    const economics = packageInfo;
+    const directAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.direct_percent])).rows[0]?.amount;
+    const matrixAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.matrix_percent])).rows[0]?.amount;
+    const adminAmount = (await client.query<{amount:string}>(`select ($1::numeric * $2::numeric / 100)::text as amount`, [purchase.amount, economics.admin_percent])).rows[0]?.amount;
       if (directAmount == null || matrixAmount == null || adminAmount == null) throw new HttpError(500, 'Unable to calculate package allocation');
 
       await client.query(`update package_purchases set direct_amount=$2,matrix_amount=$3,admin_amount=$4 where id=$1`, [purchaseId,directAmount,matrixAmount,adminAmount]);
@@ -344,12 +498,14 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
         await client.query(`
           insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
           values($1,'unallocated_direct',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
-        `,[purchaseId,directAmount,purchase.asset,JSON.stringify({reason:'No sponsor on confirmed purchase'})]);
+        `,[purchaseId,directAmount,purchase.asset,JSON.stringify({reason:'No sponsor on confirmed purchase',purchaseAmount:purchase.amount})]);
       }
 
       const rules = (await client.query<{level:number;percent_of_matrix_pool:string}>(`
-        select level,percent_of_matrix_pool from matrix_distribution_rules where package_id=$1 order by level
-      `, [purchase.package_id])).rows;
+        select level,percent_of_matrix_pool
+        from jsonb_to_recordset($1::jsonb) as x(level integer, percent_of_matrix_pool numeric)
+        order by level
+      `, [JSON.stringify(economics.matrix_distribution_rules)])).rows;
 
       let currentNodeId = parentNodeId;
       let allocatedMatrix = '0';
@@ -387,14 +543,13 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
         await client.query(`
           insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
           values($1,'unallocated_matrix',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
-        `,[purchaseId,unallocatedMatrix,purchase.asset,JSON.stringify({reason:'No eligible matrix ancestor at one or more levels',matrixPool:matrixAmount,allocatedMatrix})]);
+        `,[purchaseId,unallocatedMatrix,purchase.asset,JSON.stringify({reason:'No eligible matrix ancestor at one or more levels',purchaseAmount:purchase.amount,matrixPool:matrixAmount,allocatedMatrix})]);
       }
 
       await client.query(`
         insert into platform_revenue_ledger(package_purchase_id,kind,amount,asset,metadata)
         values($1,'admin_revenue',$2,$3,$4::jsonb) on conflict (package_purchase_id,kind) do nothing
       `,[purchaseId,adminAmount,purchase.asset,JSON.stringify({percent:economics.admin_percent,packageCode:purchase.package_code,tier:packageInfo.tier})]);
-    }
 
     if (!node) throw new HttpError(500, 'Matrix position was not resolved during settlement');
 
@@ -406,7 +561,21 @@ router.post('/purchases/:purchaseId/confirm', async (req, res, next) => {
       position:node.position,level:node.level,membershipId:membershipRow?.id
     })]);
 
+    const notificationId = await createUserNotification(
+      client,
+      req.auth!.userId,
+      'Package activated',
+      `${purchase.package_code} payment was verified and your matrix position was activated at position #${node.position}.`
+    );
     await client.query('commit');
+    if (notificationId) {
+      void sendUserPushNotification(
+        req.auth!.userId,
+        'Package activated',
+        `${purchase.package_code} payment was verified and your matrix position was activated at position #${node.position}.`,
+        notificationId
+      ).catch(error => console.warn('package activation push notification failed', error));
+    }
     res.json({ status:'confirmed', purchase:{id:purchaseId,packageCode:purchase.package_code,programCode:purchase.program_code,position:node.position,level:node.level,txHash,confirmations} });
   } catch (e) {
     await client.query('rollback').catch(()=>{});
