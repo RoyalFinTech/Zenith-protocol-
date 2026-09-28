@@ -337,6 +337,8 @@ The original package lifecycle/admin implementation was already merged into main
 
 
 ## Frontend visual redesign checkpoint — 2026-09-28
+- Source-level frontend verification fixed and regression-covered two Admin-portal runtime-safety issues: the withdrawal action renderer and the delegated action listener's async declaration.
+
 - Final brand pass also removes the remaining literal blue accents
 - PWA browser/app chrome now uses the same dark-gold ZENIT theme and the official PNG icon remains the only manifest icon.
  from the staff/admin interface; the feature branch now uses the ZENIT gold family as the primary visual accent, with semantic green/red status colors preserved.
