@@ -376,3 +376,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Final production checks confirm the snapshot fields/constraints/index, immutability trigger, wallet-handoff fields/index, zero admin users, canonical package catalog/economics, untouched historical pending purchase amounts/statuses, and zero waiting locks.
 - Release deployment has **not** been performed as part of this work. Render/main deployment state remains separate from the schema change.
 - Remaining release gate: reconcile the source migration filenames with the generated production migration history before treating repository migration synchronization as clean; then run final CI/release verification.
+
+
+## Post-merge Render verification — 2026-09-28 22:05 UTC
+
+- PR #10 was already merged before this continuation at merge commit `e0c4b687324b92793f5c38295b7b1ef1f063021d`.
+- Render auto-deploy is enabled from `main`; Render automatically created deployment `dep-datcbiou01pc73f4jlgg` for that merge commit.
+- The deployment finished `live` at 2026-09-28 19:55:41 UTC. No manual deployment was triggered by this continuation.
+- Render service configuration still reports a blank health-check path while repository configuration declares `/health`; this remains an unresolved infrastructure drift item.
+- A Render error-log query could not be completed because the Render MCP session currently has no selected workspace; no claim about recent Render error logs is made from that failed query.
