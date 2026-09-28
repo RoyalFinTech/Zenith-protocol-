@@ -17,7 +17,7 @@ const vapidPublicKey = process.env.VAPID_PUBLIC_KEY ?? '';
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY ?? '';
 const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map(v => v.trim()).filter(Boolean);
 const appOrigin = required('APP_ORIGIN', 'http://localhost:5173');
-const apiPublicUrl = required('API_PUBLIC_URL', 'http://localhost:8787');
+const apiPublicUrl = required('API_PUBLIC_URL', appOrigin);
 const jwtSecret = required('JWT_SECRET');
 
 if (nodeEnv === 'production') {
@@ -37,6 +37,10 @@ if (nodeEnv === 'production') {
   if (!Number.isInteger(nonceTtlMinutes) || nonceTtlMinutes < 1) {
     throw new Error('NONCE_TTL_MINUTES must be at least 1 minute');
   }
+  if ((Boolean(process.env.RESEND_API_KEY) || Boolean(process.env.RESEND_FROM)) &&
+      (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM)) {
+    throw new Error('RESEND_API_KEY and RESEND_FROM must be configured together in production');
+  }
 }
 
 export const env = {
@@ -53,7 +57,7 @@ export const env = {
   walletConnectProjectId: process.env.WALLETCONNECT_PROJECT_ID ?? '',
   walletConnectMetadataName: process.env.WALLETCONNECT_METADATA_NAME ?? 'Zenit Protocol',
   walletConnectMetadataDescription: process.env.WALLETCONNECT_METADATA_DESCRIPTION ?? 'Decentralized Wealth Network',
-  walletConnectMetadataUrl: process.env.WALLETCONNECT_METADATA_URL ?? 'http://localhost:5173',
+  walletConnectMetadataUrl: process.env.WALLETCONNECT_METADATA_URL ?? appOrigin,
   walletConnectMetadataIcon: process.env.WALLETCONNECT_METADATA_ICON ?? '',
   bscRpcUrl: process.env.BSC_RPC_URL ?? 'https://bsc-dataseed.bnbchain.org',
   usdtContractAddress: process.env.USDT_CONTRACT_ADDRESS ?? '0x55d398326f99059ff775485246999027b3197955',
@@ -68,5 +72,5 @@ export const env = {
   vapidPrivateKey,
   pushEnabled: Boolean(vapidSubject && vapidPublicKey && vapidPrivateKey),
   resendApiKey: process.env.RESEND_API_KEY ?? '',
-  resendFrom: process.env.RESEND_FROM ?? 'ZENIT Protocol <onboarding@resend.dev>'
+  resendFrom: process.env.RESEND_FROM ?? ''
 };
