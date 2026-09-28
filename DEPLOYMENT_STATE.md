@@ -279,3 +279,14 @@ The original package lifecycle/admin implementation was already merged into main
 - Required DNS records are recorded in the engineering checkpoint and must be added at the authoritative DNS provider before the first real mailbox delivery test.
 - The feature branch contains the one-time wallet handoff security hardening, branded verification error handling, and email delivery reliability changes; it has not been promoted to production.
 - Remaining release gates: DNS verification + real mailbox delivery test, physical-device Web Push acceptance, health-check drift reconciliation, and operator-controlled first-admin provisioning.
+
+
+## 2026-09-28 15:30 UTC — Correct production app origin / email-domain correction
+- Confirmed the live Render application URL is `https://zenith-protocol-qvfe.onrender.com`; this URL is the application origin and the appropriate base for verification-link redirects and wallet handoff navigation.
+- Updated Render production environment values for `APP_ORIGIN`, `CORS_ORIGINS`, and `WALLETCONNECT_METADATA_URL` to the live Render URL. Render automatically triggered deploy `dep-dat8glu0tbcc73aaefr0` on the existing `main` commit; at checkpoint time it was still `build_in_progress`.
+- Corrected an earlier engineering assumption: `zenitprotocol.com` was not provided by the operator as an owned domain. It must not be treated as the production email domain, and no DNS changes should be requested for it.
+- Resend domain `zenitprotocol.com` remains an isolated/unverified configuration and has not been used as evidence of production domain ownership. No domain removal was performed because Resend removal is irreversible and requires explicit operator confirmation.
+- The Render `onrender.com` application URL can be used for web links/origin, but it is not a domain controlled by the operator and therefore is not being treated as the sender domain for production email verification.
+- Production email remains gated on a sender domain that the operator actually controls and can verify in Resend. Resend's current Free tier supports 3 verified domains at no monthly cost; no paid upgrade is required for verification itself.
+- Official logo usage remains unchanged; no SVG or replacement logo has been introduced.
+- All future environment/domain records must distinguish **application origin** from **email sending domain** before configuration is applied.
