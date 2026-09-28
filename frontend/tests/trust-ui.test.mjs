@@ -29,6 +29,10 @@ assert.match(html, /src="\$\{ZENIT_LOGO\}"/);
 assert.match(html, /dash-hero/);
 assert.match(html, /dash-package-grid/);
 assert.match(html, /dash-3d-scene/);
+assert.match(html, /function wallet3DVisual\(\)/);
+assert.match(html, /wallet-premium-hero/);
+assert.match(html, /wallet-3d-stage/);
+
 assert.match(html, /data-action="package-preview"/);
 assert.match(html, /function withdrawalModal\(\)/);
 assert.match(html, /data-action="withdraw-submit"/);
