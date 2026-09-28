@@ -39,6 +39,7 @@ jobs:
         with: { node-version: 22 }
       - run: npm install --no-audit --no-fund
       - run: npm run lint
+      - run: npm run check:admin-provision
       - name: Prepare Supabase-compatible roles
         working-directory: .
         run: |
