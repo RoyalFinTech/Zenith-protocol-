@@ -328,3 +328,9 @@ The original package lifecycle/admin implementation was already merged into main
 - The feature branch purchase insert also fails closed when `package_economics.entry_amount` does not match `program_packages.price`.
 - Canonical pricing and accounting rules are recorded in `docs/PACKAGE_ECONOMICS.md`.
 - Release impact: feature branch only; no production deployment or migration was triggered by this pricing hardening checkpoint.
+
+
+## 2026-09-28 — Pricing hardening CI validation
+- Commit `46e67f1117e5d221b317a338088ea5dfb44932ec` passed GitHub Actions CI #532.
+- CI validated database migrations, backend lint/unit/integration tests, frontend build, frontend login regression, and the automatic-admin provisioning guard.
+- No production database rows or production deployment were changed by this checkpoint.

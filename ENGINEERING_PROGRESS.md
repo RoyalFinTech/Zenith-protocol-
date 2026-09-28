@@ -652,3 +652,11 @@ Two historical pending 2x6 Starter purchase intents remain at **10 USDT**. They 
 
 ### Historical migration note
 An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` contains the historical 2x6 Starter 10 USDT configuration. It is intentionally preserved as migration history. It is superseded by `20260926210000_enable_dual_starter_matrix_packages.sql` and the later package-lifecycle catalog reconciliation. Future work must use `docs/PACKAGE_ECONOMICS.md` plus the current catalog, not the historical migration value.
+
+
+## 2026-09-28 — Pricing hardening validation completed
+- Commit `46e67f1117e5d221b317a338088ea5dfb44932ec` completed GitHub Actions CI #532 successfully.
+- Backend: lint, disposable PostgreSQL migration application, unit tests, integration tests, and automatic-admin provisioning guard all passed.
+- Frontend: production build and login regression test passed.
+- The canonical six-package pricing/economics regression passed, including price/economics equality, 20/70/10 allocation, and both matrix distribution patterns.
+- Feature branch remains unmerged and was not deployed to production.
