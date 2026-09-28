@@ -337,6 +337,7 @@ The original package lifecycle/admin implementation was already merged into main
 
 
 ## Frontend visual redesign checkpoint — 2026-09-28
+- Final brand pass also removes the remaining literal blue accents from the staff/admin interface; the feature branch now uses the ZENIT gold family as the primary visual accent, with semantic green/red status colors preserved.
 
 - The feature branch now contains the premium member-workspace redesign based on the approved reference direction.
 - Official brand asset remains `frontend/public/zenit-logo.png`.
