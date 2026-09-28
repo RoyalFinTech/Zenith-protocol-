@@ -778,3 +778,20 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Wallet-handoff columns are **not** present yet; seeded-admin cleanup has no matching seeded row remaining.
 - No production data mutation was performed during this diagnostic pass.
 - Do **not** call `apply_migration` again for `snapshot_package_economics`. The next engineering step is to reconcile the generated migration-history behavior and apply the remaining three migrations through a controlled, idempotent mechanism after verifying their individual SQL against the current schema.
+
+
+## Supabase feature migrations completed — 2026-09-28 22:03 UTC
+
+- After the executor diagnosis, the remaining three feature schema changes were applied individually and verified.
+- Production generated migration history now records:
+  - `20260928220335` `freeze_package_economics_snapshot`
+  - `20260928220339` `remove_seeded_admin_bootstrap`
+  - `20260928220343` `harden_email_wallet_handoff`
+- Snapshot immutability trigger `trg_package_purchase_snapshot_immutable` is present on `public.package_purchases`.
+- Wallet handoff columns `wallet_handoff_token_hash` and `wallet_handoff_expires_at` are present on `public.pending_registrations`, plus the filtered lookup index.
+- Seeded-admin cleanup was verified against the exact historical email/hash and matched zero rows; production `admin_users` remains at zero rows.
+- The two historical pending purchases remain exactly at 10 USDT and pending, with populated snapshot economics; no purchase amount/status was rewritten.
+- Production package catalog and package economics remain 2x4 = 10/25/50 and 2x6 = 30/60/120 USDT with 20/70/10 allocation.
+- No waiting locks were present during final verification.
+- No application deployment, PR merge, admin provisioning, or treasury operation was performed by this migration work.
+- Source migration filenames still use the planned `20260927134000`–`20260927150000` versions while production history uses generated 20260928 timestamps. This migration-history drift must be reconciled before relying on automated source-to-production migration synchronization.
