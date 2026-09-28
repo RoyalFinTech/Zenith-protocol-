@@ -16,6 +16,10 @@ assert.match(html, /replace\(\/\[\^a-z0-9_\]\/g,""\)/);
 assert.match(html, /\/api\/packages\/catalog/);
 assert.match(html, /Backend package catalog/);
 assert.doesNotMatch(html, /packages\.starter\?\.price\?\?\(/);
+assert.doesNotMatch(html, /const starterPrice=p\.levels===4\?10:30/);
+assert.match(html, /const starter=\(p\.packages\|\|\[\]\)\.find/);
+assert.match(html, /matrix_distribution/);
+
 assert.doesNotMatch(html, /\b20% direct referral, 70% matrix pool and 10% platform administration\b/);
 
 assert.match(html, /leaderboard/);
