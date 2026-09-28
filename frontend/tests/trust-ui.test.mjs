@@ -56,8 +56,9 @@ assert.match(html, /data-density="compact"/);
 assert.match(html, /data-reduced-motion="true"/);
 
 
-const inlineScripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
-  .map(match => match[1])
+const inlineScripts = [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)]
+  .filter(match => !match[1].toLowerCase().includes("src="))
+  .map(match => match[2])
   .filter(Boolean);
 
 assert.ok(inlineScripts.length >= 3, "Expected the application inline scripts to be present");
