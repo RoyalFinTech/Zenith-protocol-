@@ -334,3 +334,14 @@ The original package lifecycle/admin implementation was already merged into main
 - Commit `46e67f1117e5d221b317a338088ea5dfb44932ec` passed GitHub Actions CI #532.
 - CI validated database migrations, backend lint/unit/integration tests, frontend build, frontend login regression, and the automatic-admin provisioning guard.
 - No production database rows or production deployment were changed by this checkpoint.
+
+
+## Frontend visual redesign checkpoint — 2026-09-28
+
+- The feature branch now contains the premium member-workspace redesign based on the approved reference direction.
+- Official brand asset remains `frontend/public/zenit-logo.png`.
+- Primary UI accent is the ZENIT gold family; green is reserved for genuine positive/connected status indicators.
+- The redesign includes responsive 3D-style Dashboard, onboarding and Profile visuals, shared member-page styling, backend-driven package cards, Matrix economics sourced from the package catalog, masked wallet display/copy controls, backend-persistent profile photos, and corrected mobile navigation.
+- These frontend changes are feature-branch only. Render production remains on `main` and has not been promoted to this design.
+- No production database mutation was performed for the redesign.
+- Current-head CI remains the release gate for this continuation; successful earlier runs do not certify commits made afterward.
