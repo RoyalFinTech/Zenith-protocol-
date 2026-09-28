@@ -258,6 +258,12 @@ These production counts are observations only; no records were changed as part o
 - Added regression coverage preventing the old prompt-based withdrawal flow from returning.
 - CI #602/#603 exposed malformed HTML from the initial string-based modal implementation; that was replaced with a template literal.
 - Current source-level validation confirms all six inline frontend script blocks parse successfully and no legacy withdrawal prompts remain.
+- CI #604 exposed the then-current withdrawal-prompt regression assertion against a branch snapshot that still contained the legacy prompt handler; later cleanup removed that stale path.
+- CI #605 exposed the malformed withdrawal modal HTML in that same intermediate snapshot; the modal was rewritten as a template literal.
+- CI #606 exposed the trust-test matcher issue from the earlier snapshot; the inline-script extractor was simplified to a parser-safe regex.
+- CI #607 passed the stale-handler cleanup with backend and frontend jobs green.
+- CI #608 passed the premium withdrawal UX/parser-hardening checkpoint with backend and frontend jobs green.
+
 - No production data or deployment configuration was changed.
 
 ## Engineering rule going forward
