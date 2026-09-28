@@ -237,6 +237,7 @@ These production counts are observations only; no records were changed as part o
 - Fixed the delegated frontend action listener to be asynchronous because protected admin actions use awaited backend calls.
 - Independently re-ran a full inline-script syntax check after those fixes; all six application script blocks now parse successfully.
 - Current feature-head CI validation is green through **CI #595** after the runtime-safety fixes.
+- CI #596 exposed an over-escaped regular expression in the new inline-script regression test; the frontend production build and login regression still passed. The test harness was corrected in commit `766c706123f1b602c0860fa4fcb3f22896c0da01` and is being revalidated by CI #600.
 - No production deployment, production database mutation, or merge into `main` was performed.
 
 
