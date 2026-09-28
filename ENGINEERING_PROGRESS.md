@@ -574,3 +574,13 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Production email remains gated on a sender domain that the operator actually controls and can verify in Resend. Resend's current Free tier supports 3 verified domains at no monthly cost; no paid upgrade is required for verification itself.
 - Official logo usage remains unchanged; no SVG or replacement logo has been introduced.
 - All future environment/domain records must distinguish **application origin** from **email sending domain** before configuration is applied.
+
+
+## 2026-09-28 15:40 UTC — Transactional email branding continuation
+- Confirmed the live Render application origin is `https://zenith-protocol-qvfe.onrender.com`; it is used for verification redirects and for the official `/zenit-logo.png` asset URL.
+- Corrected the transactional email implementation so both Verification and Welcome emails render the official repository PNG logo rather than relying on text-only branding.
+- No SVG, generated logo, or replacement artwork was introduced.
+- The Resend configuration for `zenitprotocol.com` remains isolated and unverified; it is not treated as an operator-owned sender domain.
+- Current feature-head CI run #518 is in progress for this change. Previous origin/domain-correction run #517 passed successfully.
+- Feature branch remains unmerged and not deployed to production.
+- Remaining email release gate: an operator-owned sender domain must be verified in Resend before arbitrary member mailbox delivery can be certified.
