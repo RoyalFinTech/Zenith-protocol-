@@ -1,4 +1,4 @@
-## Release gate audit — 2026-09-28 23:xx UTC
+## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - PR #11 was merged into `main` as `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; GitHub Actions CI #629 passed.
 - Supabase production function `public.prevent_package_purchase_snapshot_mutation()` now has `search_path = ''`; the prior mutable-search-path WARN is cleared.
