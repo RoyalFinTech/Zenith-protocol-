@@ -1,3 +1,12 @@
+## Release gate audit — 2026-09-28 23:xx UTC
+
+- `main` is now at merge commit `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; CI #629 passed.
+- Supabase production security hardening is complete for the snapshot trigger search path. The production function reports `search_path=""`, and the corresponding Supabase security WARN is cleared.
+- Render service ID `srv-dajmafdg1s2s73ba8k5g` still reports `healthCheckPath: ""`; repository `render.yaml` declares `healthCheckPath: /health`. Render's current app tool surface does not expose a health-path mutation, so this gate remains pending and no unrelated settings were changed.
+- The latest Render deployment exposed through the service remains `dep-datcbiou01pc73f4jlgg` on commit `e0c4b687324b92793f5c38295b7b1ef1f063021d`; the post-merge `26eea6e...` commit is not yet reflected in the deployment list.
+- Resend sender-domain status remains failed/unverified for the existing domain configuration; no delivery test was sent.
+- Production push acceptance remains pending because there are currently zero registered device subscriptions; source service-worker handling is present, but physical phone delivery has not been proven.
+- Production financial state remains unchanged by this audit.
 # ZENIT Protocol — Deployment State
 
 Last checked: 2026-09-28 16:55 UTC
