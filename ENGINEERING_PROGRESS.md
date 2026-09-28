@@ -761,3 +761,20 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Frontend: production build and login regression test passed.
 - The canonical six-package pricing/economics regression passed, including price/economics equality, 20/70/10 allocation, and both matrix distribution patterns.
 - Feature branch remains unmerged and was not deployed to production.
+
+
+## Supabase migration executor diagnosis — 2026-09-28 21:40 UTC
+
+- Production project `fukvhfrqafudqwnnuimq` was inspected before any further migration attempt.
+- Supabase PostgreSQL logs show the purchase-economics snapshot SQL executed inside an explicit transaction and reached `commit` on 2026-09-28 at approximately 20:02, 20:35, and 20:35:54 UTC. No PostgreSQL ERROR/FATAL/PANIC entry was found for those executions.
+- Production migration history now contains three generated-version entries named `snapshot_package_economics`: `20260928200205`, `20260928203509`, and `20260928203554`. Their `idempotency_key` values are null.
+- Therefore the evidence does **not** support the earlier description that Supabase rejected the snapshot SQL at the database level. The SQL was committed successfully; repeated executor calls created additional migration-history records because the executor generated a new timestamp version on each call.
+- The snapshot schema is present in production: `package_tier`, `direct_percent`, `matrix_percent`, `admin_percent`, and `matrix_distribution_rules` are all NOT NULL.
+- The three snapshot check constraints and the partial snapshot index are present.
+- The two historical pending 2x6 Starter purchases remain at their original 10 USDT amounts and were not rewritten. Their snapshot economics are populated as 20/70/10 with the six-level distribution.
+- Production package catalog/economics remains canonical at 2x4 = 10/25/50 USDT and 2x6 = 30/60/120 USDT with 20/70/10 allocation.
+- No waiting database locks were found for `package_purchases`, `pending_registrations`, or `admin_users` at inspection time.
+- The snapshot immutability trigger is **not** present yet; the next migration has not been applied.
+- Wallet-handoff columns are **not** present yet; seeded-admin cleanup has no matching seeded row remaining.
+- No production data mutation was performed during this diagnostic pass.
+- Do **not** call `apply_migration` again for `snapshot_package_economics`. The next engineering step is to reconcile the generated migration-history behavior and apply the remaining three migrations through a controlled, idempotent mechanism after verifying their individual SQL against the current schema.
