@@ -584,3 +584,11 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Current feature-head CI run #518 is in progress for this change. Previous origin/domain-correction run #517 passed successfully.
 - Feature branch remains unmerged and not deployed to production.
 - Remaining email release gate: an operator-owned sender domain must be verified in Resend before arbitrary member mailbox delivery can be certified.
+
+
+## 2026-09-28 15:45 UTC — Wallet handoff URL hardening
+- Hardened the email-confirmation browser flow so the short-lived wallet handoff token is copied into local storage and immediately removed from the browser query string.
+- The `email_verified` marker is also removed with `history.replaceState`, reducing exposure through browser history, screenshots, copied URLs, and referrer propagation.
+- Added a frontend regression assertion covering token storage and query-string scrubbing.
+- CI run #518 passed for the official-logo email change; the new security/test commits are awaiting their current-head CI result.
+- Feature branch remains unmerged and not deployed to production.
