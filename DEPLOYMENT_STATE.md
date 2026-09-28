@@ -303,3 +303,10 @@ The original package lifecycle/admin implementation was already merged into main
 - Resend has one pending/unverified domain configuration and two published templates; no outgoing email records exist. The templates are not wired to application runtime.
 - No admin credentials were provisioned. No feature-branch deployment was triggered. No irreversible Resend domain/template deletion was performed.
 - Operator actions remaining: provide/verify an actually controlled Resend sender domain, then perform one real mailbox delivery test; decide when to promote feature migrations; reconcile Render health-check drift; provision the first admin intentionally; review the PostgreSQL maintenance upgrade.
+
+
+## 2026-09-28 16:57 UTC — Final validation checkpoint
+- Current feature head: `e7aeed9491266793390ed35691b6e681cdee2895`.
+- GitHub Actions CI #529 passed on the current head.
+- Feature remains unmerged and not deployed to production.
+- Production Render remains on main commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; production Supabase remains unchanged.
