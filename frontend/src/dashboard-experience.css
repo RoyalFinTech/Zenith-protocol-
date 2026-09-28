@@ -81,3 +81,24 @@ body{background:radial-gradient(circle at 80% 0,rgba(47,140,255,.09),transparent
 .pill{border-color:rgba(117,163,214,.13)!important;background:#0b1929!important}
 .empty-state{border-color:rgba(117,163,214,.12)!important;background:#091725!important}
 @media(max-width:760px){.main-content{padding-left:12px!important;padding-right:12px!important}.profile-human-panel>img{min-height:200px}}
+
+/* Preserve the existing functional light-mode preference */
+html.theme-light body{background:#f4f7fb!important;color:#171c24!important}
+html.theme-light .dash-hero{background:linear-gradient(135deg,#f7fbff,#edf5ff 58%,#f8fbff)!important;border-color:rgba(37,91,143,.13)!important}
+html.theme-light .dash-hero-copy>p,html.theme-light .dash-section-head p,html.theme-light .dash-balance-card p,html.theme-light .dash-activity-visual small{color:#61758d!important}
+html.theme-light .dash-hero-visual{background:radial-gradient(circle at 50% 50%,rgba(47,140,255,.11),transparent 42%),radial-gradient(circle at 72% 20%,rgba(239,202,99,.12),transparent 24%)!important}
+html.theme-light .dash-balance-card,html.theme-light .dash-trust-card,html.theme-light .dash-metrics-card,html.theme-light .dash-section-wrap,html.theme-light .dash-how,html.theme-light .dash-matrix-card,html.theme-light .dash-leader-card,html.theme-light .dash-activity-card,html.theme-light .dash-settlement-card{background:linear-gradient(145deg,#ffffff,#f6f9fd)!important;border-color:rgba(37,91,143,.13)!important;box-shadow:0 15px 40px rgba(30,66,103,.08)!important}
+html.theme-light .dash-package{background:linear-gradient(160deg,#ffffff,#edf6ff)!important;color:#1b2430!important;border-color:rgba(37,91,143,.13)!important}
+html.theme-light .dash-package-main small,html.theme-light .dash-package-program,html.theme-light .dash-card-kicker,html.theme-light .dash-spark-col span,html.theme-light .dash-trust-list>div{color:#657991!important}
+html.theme-light .dash-metric-row>div,html.theme-light .dash-activity-row,.theme-light .dash-activity-visual{background:#f7faff!important;border-color:rgba(37,91,143,.1)!important}
+html.theme-light .dash-matrix-children span{background:#edf3fa!important;color:#647b95!important;border-color:rgba(37,91,143,.12)!important}
+html.theme-light .sidebar{background:linear-gradient(180deg,#f9fbfe,#eef5fb)!important;border-right-color:rgba(37,91,143,.12)!important}
+html.theme-light .topbar{background:rgba(249,251,254,.94)!important;border-bottom-color:rgba(37,91,143,.12)!important}
+html.theme-light .network-chip{background:#eef6ff!important;color:#506a84!important;border-color:rgba(37,91,143,.12)!important}
+html.theme-light .card,html.theme-light .profile-cover,html.theme-light .profile-human-panel,html.theme-light .matrix-command,html.theme-light .matrix-visual-card,html.theme-light .matrix-breakdown,html.theme-light .team-tree,html.theme-light .filter-row,html.theme-light .chart-box,html.theme-light .metric-strip{background:linear-gradient(145deg,#ffffff,#f7faff)!important;color:#1b2430!important;border-color:rgba(37,91,143,.12)!important}
+html.theme-light .select,html.theme-light .field,html.theme-light .btn{background:#f7faff!important;color:#17212d!important;border-color:rgba(37,91,143,.15)!important}
+html.theme-light .table-wrap thead{background:#edf4fb!important}
+html.theme-light .table-wrap table,html.theme-light .table-wrap th,html.theme-light .table-wrap td{border-color:rgba(37,91,143,.1)!important}
+html.theme-light .site-footer{background:#edf3f8!important;color:#5f748a!important;border-top-color:rgba(37,91,143,.12)!important}
+html.theme-light .btn.primary{background:linear-gradient(135deg,#2f8cff,#2868d8)!important;color:white!important}
+html.theme-light .contact-card,html.theme-light .referral-box,html.theme-light .person{background:#f5f9fd!important}
