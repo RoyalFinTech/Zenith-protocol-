@@ -1,3 +1,15 @@
+## 2026-09-28 23:35 UTC — Onboarding wallet/biometric repair deployed
+
+- Main is at `ecc983c2adf20161046fdc1e4aeb86a01bb618a2` after PR #16; pre-merge CI #660 and post-merge main CI #661 passed.
+- Render deployment `dep-datfiorrjlhs73bku90g` is **live**, finished at 2026-09-28 23:35:31 UTC, on the same commit.
+- The deployed change repairs the onboarding `CONNECT WALLET / LOGIN` path, fixes the undefined WebAuthn API-base reference, forces the returning-login modal animation frame, and opens the standard AppKit Connect view through the existing wallet bridge.
+- Onboarding visual cleanup keeps the official logo asset, simplifies the existing gold coin stack, and preserves the established ZENIT dark/gold identity.
+- The current backend authentication flow remains wallet nonce/signature verification followed by the existing PIN challenge; WebAuthn remains the separate phone-biometric/passkey path.
+- Render service configuration still reports an empty `healthCheckPath` while repository `render.yaml` specifies `/health`; the endpoint exists in `backend/src/server.ts`, but the connected Render action surface still exposes no safe update operation for this setting.
+- Resend testing is now explicitly supported through the development-only `npm run test:resend` utility using Resend's documented `resend.dev` test recipients. No production mailbox was contacted by the engineering tools.
+- The current Resend domain record `zenitprotocol.com` remains failed/unverified; it is not used as evidence of domain ownership.
+- Production financial state remains unchanged.
+
 ## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - `main` is now at merge commit `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; CI #629 passed.
