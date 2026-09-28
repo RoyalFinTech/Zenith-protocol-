@@ -352,3 +352,17 @@ The original package lifecycle/admin implementation was already merged into main
 - Current-head CI remains the release gate for this continuation; successful earlier runs do not certify commits made afterward.
 
 - The current feature branch also contains the premium gold 3D Wallet command-center surface and gold-aligned package/withdrawal lifecycle status docks; these remain feature-only and are not in production.
+
+
+## Supabase migration diagnosis — 2026-09-28 21:40 UTC
+
+- Production migration history was re-read after the migration-application issue was reported.
+- The first pending feature migration, `snapshot_package_economics`, is now actually applied in production despite the earlier reported rejection. PostgreSQL logs show successful transaction commits for three executions at approximately 20:02, 20:35, and 20:35:54 UTC.
+- Supabase history contains generated versions `20260928200205`, `20260928203509`, and `20260928203554`, all named `snapshot_package_economics`, with null idempotency keys.
+- This establishes a migration-executor/history-recording issue rather than a confirmed SQL rejection for this migration. No database ERROR/FATAL/PANIC was found for the executions inspected.
+- Snapshot columns, NOT NULL state, check constraints, and the partial index are present in production. The snapshot immutability trigger is not present.
+- `pending_registrations` does not yet contain the wallet-handoff columns.
+- The seeded-admin cleanup query currently matches zero rows.
+- The two historical pending 10-USDT 2x6 Starter purchase records remain untouched.
+- No further migration was retried after this diagnosis, and no production deployment was triggered.
+- Release remains blocked pending controlled reconciliation of the migration history and safe application/verification of the remaining feature migrations.
