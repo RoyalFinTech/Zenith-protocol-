@@ -366,3 +366,13 @@ The original package lifecycle/admin implementation was already merged into main
 - The two historical pending 10-USDT 2x6 Starter purchase records remain untouched.
 - No further migration was retried after this diagnosis, and no production deployment was triggered.
 - Release remains blocked pending controlled reconciliation of the migration history and safe application/verification of the remaining feature migrations.
+
+
+## Supabase feature migration completion — 2026-09-28 22:03 UTC
+
+- Production schema verification completed after controlled individual application of the three remaining feature migrations.
+- Production migration history now contains generated versions `20260928220335`, `20260928220339`, and `20260928220343` for snapshot immutability, seeded-admin cleanup, and wallet-handoff hardening.
+- The earlier snapshot migration remains represented by three generated history rows: `20260928200205`, `20260928203509`, and `20260928203554`. No further snapshot execution is required.
+- Final production checks confirm the snapshot fields/constraints/index, immutability trigger, wallet-handoff fields/index, zero admin users, canonical package catalog/economics, untouched historical pending purchase amounts/statuses, and zero waiting locks.
+- Release deployment has **not** been performed as part of this work. Render/main deployment state remains separate from the schema change.
+- Remaining release gate: reconcile the source migration filenames with the generated production migration history before treating repository migration synchronization as clean; then run final CI/release verification.
