@@ -1,3 +1,13 @@
+## Release audit — 2026-09-28 — post-PR #13
+
+- PR #13 merged into `main` as `aa817feaa7c38550ca910f07448a5be37df4fc91` after CI #641 passed.
+- Settlement source was tightened so the unallocated matrix remainder is compared as PostgreSQL `numeric` rather than coerced through JavaScript `Number`; package economics and allocation rules are unchanged.
+- Production invariant audit returned zero violations for active node/membership pairing, confirmed-purchase deposit ledgers, matrix-earning ledgers, confirmed timestamps/transaction hashes, completed-withdrawal ledgers, active withdrawal reservations, duplicate pending purchase keys, confirmed allocation totals, and snapshot completeness.
+- Supabase security advisor remains clear of the former snapshot-trigger `search_path` warning; only the established backend-only RLS/no-policy INFO findings remain.
+- The named engineering branch `feature/admin-control-center-and-package-lifecycle` had zero unique commits and was synchronized with `main` through PR #14; it is now at the same tree as `main` plus the synchronization merge commit.
+- No production financial or member records were modified by the audit.
+- Remaining release gates are unchanged: Render health-path configuration, real-device push acceptance, controlled Resend sender-domain verification and mailbox delivery, and intentional first-admin provisioning.
+
 ## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - PR #11 was merged into `main` as `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; GitHub Actions CI #629 passed.
