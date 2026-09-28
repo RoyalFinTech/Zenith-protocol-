@@ -121,6 +121,16 @@ router.post('/purchases', async (req, res, next) => {
       order by created_at desc limit 1
     `, [req.auth!.userId, packageRow.id])).rows[0];
 
+    // Never silently reuse a stale pending intent at a historical price.
+    // Existing pending purchases remain unchanged; a mismatched intent requires
+    // explicit operational resolution instead of being presented as a current purchase.
+    if (pending && pending.amount !== packageRow.price) {
+      throw new HttpError(
+        409,
+        `A previous pending purchase for ${packageRow.code} was created at ${pending.amount} ${packageRow.asset}; the current catalog price is ${packageRow.price} ${packageRow.asset}. Resolve the existing pending purchase before starting a new one.`
+      );
+    }
+
     if (!pending) {
       if (packageRow.tier === 'starter') {
         const capacity = (await query<{available:boolean}>(`
@@ -167,6 +177,7 @@ router.post('/purchases', async (req, res, next) => {
         and pp.tier=$7
         and pp.price=$5
         and pp.asset=$6
+        and e.entry_amount=$5
       returning id,created_at,amount
     `, [
       req.auth!.userId, packageRow.id, referralCode, referrerId, packageRow.price, packageRow.asset, packageRow.tier

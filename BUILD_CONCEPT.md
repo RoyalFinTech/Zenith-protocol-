@@ -116,7 +116,11 @@ Members choose one of two Starter entry paths:
 - **2x4 Starter:** 10 USDT, 30 matrix positions, 4 levels.
 - **2x6 Starter:** 30 USDT, 126 matrix positions, 6 levels.
 
-Only Starter packages may activate a matrix position. Growth and Elite catalog entries remain unpriced until separately approved.
+The canonical package catalog is:
+- 2x4 Starter: 10 USDT; Growth: 25 USDT; Elite: 50 USDT.
+- 2x6 Starter: 30 USDT; Growth: 60 USDT; Elite: 120 USDT.
+- Every confirmed purchase allocates 20% direct, 70% matrix, and 10% platform administration.
+- Starter creates one matrix position; Growth upgrades the same position; Elite upgrades the same position.
 
 The authenticated purchase flow sends the selected package code to the backend. Settlement verifies the exact on-chain USDT transfer, then atomically activates the first available node in the selected program and creates the matching active membership.
 

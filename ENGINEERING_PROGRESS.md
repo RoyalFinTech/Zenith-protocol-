@@ -613,3 +613,42 @@ Every substantive change should be recorded here under Completed, In Progress, o
 - Current feature branch head is `e7aeed9491266793390ed35691b6e681cdee2895`; it remains unmerged and undeployed.
 - CI run #529 passed on the current documentation-inclusive head. The immediately preceding feature-code validation run #527 also passed all backend and frontend gates.
 - No production mutation, feature deployment, merge, admin provisioning, or irreversible Resend deletion was performed during this continuation.
+
+
+## 2026-09-28 — Canonical package pricing and economics checkpoint
+
+### Operator-confirmed source of truth
+The canonical package catalog is now documented in `docs/PACKAGE_ECONOMICS.md` and is the value future engineering work must preserve unless the operator explicitly approves a price change:
+
+- 2x4 Starter: **10 USDT**
+- 2x4 Growth: **25 USDT**
+- 2x4 Elite: **50 USDT**
+- 2x6 Starter: **30 USDT**
+- 2x6 Growth: **60 USDT**
+- 2x6 Elite: **120 USDT**
+
+Every confirmed purchase uses **20% direct / 70% matrix / 10% platform administration**.
+
+Matrix distribution:
+- 2x4: **30% / 25% / 25% / 20%** across levels 1–4.
+- 2x6: **30% / 20% / 15% / 10% / 10% / 15%** across levels 1–6.
+
+### Production verification
+Read-only production checks on 2026-09-28 confirmed that `program_packages.price` and `package_economics.entry_amount` currently match the canonical six-package catalog, with 20/70/10 economics configured for all six packages and the expected matrix-level rules present.
+
+Two historical pending 2x6 Starter purchase intents remain at **10 USDT**. They were not modified. They are historical pending records and must not be used as evidence that the current 2x6 Starter price is 10 USDT.
+
+### Code hardening
+- New purchase intent creation now requires `package_economics.entry_amount = program_packages.price` in the atomic insert guard.
+- A stale pending purchase whose recorded amount differs from the current package catalog price is no longer silently reused; the API returns HTTP 409 and leaves the historical pending purchase unchanged.
+- Added regression coverage locking the six-package catalog, price/economics equality, 20/70/10 allocation, and both matrix distribution patterns.
+
+### Validation / release impact
+- Changes are confined to the feature branch.
+- No production rows were modified.
+- The production catalog itself was verified read-only; no price correction was required.
+- Current feature head before this checkpoint: `630da77f375edce7134eb8136c13e2926804a907`.
+- New CI must pass before this checkpoint is treated as validated.
+
+### Historical migration note
+An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` contains the historical 2x6 Starter 10 USDT configuration. It is intentionally preserved as migration history. It is superseded by `20260926210000_enable_dual_starter_matrix_packages.sql` and the later package-lifecycle catalog reconciliation. Future work must use `docs/PACKAGE_ECONOMICS.md` plus the current catalog, not the historical migration value.

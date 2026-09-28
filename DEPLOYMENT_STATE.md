@@ -310,3 +310,21 @@ The original package lifecycle/admin implementation was already merged into main
 - GitHub Actions CI #529 passed on the current head.
 - Feature remains unmerged and not deployed to production.
 - Production Render remains on main commit `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`; production Supabase remains unchanged.
+
+
+## 2026-09-28 — Package pricing verification and protection
+
+- Read-only Supabase verification confirmed the current production package catalog is:
+  - 2x4 Starter 10 USDT
+  - 2x4 Growth 25 USDT
+  - 2x4 Elite 50 USDT
+  - 2x6 Starter 30 USDT
+  - 2x6 Growth 60 USDT
+  - 2x6 Elite 120 USDT
+- Production `package_economics.entry_amount` matches those package prices and uses 20% direct / 70% matrix / 10% platform administration for each package.
+- Production matrix distribution rules are 2x4 = 30/25/25/20 and 2x6 = 30/20/15/10/10/15.
+- Two historical pending 2x6 Starter purchase intents remain at 10 USDT. No production records were changed. Those rows are not the current catalog price.
+- The feature branch now rejects reuse of a pending purchase intent when its recorded amount differs from the current catalog price, preventing a stale historical intent from being silently presented as a current-price purchase.
+- The feature branch purchase insert also fails closed when `package_economics.entry_amount` does not match `program_packages.price`.
+- Canonical pricing and accounting rules are recorded in `docs/PACKAGE_ECONOMICS.md`.
+- Release impact: feature branch only; no production deployment or migration was triggered by this pricing hardening checkpoint.

@@ -280,6 +280,52 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect(unauthenticated.status).toBe(401);
   });
 
+  it('locks the canonical package catalog and 20/70/10 settlement economics', async () => {
+    const expected = {
+      '2x4-starter': { price:'10.00000000', tier:'starter', direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,25,25,20] },
+      '2x4-growth':  { price:'25.00000000', tier:'growth',  direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,25,25,20] },
+      '2x4-elite':   { price:'50.00000000', tier:'elite',   direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,25,25,20] },
+      '2x6-starter': { price:'30.00000000', tier:'starter', direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,20,15,10,10,15] },
+      '2x6-growth':  { price:'60.00000000', tier:'growth',  direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,20,15,10,10,15] },
+      '2x6-elite':   { price:'120.00000000',tier:'elite',   direct:'20.0000', matrix:'70.0000', admin:'10.0000', distribution:[30,20,15,10,10,15] }
+    } as const;
+
+    const result = await database.pool.query<{
+      code:string;
+      tier:string;
+      price:string|null;
+      entry_amount:string;
+      direct_percent:string;
+      matrix_percent:string;
+      admin_percent:string;
+      distribution:number[];
+    }>(`
+      select pp.code,pp.tier,pp.price::text,pe.entry_amount::text,
+             pe.direct_percent::text,pe.matrix_percent::text,pe.admin_percent::text,
+             coalesce(array_agg(r.percent_of_matrix_pool order by r.level), '{}'::numeric[])::numeric[] as distribution
+      from program_packages pp
+      join package_economics pe on pe.package_id=pp.id
+      left join matrix_distribution_rules r on r.package_id=pp.id
+      where pp.code = any($1::text[])
+      group by pp.code,pp.tier,pp.price,pe.entry_amount,pe.direct_percent,pe.matrix_percent,pe.admin_percent
+      order by pp.code
+    `, [Object.keys(expected)]);
+
+    expect(result.rows).toHaveLength(6);
+    for (const row of result.rows) {
+      const item = expected[row.code as keyof typeof expected];
+      expect(item).toBeTruthy();
+      expect(row.tier).toBe(item.tier);
+      expect(row.price).toBe(item.price);
+      expect(row.entry_amount).toBe(item.price);
+      expect(row.direct_percent).toBe(item.direct);
+      expect(row.matrix_percent).toBe(item.matrix);
+      expect(row.admin_percent).toBe(item.admin);
+      expect(row.distribution.map(Number)).toEqual(item.distribution);
+      expect(row.distribution.reduce((sum, value) => sum + Number(value), 0)).toBe(100);
+    }
+  });
+
   it('makes package confirmation retries idempotent to the recorded transaction hash', async () => {
     const packageRow = (await database.pool.query<{id:string}>(
       `select id from program_packages where code='2x4-starter' limit 1`
