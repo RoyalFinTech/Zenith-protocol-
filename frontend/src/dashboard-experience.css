@@ -140,3 +140,9 @@ html.theme-light .contact-card,html.theme-light .referral-box,html.theme-light .
 html.theme-light .page-head{background:linear-gradient(135deg,#ffffff,#f7fbff)!important;border-color:rgba(37,91,143,.12)!important;box-shadow:0 13px 34px rgba(30,66,103,.07)!important}
 html.theme-light .page-head::before{border-color:rgba(190,145,44,.18)!important}
 @media(max-width:600px){.page-head{padding:16px!important}.page-head::before{right:-96px}}
+
+/* Gold withdrawal modal */
+.withdrawal-eligibility{display:flex;align-items:center;gap:10px;padding:12px 13px;border:1px solid rgba(240,207,114,.18);border-radius:12px;background:rgba(240,207,114,.05)}.withdrawal-eligibility.blocked{border-color:rgba(239,125,135,.18);background:rgba(239,125,135,.045)}.withdrawal-eligibility>div{min-width:0}.withdrawal-eligibility strong{display:block;font-size:10px}.withdrawal-eligibility small{display:block;margin-top:3px;color:var(--muted);font-size:8px;line-height:1.45}
+.withdrawal-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.withdrawal-modal-note{margin-top:14px;padding:11px 12px;border:1px solid var(--zenit-dash-line);border-radius:11px;background:#091725}.withdrawal-modal-note strong{display:block;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--zenit-gold)}.withdrawal-modal-note span{display:block;margin-top:4px;color:#7088a2;font-size:8px;line-height:1.5}
+@media(max-width:600px){.withdrawal-modal-grid{grid-template-columns:1fr}}
+html.theme-light .withdrawal-modal-note{background:#f5f9fd}
