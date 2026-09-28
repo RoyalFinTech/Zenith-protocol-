@@ -385,3 +385,12 @@ The original package lifecycle/admin implementation was already merged into main
 - The deployment finished `live` at 2026-09-28 19:55:41 UTC. No manual deployment was triggered by this continuation.
 - Render service configuration still reports a blank health-check path while repository configuration declares `/health`; this remains an unresolved infrastructure drift item.
 - A Render error-log query could not be completed because the Render MCP session currently has no selected workspace; no claim about recent Render error logs is made from that failed query.
+
+
+## Release audit — 2026-09-28 22:17 UTC
+
+- GitHub Actions Zenit CI run #618 for merged `main` commit `e0c4b687324b92793f5c38295b7b1ef1f063021d` completed successfully.
+- Supabase reports project status `ACTIVE_HEALTHY`.
+- Current Supabase security warning: `public.prevent_package_purchase_snapshot_mutation` has a mutable function `search_path`. This is the next database hardening item.
+- Current Supabase performance notices are INFO-level unused-index findings; no performance index was removed.
+- Migration/history reconciliation remains intentionally conservative: generated production history is preserved, and unsupported direct history deletion was not performed.
