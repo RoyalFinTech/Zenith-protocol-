@@ -51,7 +51,7 @@ assert.match(html, /data-density="compact"/);
 assert.match(html, /data-reduced-motion="true"/);
 
 
-const inlineScripts = [...html.matchAll(/<script\\b(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi)]
+const inlineScripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1])
   .filter(Boolean);
 
