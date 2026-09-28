@@ -164,16 +164,16 @@ The repository Blueprint defines:
 
 The live Render service should still be treated as a separate deployment state from this security branch until an explicit merge/deploy.
 
-### Vercel
-Frontend deploys independently from `frontend/` using Vite output in `dist/`.
+### Frontend delivery
+The current Render web service builds the frontend with the backend and serves the resulting production frontend from the Node service. Vite remains the frontend build tool, with output bundled into the backend's `frontend-dist` during the Render build.
 
 ### Supabase migrations
-Production currently contains migration records through:
-- `20260926145028 package_payment_settlement_hardening_constraints`
-- `20260926145451 withdrawal_payout_idempotency`
-- `20260926175500 webauthn_challenge_user_index`
+Production migration records were last verified through:
+- `20260927114925 upgrade_package_lifecycle_and_admin`
+- `20260927130432 push_notifications`
+- `20260927130737 add_matrix_memberships_package_index`
 
-Repository migrations now include the corresponding settlement/payout history and the new WebAuthn index migration.
+The feature branch additionally contains the purchase-snapshot, snapshot-immutability, admin-bootstrap cleanup, and wallet-handoff hardening migrations that remain unpromoted to production.
 
 ## Engineering workflow
 
@@ -189,8 +189,8 @@ Repository migrations now include the corresponding settlement/payout history an
 
 - Engineering progress: `ENGINEERING_PROGRESS.md`
 - This architecture/build map: `BUILD_CONCEPT.md`
-- Security branch: `security/atomic-auth-withdrawal`
-- Draft PR: #7
+- Active engineering branch: `feature/admin-control-center-and-package-lifecycle`
+- Current feature PR: #9
 
 
 ## Package lifecycle and staff operations — 2026-09-27
