@@ -48,28 +48,15 @@ Add these environment variables in Render:
 - `WALLETCONNECT_METADATA_ICON=<public icon URL>`
 - `SESSION_TTL_MINUTES=10080`
 - `NONCE_TTL_MINUTES=10`
-- `CORS_ORIGINS=<Vercel frontend URL>`
+- `CORS_ORIGINS=<application origin URL>`
 
 Never put `DATABASE_URL` or `JWT_SECRET` into Vercel.
 
-## 3. Vercel frontend
+## 3. Frontend delivery
 
-Create a Vercel project from the same repository and set its root directory to `frontend`.
+The current Render web service builds the frontend from `frontend/` as part of the repository build and serves the resulting Vite production bundle through the backend service. No separate Vercel deployment is required by the current production deployment model.
 
-Build command:
-
-`npm install --no-audit --no-fund && npm run build`
-
-Output directory:
-
-`dist`
-
-Add:
-
-- `VITE_API_BASE_URL=<Render backend URL>`
-- `VITE_REOWN_PROJECT_ID=<Reown project ID>`
-
-These are client-side values. Do not add a database password, JWT secret, seed phrase, or private key.
+Client-side values such as the Reown project identifier may be configured through the frontend build environment when needed. Never add a database password, JWT secret, seed phrase, or private key.
 
 ## 4. First admin account
 
