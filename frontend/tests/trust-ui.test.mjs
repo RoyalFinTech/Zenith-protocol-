@@ -21,7 +21,7 @@ assert.doesNotMatch(html, /\b20% direct referral, 70% matrix pool and 10% platfo
 assert.match(html, /leaderboard/);
 assert.match(html, /settlement-flow/);
 assert.match(html, /settlementFlowMarkup\(\)/);
-assert.match(html, /src="\\$\{ZENIT_LOGO\\}"/);
+assert.match(html, /src="\$\{ZENIT_LOGO\}"/);
 assert.match(html, /dash-hero/);
 assert.match(html, /dash-package-grid/);
 assert.match(html, /dash-3d-scene/);
