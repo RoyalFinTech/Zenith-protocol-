@@ -1,3 +1,18 @@
+## 2026-09-28 23:35 UTC — Onboarding wallet/biometric repair + email test boundary
+
+- Fixed the returning-member onboarding click path so `CONNECT WALLET / LOGIN` routes through the existing application action handler instead of a competing onboarding listener.
+- Fixed the WebAuthn login/registration frontend calls that referenced an undefined `api` variable; they now use the existing `backendBase()` resolver and the already-implemented backend WebAuthn endpoints.
+- The returning-member modal now explicitly animates through a render frame before becoming visible, preserving the existing modal animation system.
+- Wallet connection now opens the standard Reown AppKit Connect view and exposes a wallet-ready event for initialization races; the existing backend wallet nonce/signature/PIN flow remains unchanged.
+- Cleaned the onboarding visual stage: the official `frontend/public/zenit-logo.png` is presented as a contained focal asset, the existing decorative coin stack was reduced to three controlled discs, and the existing gold/dark visual language remains the primary treatment.
+- Added regression checks for the onboarding action wiring, WebAuthn backend URL resolution, AppKit Connect opening, and wallet-ready signaling.
+- Added a development-only `backend/scripts/test-resend.mjs` command exposed as `npm run test:resend`; it is blocked under `NODE_ENV=production` and uses Resend's provider-owned test recipients for delivered, bounced, and spam/complaint simulations.
+- Updated `BUILD_CONCEPT.md` to distinguish the Render `onrender.com` application origin from an email sender domain and to document the domainless Resend test path.
+- CI #660 passed the complete backend and frontend validation on the onboarding fix; main push CI #661 also passed after merge.
+- Render deployment `dep-datfiorrjlhs73bku90g` is now `live` on `ecc983c2adf20161046fdc1e4aeb86a01bb618a2`.
+- Real-device push acceptance remains unverified; production has zero push subscriptions.
+- The existing `zenitprotocol.com` Resend configuration remains failed/unverified and is not treated as an operator-controlled sender domain.
+
 ## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - PR #11 was merged into `main` as `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; GitHub Actions CI #629 passed.
