@@ -215,6 +215,8 @@ These production counts are observations only; no records were changed as part o
 - CI run #573: success — backend member-content escaping in Programs and Team.
 - Newer commits after #573 are undergoing current-head CI validation; they are not treated as fully validated until that run succeeds.
 
+### Final gold palette pass
+- Final brand pass: converted remaining literal blue admin chart/tab accents to the ZENIT gold family; semantic green/red status colors remain intentionally unchanged.
 ### Current release boundary
 - All work in this section remains on `feature/admin-control-center-and-package-lifecycle`.
 - No merge into `main`.
