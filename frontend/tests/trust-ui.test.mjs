@@ -30,6 +30,11 @@ assert.match(html, /dash-hero/);
 assert.match(html, /dash-package-grid/);
 assert.match(html, /dash-3d-scene/);
 assert.match(html, /data-action="package-preview"/);
+assert.match(html, /function withdrawalModal\(\)/);
+assert.match(html, /data-action="withdraw-submit"/);
+assert.doesNotMatch(html, /const amount=prompt\("Withdrawal amount in USDT"\)/);
+assert.doesNotMatch(html, /const address=prompt\("Destination BNB Smart Chain address"\)/);
+
 assert.match(html, /action==="package-preview"/);
 assert.doesNotMatch(html, /images\.unsplash\.com/);
 
