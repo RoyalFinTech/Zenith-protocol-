@@ -5,8 +5,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#101113",
-  "background_color": "#0b0c0e",
+  "theme_color": "#0b0d0f",
+  "background_color": "#0b0d0f",
   "icons": [
     {
       "src": "/zenit-logo.png",
