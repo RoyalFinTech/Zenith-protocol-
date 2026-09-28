@@ -73,11 +73,15 @@ These are client-side values. Do not add a database password, JWT secret, seed p
 
 ## 4. First admin account
 
-Connect a wallet once so the backend creates the member row. Then, from the Supabase SQL Editor, promote that exact wallet address:
+Admin authentication is separate from member wallet authentication. The `admin_users` table is backend-owned and migrations never create credentials automatically.
 
-`update public.app_users set role='Admin', updated_at=now() where wallet_address=lower('0xYOUR_WALLET_ADDRESS');`
+After the admin schema migration has been explicitly promoted, provision the first administrator through the repository's operator-controlled utility:
 
-Use the exact address you intend to administer from. Do not create an admin through an unauthenticated API route.
+`ADMIN_EMAIL=<operator-controlled-admin-email> ADMIN_PASSWORD=<secure-password> DATABASE_URL=<server-only-database-url> npm run provision:admin`
+
+Run this only from a trusted operator environment with the secret values supplied through a secure secret mechanism. Do not commit credentials, place them in frontend configuration, or put them into migrations.
+
+After provisioning, use the Admin Portal login. Credential changes are handled from the Admin Security flow and revoke existing admin sessions.
 
 ## 5. First test
 
