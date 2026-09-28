@@ -32,9 +32,21 @@ router.get('/catalog', async (_req, res, next) => {
   try {
     const r = await query(`
       select pp.id, pp.code, pp.name, pp.tier, pp.description, pp.price, pp.asset,
-             p.code as program_code, p.name as program_name, p.levels, p.capacity
+             p.code as program_code, p.name as program_name, p.levels, p.capacity,
+             e.direct_percent, e.matrix_percent, e.admin_percent,
+             coalesce((
+               select json_agg(
+                 json_build_object(
+                   'level', r.level,
+                   'percentOfMatrixPool', r.percent_of_matrix_pool
+                 ) order by r.level
+               )
+               from matrix_distribution_rules r
+               where r.package_id=pp.id
+             ), '[]'::json) as matrix_distribution
       from program_packages pp
       join programs p on p.id=pp.program_id
+      left join package_economics e on e.package_id=pp.id
       where pp.active=true and p.active=true
       order by p.sort_order, pp.sort_order
     `);
