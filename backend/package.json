@@ -13,7 +13,8 @@
     "test": "vitest run",
     "lint": "tsc --noEmit -p tsconfig.json",
     "test:integration": "vitest run tests/production.integration.test.ts",
-    "provision:admin": "node scripts/provision-admin.mjs"
+    "provision:admin": "node scripts/provision-admin.mjs",
+    "check:admin-provision": "node --check scripts/provision-admin.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
