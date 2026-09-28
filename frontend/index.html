@@ -1249,7 +1249,7 @@ function renderTransactions() { return pageHead("Ledger","Transactions","Your tr
     if(localStorage.getItem("zenitToken")){void loadPushState(localStorage.getItem("zenitToken"),{sync:true});void consumeNotificationLink(localStorage.getItem("zenitToken"));}
     if(localStorage.getItem('zenitAdminToken')) appState.admin.authenticated=true; ensureReferral(); applyTheme(localStorage.getItem("zenitTheme")||"dark",false); const incomingReferral=new URLSearchParams(window.location.search).get("ref"); if(incomingReferral){ appState.pendingReferral=incomingReferral.toUpperCase().slice(0,32); try{localStorage.setItem("zenitPendingReferral",appState.pendingReferral);}catch(e){} }
 
-    document.addEventListener("click",e=>{
+    document.addEventListener("click",async e=>{
       const page=e.target.closest("[data-page]")?.dataset.page; if(page){navigate(page);return;}
       const el=e.target.closest("[data-action]"); const action=el?.dataset.action;
       if(action==="registration-wallet"){const handoff=localStorage.getItem("zenitWalletHandoffToken");if(!handoff){toast("Email verification required","Please open the verification email again.","warning");return;}localStorage.setItem("zenitAuthMode","onboarding");window.zenitOpenWallet?.().catch(e=>toast("Wallet unavailable",e?.message||String(e),"error"));return;}
