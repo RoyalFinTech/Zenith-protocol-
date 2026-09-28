@@ -6,11 +6,16 @@ const { Pool } = pg;
 const scrypt = promisify(scryptCb);
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
+const nodeEnv = process.env.NODE_ENV ?? 'development';
 const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 const password = process.env.ADMIN_PASSWORD ?? '';
 
 if (!databaseUrl) {
   console.error('DATABASE_URL is required.');
+  process.exit(1);
+}
+if (nodeEnv === 'production' && process.env.ALLOW_PRODUCTION_ADMIN_PROVISIONING !== 'YES') {
+  console.error('Production admin provisioning requires ALLOW_PRODUCTION_ADMIN_PROVISIONING=YES.');
   process.exit(1);
 }
 if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
