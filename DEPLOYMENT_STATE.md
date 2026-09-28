@@ -1,6 +1,6 @@
 # ZENIT Protocol — Deployment State
 
-Last checked: 2026-09-27 14:23 UTC
+Last checked: 2026-09-28 16:55 UTC
 
 ## Render API
 
@@ -290,3 +290,16 @@ The original package lifecycle/admin implementation was already merged into main
 - Production email remains gated on a sender domain that the operator actually controls and can verify in Resend. Resend's current Free tier supports 3 verified domains at no monthly cost; no paid upgrade is required for verification itself.
 - Official logo usage remains unchanged; no SVG or replacement logo has been introduced.
 - All future environment/domain records must distinguish **application origin** from **email sending domain** before configuration is applied.
+
+
+## 2026-09-28 16:55 UTC — Current verified deployment/audit state
+- Feature validation head: `92f58496d2fdbf254a1423018a7075d9dd715afc`; feature branch is unmerged and not deployed to production.
+- CI #527 is green: backend lint, migration application, unit tests, integration tests, frontend build, frontend login tests, and automatic-admin provisioning guard all passed.
+- Production Render remains configured to deploy `main` and is live on `1ad5c74a2f09cae92a8868bad4b13ad2e50f91ca`. Live URL: `https://zenith-protocol-qvfe.onrender.com`.
+- Render service configuration still reports a blank Health Check Path while `render.yaml` specifies `/health`; no production change was made because the available Render action surface does not expose a health-path update operation.
+- Production Supabase migration history is unchanged through `20260927130737`. The four feature-only migrations remain pending and were not applied.
+- Production read-only checks: 2 pending package purchases, 0 confirmed, 0 admin users, 0 push subscriptions, 0 active pending registrations.
+- Production purchase rows remain untouched, including the existing historical amount mismatch described in earlier checkpoints.
+- Resend has one pending/unverified domain configuration and two published templates; no outgoing email records exist. The templates are not wired to application runtime.
+- No admin credentials were provisioned. No feature-branch deployment was triggered. No irreversible Resend domain/template deletion was performed.
+- Operator actions remaining: provide/verify an actually controlled Resend sender domain, then perform one real mailbox delivery test; decide when to promote feature migrations; reconcile Render health-check drift; provision the first admin intentionally; review the PostgreSQL maintenance upgrade.
