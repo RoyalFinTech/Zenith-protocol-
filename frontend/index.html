@@ -1632,7 +1632,8 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
   function openReturningLogin(){
     const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
     modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER</div><h2 id="modalTitle">Welcome back to ZENIT</h2><p>Use your phone biometrics first, or connect your wallet and use your 4-digit PIN.</p></div><button class="icon-btn" type="button" id="closeReturningLogin" aria-label="Close">×</button></div><div class="modal-body"><div class="biometric-actions"><button class="biometric-btn" type="button" id="useBiometricLogin">USE PHONE BIOMETRICS</button></div><div class="login-divider">OR USE WALLET + PIN</div><button class="btn primary" type="button" id="connectReturningWallet" style="width:100%;min-height:44px">CONNECT WALLET →</button><p style="margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.6">After your wallet signature, ZENIT will ask for your 4-digit security PIN.</p></div>';
-    backdrop.classList.add("open");
+    backdrop.classList.remove("open");
+    requestAnimationFrame(()=>backdrop.classList.add("open"));
     $("#closeReturningLogin")?.addEventListener("click",()=>backdrop.classList.remove("open"));
     $("#connectReturningWallet")?.addEventListener("click",async()=>{localStorage.setItem("zenitAuthMode","existing");backdrop.classList.remove("open");try{await window.zenitOpenWallet?.();}catch(e){toast("Wallet unavailable",e?.message||String(e),"error");}});
     $("#useBiometricLogin")?.addEventListener("click",()=>biometricLogin());
