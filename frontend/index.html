@@ -415,14 +415,13 @@
     .topbar-right { display: flex; align-items: center; gap: 10px; }
     .network-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 10px; font-weight: 750; }
     .network-chip .status-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
-    .notification-wrap { position: relative; }<style>
+    .notification-wrap { position: relative; }
     .push-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;margin:0 0 10px;border:1px solid rgba(123,184,255,.2);border-radius:10px;background:rgba(123,184,255,.05)}
     .push-banner.enabled{border-color:rgba(97,214,163,.22);background:rgba(97,214,163,.05)}
     .push-banner strong{display:block;font-size:10px}.push-banner span{display:block;margin-top:3px;color:var(--muted);font-size:9px;line-height:1.4}.push-banner .btn{flex:0 0 auto}
     @media(max-width:560px){.notification-menu{position:fixed;top:72px;right:9px;left:9px;width:auto;max-height:calc(100vh - 90px);overflow:auto}}
   
 .onboard-human-scene img{object-fit:contain!important;padding:16%;filter:drop-shadow(0 14px 34px rgba(47,140,255,.22))}.registration-art>img{object-fit:contain!important;padding:18%;filter:drop-shadow(0 14px 34px rgba(47,140,255,.22))}.profile-human-panel>img{object-fit:contain!important;padding:15%;background:radial-gradient(circle at 50% 45%,rgba(47,140,255,.16),transparent 60%)}
-</style>
 
     .notification-menu { position: absolute; z-index: 40; top: 46px; right: 0; width: 310px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: #171a1e; box-shadow: var(--shadow); }
     .notification-menu h3 { margin: 0 0 10px; font-size: 13px; } .notif-item { padding: 11px 0; border-top: 1px solid var(--line); } .notif-item strong { display: block; font-size: 11px; } .notif-item span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
@@ -672,6 +671,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         overscroll-behavior:contain;
       }
       .onboard-art {
+        display:flex;
         min-height:250px;
         padding:14px;
         border-right:0;
@@ -865,7 +865,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
   <section class="splash" id="splash" aria-label="Loading Zenit Protocol">
     <div class="splash-grid"></div><div class="splash-glow"></div>
     <div class="splash-content">
-      <div class="splash-logo"><img data-logo alt="Zenit Protocol logo"></div>
+      <div class="splash-logo"><img src="/zenit-logo.png?zenit-official-20260928" data-logo alt="Zenit Protocol logo"></div>
       <h1 class="splash-name">ZENIT PROTOCOL</h1>
       <p class="splash-sub">DECENTRALIZED WEALTH NETWORK</p>
       <div class="splash-network">BNB SMART CHAIN</div>
@@ -880,12 +880,13 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
 
   <script id="zenitSplashBootstrap">
     (function(){
-      var started=Date.now(), minimum=1200, maximum=3600, ready=false;
+      var started=Date.now(), minimum=1800, maximum=4200, ready=false;
       function finish(){
         if(ready)return;
         ready=true;
         document.getElementById("splash")?.classList.add("done");
         document.getElementById("onboarding")?.classList.remove("hidden-screen");
+        window.dispatchEvent(new CustomEvent("zenit:splash-ready"));
       }
       function tick(){
         var elapsed=Date.now()-started;
@@ -1643,30 +1644,14 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       $(".registration-progress")?.querySelectorAll("span").forEach((x,i)=>x.classList.toggle("active",i>=1));
     }
     function startApp(){ if(!localStorage.getItem("zenitRegistrationVerified")){showRegistration();return;} $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render(); }
-    /* Splash loader is intentionally short; independent bootstrap prevents startup errors from freezing it. */
-    const SPLASH_DURATION = 8000;
-    const loaderStages = [[0,"INITIALIZING CORE"],[18,"LOADING MODULES"],[36,"BUILDING NETWORK"],[56,"SYNCING MATRIX STRUCTURE"],[74,"PREPARING WORKSPACE"],[90,"FINALIZING INTERFACE"],[100,"READY TO EXPLORE"]];
-    const loaderStart = performance.now();
-    let splashReleased = false;
-    function releaseSplash(){
-      if(splashReleased) return;
-      splashReleased = true;
-      if(new URLSearchParams(location.search).get("email_verified")==="1"){ showRegistration(); }
-      else { $("#splash")?.classList.add("done"); $("#onboarding")?.classList.remove("hidden-screen"); }
-    }
-    function updateSplashLoader(now){
-      const elapsed=Math.min(now-loaderStart,SPLASH_DURATION), progress=Math.min(100,(elapsed/SPLASH_DURATION)*100);
-      const fill=$("#loaderProgress"), jet=$("#loaderJet"), pct=$("#loaderPercent"), status=$("#loaderStatus");
-      if(fill) fill.style.width=`${progress}%`;
-      if(jet) jet.style.left=`${progress}%`;
-      if(pct) pct.textContent=`${Math.round(progress)}%`;
-      const stage=[...loaderStages].reverse().find(x=>progress>=x[0]); if(status&&stage) status.textContent=stage[1];
-      if(elapsed<SPLASH_DURATION) requestAnimationFrame(updateSplashLoader);
-      else releaseSplash();
-    }
-    requestAnimationFrame(updateSplashLoader);
-    /* Safety net for browsers where animation frames are throttled or delayed. */
-    setTimeout(releaseSplash, SPLASH_DURATION + 700);
+    // The standalone splash bootstrap above owns startup timing.
+    // This core script only handles deep-link routing after the splash is ready.
+    window.addEventListener("zenit:splash-ready", () => {
+      const params = new URLSearchParams(location.search);
+      if (params.get("email_verified") === "1" || params.get("email_verification") === "error") {
+        showRegistration();
+      }
+    }, { once: true });
   </script>
 <script id="zenitRegistrationQaController">
 (() => {

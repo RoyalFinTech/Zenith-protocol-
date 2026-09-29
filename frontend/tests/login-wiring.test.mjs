@@ -3,6 +3,15 @@ import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 
 const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+assert.equal((html.match(/<style\b/gi) ?? []).length, 1);
+assert.equal((html.match(/<\/style>/gi) ?? []).length, 1);
+assert.match(html, /<div class="splash-logo"><img src="\/zenit-logo\.png\?zenit-official-20260928"/);
+assert.match(html, /minimum=1800/);
+assert.match(html, /maximum=4200/);
+assert.match(html, /zenit:splash-ready/);
+assert.doesNotMatch(html, /SPLASH_DURATION\s*=\s*8000/);
+assert.doesNotMatch(html, /setTimeout\(releaseSplash/);
+assert.match(html, /@media \(max-width:820px\)[\s\S]*?\.onboard-art \{\s*display:flex;/);
 
 assert.equal((html.match(/function openReturningLogin\(\)/g) ?? []).length, 1);
 assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin;/);
@@ -31,7 +40,7 @@ assert.match(html, /grid-template-columns:1fr;\s*grid-template-rows:minmax\(250p
 assert.match(html, /@media \(max-width:820px\)/);
 assert.match(html, /window\.__zenitAppReady=true/);
 assert.match(html, /zenit:app-ready/);
-assert.match(html, /maximum=3600/);
+assert.match(html, /maximum=4200/);
 assert.match(walletBridge, /function setWalletButtonsBusy\(busy: boolean\)/);
 assert.match(walletBridge, /await kit\.open\(\)/);
 assert.doesNotMatch(walletBridge, /await \(appKit as any\)\.open\(\{ view: ['"]Connect['"] \}\)/);
