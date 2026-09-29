@@ -784,3 +784,11 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Hardened wallet opening to use AppKit's standard open() connection entry point, added visible OPENING WALLET… button state, and kept the backend authentication path unchanged.
 - Added regression assertions covering responsive onboarding, adaptive splash readiness, and wallet-open behavior.
 - No financial/member records, package economics, authentication endpoints, or settlement logic were changed by this UI/wallet QA pass.
+
+## Returning-member wallet gateway — 2026-09-29
+
+- Traced the original onboarding repair commits and confirmed the intended returning-member flow: CONNECT WALLET / LOGIN → returning-member modal → phone biometrics or wallet + PIN.
+- Found the remaining routing defect: the main [data-action] router called an openExistingWalletLogin function that lived only inside the separate onboarding bootstrap scope. That left the route dependent on an out-of-scope function instead of the already-published window.zenitOpenReturningLogin gateway.
+- Removed the duplicate/dead onboarding gateway and routed existing-wallet-login directly to the single published returning-member gateway.
+- Kept registration wallet authentication separate: verified-email onboarding continues directly to wallet authentication, while returning members get the biometric/wallet choice first.
+- Added regression coverage preventing the duplicate gateway from returning and requiring both biometric and wallet+PIN choices in the returning-member modal.
