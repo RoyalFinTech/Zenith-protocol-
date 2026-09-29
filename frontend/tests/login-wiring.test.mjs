@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
 
 assert.equal((html.match(/<style\\b/gi) ?? []).length, 1);
-assert.equal((html.match(/<\\/style>/gi) ?? []).length, 1);
-assert.match(html, /<div class="splash-logo"><img src="\\/zenit-logo\\.png\\?zenit-official-20260928"/);
+assert.equal((html.match(/<\/style>/gi) ?? []).length, 1);
+assert.match(html, /<div class="splash-logo"><img src="\/zenit-logo\\.png\\?zenit-official-20260928"/);
 assert.match(html, /minimum=1800/);
 assert.match(html, /maximum=4200/);
 assert.match(html, /zenit:splash-ready/);
