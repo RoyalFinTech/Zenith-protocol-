@@ -773,3 +773,14 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Frontend: production build and login regression test passed.
 - The canonical six-package pricing/economics regression passed, including price/economics equality, 20/70/10 allocation, and both matrix distribution patterns.
 - Feature branch remains unmerged and was not deployed to production.
+
+## Cross-device onboarding / wallet QA — 2026-09-29
+
+- Audited the production frontend source after the onboarding/wallet repair deployment.
+- Fixed the onboarding layout so phones use a single-column, viewport-sized composition with independently scrollable copy rather than retaining the desktop two-column layout.
+- Added small-phone and short-viewport breakpoints for the onboarding art, badges, network-flow card, actions, and pager.
+- Reduced the splash maximum wait from 8 seconds to 3.6 seconds and made it finish after the app signals readiness, with the maximum remaining as a failure-safe.
+- Added an explicit zenit:app-ready readiness signal after the inline application boot path completes.
+- Hardened wallet opening to use AppKit's standard open() connection entry point, added visible OPENING WALLET… button state, and kept the backend authentication path unchanged.
+- Added regression assertions covering responsive onboarding, adaptive splash readiness, and wallet-open behavior.
+- No financial/member records, package economics, authentication endpoints, or settlement logic were changed by this UI/wallet QA pass.
