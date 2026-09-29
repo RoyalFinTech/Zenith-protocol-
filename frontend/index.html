@@ -1643,30 +1643,14 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       $(".registration-progress")?.querySelectorAll("span").forEach((x,i)=>x.classList.toggle("active",i>=1));
     }
     function startApp(){ if(!localStorage.getItem("zenitRegistrationVerified")){showRegistration();return;} $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render(); }
-    /* Splash loader is intentionally short; independent bootstrap prevents startup errors from freezing it. */
-    const SPLASH_DURATION = 8000;
-    const loaderStages = [[0,"INITIALIZING CORE"],[18,"LOADING MODULES"],[36,"BUILDING NETWORK"],[56,"SYNCING MATRIX STRUCTURE"],[74,"PREPARING WORKSPACE"],[90,"FINALIZING INTERFACE"],[100,"READY TO EXPLORE"]];
-    const loaderStart = performance.now();
-    let splashReleased = false;
-    function releaseSplash(){
-      if(splashReleased) return;
-      splashReleased = true;
-      if(new URLSearchParams(location.search).get("email_verified")==="1"){ showRegistration(); }
-      else { $("#splash")?.classList.add("done"); $("#onboarding")?.classList.remove("hidden-screen"); }
-    }
-    function updateSplashLoader(now){
-      const elapsed=Math.min(now-loaderStart,SPLASH_DURATION), progress=Math.min(100,(elapsed/SPLASH_DURATION)*100);
-      const fill=$("#loaderProgress"), jet=$("#loaderJet"), pct=$("#loaderPercent"), status=$("#loaderStatus");
-      if(fill) fill.style.width=`${progress}%`;
-      if(jet) jet.style.left=`${progress}%`;
-      if(pct) pct.textContent=`${Math.round(progress)}%`;
-      const stage=[...loaderStages].reverse().find(x=>progress>=x[0]); if(status&&stage) status.textContent=stage[1];
-      if(elapsed<SPLASH_DURATION) requestAnimationFrame(updateSplashLoader);
-      else releaseSplash();
-    }
-    requestAnimationFrame(updateSplashLoader);
-    /* Safety net for browsers where animation frames are throttled or delayed. */
-    setTimeout(releaseSplash, SPLASH_DURATION + 700);
+    // The standalone splash bootstrap above owns startup timing.
+    // This core script only handles deep-link routing after the splash is ready.
+    window.addEventListener("zenit:splash-ready", () => {
+      const params = new URLSearchParams(location.search);
+      if (params.get("email_verified") === "1" || params.get("email_verification") === "error") {
+        showRegistration();
+      }
+    }, { once: true });
   </script>
 <script id="zenitRegistrationQaController">
 (() => {
