@@ -319,28 +319,55 @@ function setupWatchers() {
 
 let walletOpenInFlight = false;
 
+function setWalletButtonsBusy(busy: boolean) {
+  document.querySelectorAll<HTMLElement>('[data-action="wallet"]').forEach(button => {
+    const el = button as HTMLButtonElement;
+    if (busy) {
+      if (!el.dataset.walletLabel) el.dataset.walletLabel = el.textContent || 'Connect wallet';
+      el.disabled = true;
+      el.setAttribute('aria-busy', 'true');
+      el.textContent = 'OPENING WALLET…';
+    } else {
+      el.disabled = false;
+      el.removeAttribute('aria-busy');
+      if (el.dataset.walletLabel) el.textContent = el.dataset.walletLabel;
+    }
+  });
+}
+
 async function openWallet() {
   if (walletOpenInFlight) return;
   walletOpenInFlight = true;
+  setWalletButtonsBusy(true);
   try {
     await init();
     setupWatchers();
 
     if (!appKit) throw new Error('Wallet connection interface is unavailable');
 
-    // Always open the standard AppKit Connect view. This keeps desktop
-    // injected wallets and mobile WalletConnect flows on the same backend
-    // authentication path without inventing provider-specific behavior.
-    await (appKit as any).open({ view: 'Connect' });
+    (window as any).zenitToast?.(
+      'Wallet connection',
+      'Opening the secure wallet selector…',
+      'info'
+    );
 
-    for (let attempt = 0; attempt < 20; attempt += 1) {
+    // Use AppKit's standard public connection entry point. This is the
+    // stable path for both desktop injected wallets and mobile WalletConnect.
+    // The optional view argument is intentionally avoided because older
+    // AppKit builds can ignore or mishandle view-specific navigation.
+    const kit = appKit as any;
+    if (typeof kit.open !== 'function') throw new Error('Wallet connection interface is unavailable');
+    await kit.open();
+
+    for (let attempt = 0; attempt < 24; attempt += 1) {
       await new Promise(resolve => setTimeout(resolve, 500));
       await syncCurrentAccount();
       const account = adapter ? getAccount(adapter.wagmiConfig) : null;
-      if (account?.isConnected && account.address && authToken) break;
+      if (account?.isConnected && account.address) break;
     }
   } finally {
     walletOpenInFlight = false;
+    setWalletButtonsBusy(false);
   }
 }
 
