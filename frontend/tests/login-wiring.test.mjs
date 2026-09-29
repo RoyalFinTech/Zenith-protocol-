@@ -9,6 +9,7 @@ assert.equal((html.match(/<\\/style>/gi) ?? []).length, 1);
 assert.match(html, /<div class="splash-logo"><img src="\\/zenit-logo\\.png\\?zenit-official-20260928"/);
 assert.match(html, /minimum=1800/);
 assert.match(html, /maximum=4200/);
+assert.match(html, /@media \\(max-width:820px\\)[\\s\\S]*?\\.onboard-art \\{\\s*display:flex;/);
 
 assert.equal((html.match(/function openReturningLogin\(\)/g) ?? []).length, 1);
 assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin;/);
