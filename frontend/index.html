@@ -886,6 +886,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         ready=true;
         document.getElementById("splash")?.classList.add("done");
         document.getElementById("onboarding")?.classList.remove("hidden-screen");
+        window.dispatchEvent(new CustomEvent("zenit:splash-ready"));
       }
       function tick(){
         var elapsed=Date.now()-started;
