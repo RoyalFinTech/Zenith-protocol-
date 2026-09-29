@@ -13,7 +13,7 @@ assert.doesNotMatch(html, /event\.stopImmediatePropagation\(\);openReturningLogi
 console.log('✓ onboarding login wiring regression checks passed');
 const walletBridge = readFileSync(resolve(process.cwd(), 'src/wallet-bridge.ts'), 'utf8');
 assert.match(html, /id="onboardExistingLogin"[^>]*data-action="existing-wallet-login"/);
-assert.match(html, /if\(action==="existing-wallet-login"\)\{void openExistingWalletLogin\(\);return;\}/);
+assert.match(html, /if\(action==="existing-wallet-login"\)\{localStorage\.setItem\("zenitAuthMode","existing"\);const openReturning=window\.zenitOpenReturningLogin/);
 assert.doesNotMatch(html, /fetch\(api\s*\+\s*["']\/api\/auth\/webauthn/);
 assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/options/);
 assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/verify/);
@@ -37,3 +37,10 @@ assert.match(walletBridge, /await kit\.open\(\)/);
 assert.doesNotMatch(walletBridge, /await \(appKit as any\)\.open\(\{ view: ['"]Connect['"] \}\)/);
 
 console.log('✓ cross-device onboarding, splash, and wallet-open regression checks passed');
+
+assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin/);
+assert.match(html, /if\(typeof openReturning==="function"\)\{openReturning\(\);\}else\{toast\("Login is still loading"/);
+assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
+assert.match(html, /id="connectReturningWallet"/);
+assert.match(html, /id="useBiometricLogin"/);
+console.log('✓ returning-member gateway is centralized and biometric/wallet choices are wired');
