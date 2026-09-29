@@ -26,3 +26,14 @@ assert.match(html, /params\.delete\("wallet_handoff"\);/);
 assert.match(html, /params\.delete\("email_verified"\);/);
 assert.match(html, /history\.replaceState\(\{\},'',location\.pathname/);
 assert.match(html, /localStorage\.setItem\("zenitWalletHandoffToken",walletHandoff\)/);
+
+assert.match(html, /grid-template-columns:1fr;\s*grid-template-rows:minmax\(250px,42dvh\)/);
+assert.match(html, /@media \(max-width:820px\)/);
+assert.match(html, /window\.__zenitAppReady=true/);
+assert.match(html, /zenit:app-ready/);
+assert.match(html, /maximum=3600/);
+assert.match(walletBridge, /function setWalletButtonsBusy\(busy: boolean\)/);
+assert.match(walletBridge, /await kit\.open\(\)/);
+assert.doesNotMatch(walletBridge, /await \(appKit as any\)\.open\(\{ view: ['"]Connect['"] \}\)/);
+
+console.log('✓ cross-device onboarding, splash, and wallet-open regression checks passed');
