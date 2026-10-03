@@ -1,3 +1,15 @@
+# 2026-10-03 — Engineering hygiene + production-gate checkpoint
+
+- Re-verified the production Render service in **Royal's workspace** (`tea-dadvf02d0e5s73eha320`): `Zenith-protocol-` tracks `main`, auto-deploy is enabled for commits, and the current live deployment is `dep-db06mk5ckfvc73chhkj0` from commit `d243938a4e196556f1822244df80e5237504056d`.
+- Current GitHub `main` has advanced to `90e341197d72469226c6d80c4a0431288df866f7`; CI run #727 completed successfully.
+- No open pull requests remain. Historical PRs #15, #17, and #18 were closed as superseded/stale with comments; no code from those PRs was promoted by this cleanup.
+- Render configuration drift remains unresolved: the live service still reports a blank health-check path while repository `render.yaml` declares `/health`, and the backend exposes `GET /health`. The available Render action surface still does not expose a service health-path update operation, so no unrelated production setting was changed.
+- Push infrastructure remains source-complete: `frontend/public/sw.js`, authenticated subscription registration, and the member **Test** action are present. Production read-only counts remain 3 application users, 0 admins, 0 push subscriptions, 0 active pending wallet handoffs, and 0 notifications at this checkpoint.
+- Real-device push acceptance is still open. No request traffic was observed on the Render service during 2026-10-03 02:40–02:55 UTC, so no device test has been demonstrated through the service logs.
+- No production financial, membership, package, withdrawal, ledger, or admin records were modified during this engineering phase.
+
+---
+
 # 2026-10-03 — Live push self-test release
 
 - **Render workspace:** Royal's workspace (`tea-dadvf02d0e5s73eha320`)
