@@ -1,3 +1,18 @@
+# 2026-10-03 — Live push self-test release
+
+- **Render workspace:** Royal's workspace (`tea-dadvf02d0e5s73eha320`)
+- **Service:** `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`)
+- **Live deployment:** `dep-db06mk5ckfvc73chhkj0`
+- **Live commit:** `d243938a4e196556f1822244df80e5237504056d` (PR #23 merge)
+- **Status:** `live`, finished `2026-10-03 02:43:24 UTC`
+- Build logs confirm `npm ci && npm run build` completed successfully, the frontend was bundled into `backend/frontend-dist`, and `npm start` launched `dist/server.js`.
+- GitHub Actions CI run #719 passed backend and frontend gates before merge.
+- Push self-test endpoint is now live at authenticated route `POST /api/me/push/test` and the member UI exposes the **Test** action when a push subscription exists.
+- Production `push_subscriptions` count is currently 0, so actual phone-notification delivery remains unaccepted until a real device subscribes and receives the test.
+- Existing Render health-check drift remains unchanged: service setting blank while repository `render.yaml` specifies `/health`.
+
+---
+
 # Current verified deployment checkpoint — 2026-10-03 02:35 UTC
 
 - **Render workspace:** Royal's workspace (`tea-dadvf02d0e5s73eha320`)
