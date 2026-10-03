@@ -1,3 +1,14 @@
+# 2026-10-03 — Push-device self-test release gate
+
+- PR #23 (`feat: add authenticated push device self-test`) merged successfully into `main` as `d243938a4e196556f1822244df80e5237504056d` after GitHub Actions run #719 passed both backend and frontend jobs.
+- Render **Royal's workspace** service `Zenith-protocol-` deployed the merge commit as deployment `dep-db06mk5ckfvc73chhkj0`, now `live`.
+- The live build completed successfully and the service started normally at `https://zenith-protocol-qvfe.onrender.com`.
+- The member notification panel now exposes an authenticated **Test** action after a device has subscribed to push notifications. The test route only targets the logged-in user's own subscriptions and does not create package, withdrawal, or financial records.
+- Production Supabase remains read-only for this gate: 3 application users, 0 admin users, 0 push subscriptions, and 0 active pending wallet handoffs at the time of verification.
+- Real-device push acceptance is still pending because no production device subscription exists yet. Acceptance requires enabling notifications on a real supported device and receiving the native test notification.
+
+---
+
 # Current verified release checkpoint — 2026-10-03 02:35 UTC
 
 - Repository default branch `main` is at merge commit `96a53c2865c44c5b0f27045e436cc7e148ecac39`, the merged PR #21 frontend mobile markup/splash repair.
