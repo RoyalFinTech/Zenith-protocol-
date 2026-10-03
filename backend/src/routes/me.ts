@@ -5,6 +5,7 @@ import { HttpError } from '../utils/http.js';
 import { sendWelcomeEmail } from '../services/email.js';
 import { env } from '../config.js';
 import { validatePushSubscriptionInput } from '../services/web-push.js';
+import { sendUserPushTestNotification } from '../services/notifications.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -109,6 +110,16 @@ router.post('/push/subscriptions', async (req,res,next)=>{
       [req.auth!.userId,subscription.endpoint,subscription.p256dh,subscription.auth,expirationTime,userAgent]
     );
     res.status(201).json({subscription:r.rows[0]});
+  }catch(e){ next(e); }
+});
+
+router.post('/push/test', async (req,res,next)=>{
+  try{
+    if(!env.pushEnabled) throw new HttpError(503,'Device push notifications are not configured');
+    const result = await sendUserPushTestNotification(req.auth!.userId);
+    if(!result.subscriptions) throw new HttpError(409,'Enable phone notifications on this device first');
+    if(!result.delivered) throw new HttpError(502,'The push test could not be delivered to any active device subscription');
+    res.json({ok:true,delivered:result.delivered,failed:result.failed,staleRemoved:result.staleRemoved});
   }catch(e){ next(e); }
 });
 
