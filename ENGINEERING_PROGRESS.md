@@ -1,3 +1,16 @@
+# Current verified release checkpoint — 2026-10-03 02:35 UTC
+
+- Repository default branch `main` is at merge commit `96a53c2865c44c5b0f27045e436cc7e148ecac39`, the merged PR #21 frontend mobile markup/splash repair.
+- Render **Royal's workspace** service `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`) is confirmed to track `main` with auto-deploy enabled.
+- Render deployment `dep-datu5r2d0e5s73dho0s0` was deployed from commit `96a53c2865c44c5b0f27045e436cc7e148ecac39` and is confirmed `live` as of 2026-09-29 16:12 UTC.
+- GitHub Actions CI run #707 completed successfully for the current `main` commit.
+- Render configuration drift remains: the live service reports a blank health-check path while repository `render.yaml` specifies `/health`. The application exposes `GET /health`; no production health-path mutation was made because the available Render action surface does not expose a service-config update operation.
+- Current read-only Supabase counts: 3 application users, 0 admin users, 0 push subscriptions, and 0 active pending wallet handoffs. No production financial/member records were modified during this checkpoint.
+- The real-device push gate is therefore still open: the code path and service worker are present, but no device subscription exists in production yet, so actual phone-delivery acceptance has not been demonstrated.
+- Email release remains gated on an operator-controlled, Resend-verified sender domain and a real mailbox delivery test.
+
+---
+
 ## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - PR #11 was merged into `main` as `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; GitHub Actions CI #629 passed.
