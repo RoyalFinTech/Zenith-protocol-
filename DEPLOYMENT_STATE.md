@@ -1,3 +1,23 @@
+# Current verified deployment checkpoint — 2026-10-03 02:35 UTC
+
+- **Render workspace:** Royal's workspace (`tea-dadvf02d0e5s73eha320`)
+- **Service:** `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`)
+- **Repository:** `https://github.com/RoyalFinTech/Zenith-protocol-`
+- **Tracked branch:** `main`
+- **Auto-deploy:** enabled, trigger `commit`
+- **Current GitHub main:** `96a53c2865c44c5b0f27045e436cc7e148ecac39`
+- **Live deployment:** `dep-datu5r2d0e5s73dho0s0`
+- **Deployment status:** `live` (completed 2026-09-29 16:12:20 UTC)
+- **Previous live deployment:** `ecc983c2adf20161046fdc1e4aeb86a01bb618a2` (PR #16), now deactivated.
+- **Build/start:** `npm ci && npm run build` / `npm start`
+- **Health-check drift:** Render's live service setting is blank while `render.yaml` specifies `/health`. The backend defines `GET /health`. This remains an operator/configuration reconciliation item, not a code-release failure.
+- GitHub Actions CI run #707 passed for commit `96a53c2865c44c5b0f27045e436cc7e148ecac39`.
+- Production push acceptance is not complete: Supabase currently has 0 `push_subscriptions`, so no real-device push delivery has been recorded.
+- Production email acceptance is not complete because no operator-controlled verified sender domain/mailbox test has been completed.
+- First-admin provisioning remains intentionally operator-controlled; current `admin_users` count is 0.
+
+---
+
 ## Release gate audit — 2026-09-28 — post-PR #11 release gate audit
 
 - `main` is now at merge commit `26eea6edf4a5a7a1ee489bd86a96cfb06b3409c0`; CI #629 passed.
