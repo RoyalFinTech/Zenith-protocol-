@@ -53,3 +53,7 @@ assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
 assert.match(html, /id="connectReturningWallet"/);
 assert.match(html, /id="useBiometricLogin"/);
 console.log('✓ returning-member gateway is centralized and biometric/wallet choices are wired');
+
+assert.match(html, /data-action="test-push"/);
+assert.match(html, /backendFetch\(['"]\/api\/me\/push\/test['"]/);
+console.log('✓ authenticated push self-test is wired without touching financial flows');
