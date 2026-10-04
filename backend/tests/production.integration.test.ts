@@ -259,6 +259,9 @@ describeProduction('production API against a real PostgreSQL test database', () 
   });
 
   it('exposes authenticated device push capability without allowing unauthenticated subscription writes', async () => {
+    const unauthenticatedTest = await request('/api/me/push/test', { method:'POST' });
+    expect(unauthenticatedTest.status).toBe(401);
+
     const authorization = { authorization: `Bearer ${token}` };
     const pushConfig = await request('/api/me/push/config', { headers: authorization });
     expect(pushConfig.status).toBe(200);
