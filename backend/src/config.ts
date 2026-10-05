@@ -25,6 +25,15 @@ if (emailProvider !== 'resend' && emailProvider !== 'mailersend') {
   throw new Error('EMAIL_PROVIDER must be either resend or mailersend');
 }
 
+const mailersendTransport = (process.env.MAILERSEND_TRANSPORT ?? 'api').trim().toLowerCase();
+if (mailersendTransport !== 'api' && mailersendTransport !== 'smtp') {
+  throw new Error('MAILERSEND_TRANSPORT must be either api or smtp');
+}
+const mailersendSmtpPort = Number(process.env.MAILERSEND_SMTP_PORT ?? 587);
+if (!Number.isInteger(mailersendSmtpPort) || mailersendSmtpPort < 1 || mailersendSmtpPort > 65535) {
+  throw new Error('MAILERSEND_SMTP_PORT must be a valid TCP port');
+}
+
 if (nodeEnv === 'production') {
   if (jwtSecret.length < 32) throw new Error('JWT_SECRET must be at least 32 characters in production');
   if (!/^https:\/\//i.test(appOrigin)) throw new Error('APP_ORIGIN must use HTTPS in production');
@@ -46,12 +55,16 @@ if (nodeEnv === 'production') {
       (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM))) {
     throw new Error('RESEND_API_KEY and RESEND_FROM must be configured together in production');
   }
-  if (emailProvider === 'mailersend' && ((Boolean(process.env.MAILERSEND_API_KEY) || Boolean(process.env.MAILERSEND_FROM)) &&
+  if (emailProvider === 'mailersend' && mailersendTransport === 'api' && ((Boolean(process.env.MAILERSEND_API_KEY) || Boolean(process.env.MAILERSEND_FROM)) &&
       (!process.env.MAILERSEND_API_KEY || !process.env.MAILERSEND_FROM))) {
     throw new Error('MAILERSEND_API_KEY and MAILERSEND_FROM must be configured together in production');
   }
-  if (emailProvider === 'mailersend' && (!process.env.MAILERSEND_API_KEY || !process.env.MAILERSEND_FROM)) {
-    throw new Error('MailerSend is selected but MAILERSEND_API_KEY/MAILERSEND_FROM are not configured');
+  if (emailProvider === 'mailersend' && mailersendTransport === 'api' && (!process.env.MAILERSEND_API_KEY || !process.env.MAILERSEND_FROM)) {
+    throw new Error('MailerSend API transport is selected but MAILERSEND_API_KEY/MAILERSEND_FROM are not configured');
+  }
+  if (emailProvider === 'mailersend' && mailersendTransport === 'smtp' &&
+      (!process.env.MAILERSEND_SMTP_HOST || !process.env.MAILERSEND_SMTP_USER || !process.env.MAILERSEND_SMTP_PASSWORD || !process.env.MAILERSEND_FROM)) {
+    throw new Error('MailerSend SMTP transport is selected but SMTP credentials and MAILERSEND_FROM are not configured');
   }
   if (emailProvider === 'resend' && (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM)) {
     throw new Error('Resend is selected but RESEND_API_KEY/RESEND_FROM are not configured');
@@ -87,9 +100,14 @@ export const env = {
   vapidPrivateKey,
   pushEnabled: Boolean(vapidSubject && vapidPublicKey && vapidPrivateKey),
   emailProvider: emailProvider as 'resend' | 'mailersend',
+  mailersendTransport: mailersendTransport as 'api' | 'smtp',
   resendApiKey: process.env.RESEND_API_KEY ?? '',
   resendFrom: process.env.RESEND_FROM ?? '',
   mailersendApiKey: process.env.MAILERSEND_API_KEY ?? '',
   mailersendFrom: process.env.MAILERSEND_FROM ?? '',
-  mailersendFromName: process.env.MAILERSEND_FROM_NAME ?? 'ZENIT Protocol'
+  mailersendFromName: process.env.MAILERSEND_FROM_NAME ?? 'ZENIT Protocol',
+  mailersendSmtpHost: process.env.MAILERSEND_SMTP_HOST ?? 'smtp.mailersend.net',
+  mailersendSmtpPort,
+  mailersendSmtpUser: process.env.MAILERSEND_SMTP_USER ?? '',
+  mailersendSmtpPassword: process.env.MAILERSEND_SMTP_PASSWORD ?? ''
 };
