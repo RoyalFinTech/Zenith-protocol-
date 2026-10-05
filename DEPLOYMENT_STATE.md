@@ -429,3 +429,14 @@ The original package lifecycle/admin implementation was already merged into main
 - Push gate: implementation is live, but real-device subscription and native notification delivery remain unverified.
 - Email gate: controlled sender-domain verification and real mailbox delivery remain pending.
 - Admin gate: first-admin provisioning remains intentionally operator-controlled.
+
+
+## 2026-10-05 — Onboarding/returning-auth feature checkpoint
+
+- Current production baseline before this feature: main commit `36811318990c42bdf39b55c00242c8728958cfdf`.
+- Render Royal's workspace remains the confirmed production workspace: `tea-dadvf02d0e5s73eha320`.
+- Service remains `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`) and the live deployment for commit `368113189...` is `dep-db1lta942hec73da7ni0`, status **live**, finished 2026-10-05 08:25:49 UTC.
+- Feature branch `fix/onboarding-real-images-returning-auth-20261005` is not yet promoted to production at this checkpoint.
+- The feature replaces the onboarding logo-as-art treatment with real office/financial photography, forces onboarding actions to the ZENIT gold system, resumes valid stored sessions directly into the dashboard after splash, and hardens phone WebAuthn registration so it does not require a browser-specific public-key accessor.
+- Render builds the frontend from the repository's `frontend` directory during `backend/scripts/build.mjs`, so the next merged frontend change will be included in the production build when main deploys.
+- No production database rows were modified by this feature branch.
