@@ -440,3 +440,13 @@ The original package lifecycle/admin implementation was already merged into main
 - The feature replaces the onboarding logo-as-art treatment with real office/financial photography, forces onboarding actions to the ZENIT gold system, resumes valid stored sessions directly into the dashboard after splash, and hardens phone WebAuthn registration so it does not require a browser-specific public-key accessor.
 - Render builds the frontend from the repository's `frontend` directory during `backend/scripts/build.mjs`, so the next merged frontend change will be included in the production build when main deploys.
 - No production database rows were modified by this feature branch.
+
+
+# 2026-10-05 — PR #30 onboarding/returning-auth release checkpoint
+
+- Re-verified GitHub `main`: merge commit `fc8ada9ffb33f67a57fab86573deab5513b0d29e` from PR #30.
+- PR #30 hardened onboarding gold selectors, replaced onboarding visual overlays with realistic photography sources, added returning-member WebAuthn challenge validation/timeout/error handling, and routed successful biometric authentication directly to the dashboard.
+- Initial CI runs for PR #30 exposed a regression-test assertion problem, not an application build/type failure. The regression assertion was corrected on the PR branch; final push CI run #778 completed successfully for the merged commit, with frontend and backend jobs successful.
+- Render Royal's workspace service `Zenith-protocol-` is configured for `main`, auto-deploy enabled, rootDir `backend`. After CI verification, deployment `dep-db1ml6h42hec73dddpkg` was manually triggered to ensure the frontend bundled by the backend build is refreshed; at this checkpoint it remains `build_in_progress` and has not yet been called live.
+- No production database/member/financial/admin records were changed by PR #30 or this deployment trigger.
+- Live Render health-check drift remains unchanged: service configuration reports an empty health-check path while repository `render.yaml` declares `/health`; no unrelated configuration mutation was made.
