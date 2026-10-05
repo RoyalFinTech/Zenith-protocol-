@@ -918,7 +918,7 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
   - MAILERSEND_FROM
   - MAILERSEND_FROM_NAME
 - MAILERSEND_SMTP_PASSWORD is not committed to GitHub, logs, tests, or documentation.
-- The SMTP username/password supplied during this engineering session was not written into the repository or Render environment. MailerSend's security guidance recommends resetting SMTP credentials when they have been shared in plain text; a fresh SMTP password should therefore be generated before production configuration. citeturn968566search0
+- The SMTP username/password supplied during this engineering session was not written into the repository or Render environment. MailerSend's security guidance recommends resetting SMTP credentials when they have been shared in plain text; a fresh SMTP password should therefore be generated before production configuration.
 - MailerSend requires the From address to match the verified/trial sending domain; the SMTP username itself is not the From address.
 - Added Nodemailer 10.0.13 as the SMTP transport library. Nodemailer currently supports Node.js 20+, matching the backend runtime requirement.
 - Added regression coverage for SMTP transport creation and the custom ZENIT template, including the official logo URL and Message-ID behavior.
@@ -943,3 +943,11 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - PR #31 remains draft, open, mergeable, and unmerged. It has not been deployed to Render production.
 - No production database records, Render environment variables, email-provider settings, or production credentials were changed.
 - The API token shared in chat remains intentionally unused; because it was exposed, it should be revoked/rotated before any future use.
+
+
+# 2026-10-05 — CI/install parity checkpoint
+
+- Changed GitHub Actions backend/frontend dependency installation from `npm install` to `npm ci` so CI validates the committed lockfile using the same clean-install mode used by the Render production service.
+- Added regression coverage for all three email-provider paths now supported by the adapter: MailerSend SMTP, MailerSend API, and the existing Resend API.
+- Removed an internal citation marker from repository documentation; source docs contain no chat-only citation syntax.
+- No production deployment, Render environment change, database mutation, or secret update occurred.
