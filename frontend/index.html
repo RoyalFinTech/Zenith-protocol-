@@ -1719,14 +1719,55 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     wrap.appendChild(btn);
   }
   function bindPinInputs(){addPinToggle("registrationPin");addPinToggle("registrationPinConfirm");}
+  function openPinRecoveryModal(){
+    const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
+    let challengeId="";let recoveryCooldownTimer=0;
+    const requestView=()=>{
+      modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">ACCOUNT RECOVERY</div><h2 id="modalTitle">Reset your PIN</h2><p>Use the WhatsApp number registered to your ZENIT account. If it matches, we will send a one-time recovery code.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body"><div class="recovery-whatsapp-note"><span class="whatsapp-brand" aria-hidden="true"><img src="/whatsapp.svg" alt=""></span><span>Your recovery code is sent only to the registered WhatsApp number. Never share that code with another person.</span></div><div class="form-field"><label for="pinRecoveryWhatsapp">Registered WhatsApp number</label><input class="field" id="pinRecoveryWhatsapp" type="tel" autocomplete="tel" inputmode="tel" placeholder="+220 3XX XXXX" data-autofocus></div><button class="btn primary" id="sendPinRecoveryCode" type="button" style="width:100%">SEND RECOVERY CODE →</button></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button></div>';
+      $("#sendPinRecoveryCode")?.addEventListener("click",async()=>{
+        const btn=$("#sendPinRecoveryCode"),phone=($("#pinRecoveryWhatsapp")?.value||"").trim();
+        if(!internationalWhatsAppValid(phone)){toast("WhatsApp number required","Enter the registered number in international format, including country code.","warning");return;}
+        if(btn){btn.disabled=true;btn.textContent="SENDING…";}
+        try{
+          const r=await fetch(`${backendBase()}/api/auth/pin/reset/request`,{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({whatsappNumber:phone})});
+          const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Unable to send the recovery code");
+          challengeId=d.challengeId||"";verifyView(phone);
+        }catch(error){if(btn){btn.disabled=false;btn.textContent="SEND RECOVERY CODE →";}toast("Recovery request failed",error?.message||String(error),"error");}
+      });
+      requestAnimationFrame(()=>$("#pinRecoveryWhatsapp")?.focus());
+    };
+    const verifyView=(phone)=>{
+      clearInterval(recoveryCooldownTimer);
+      modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">ACCOUNT RECOVERY</div><h2 id="modalTitle">Enter recovery code</h2><p>Enter the 6-digit code sent to your registered WhatsApp number, then create a new 4-digit PIN.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body"><div class="verification-modal-destination"><strong>Recovery destination</strong><span>'+esc(phone)+'</span></div><div class="form-field"><label for="pinRecoveryCode">6-digit recovery code</label><input class="field mono recovery-code" id="pinRecoveryCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" data-autofocus></div><div class="grid grid-2" style="gap:10px"><div class="form-field"><label for="pinRecoveryNew">New 4-digit PIN</label><input class="field mono" id="pinRecoveryNew" type="password" inputmode="numeric" autocomplete="new-password" maxlength="4" placeholder="••••"></div><div class="form-field"><label for="pinRecoveryConfirm">Confirm new PIN</label><input class="field mono" id="pinRecoveryConfirm" type="password" inputmode="numeric" autocomplete="new-password" maxlength="4" placeholder="••••"></div></div><button class="btn primary" id="resetPinRecovery" type="button" style="width:100%;margin-top:14px">RESET PIN & OPEN DASHBOARD →</button><div class="verification-resend"><button id="resendPinRecovery" type="button" disabled>RESEND CODE</button><span class="verification-timer" id="pinRecoveryTimer">Resend available in 30s</span></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button></div></div>';
+      let remaining=30;const tick=()=>{const t=$("#pinRecoveryTimer");if(t)t.textContent=remaining>0?`Resend available in ${remaining}s`:"You can resend now";if(remaining<=0){clearInterval(recoveryCooldownTimer);$("#resendPinRecovery")?.removeAttribute("disabled");}};tick();recoveryCooldownTimer=setInterval(()=>{remaining-=1;tick();},1000);
+      $("#resendPinRecovery")?.addEventListener("click",async()=>{clearInterval(recoveryCooldownTimer);const b=$("#resendPinRecovery");if(b)b.disabled=true;try{const r=await fetch(`${backendBase()}/api/auth/pin/reset/request`,{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({whatsappNumber:phone})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Unable to resend the recovery code");challengeId=d.challengeId||challengeId;toast("Recovery code resent","A new recovery request was submitted.","success");verifyView(phone);}catch(error){if(b)b.disabled=false;toast("Resend failed",error?.message||String(error),"error");}});
+      $("#resetPinRecovery")?.addEventListener("click",async()=>{
+        const code=($("#pinRecoveryCode")?.value||"").trim(),next=($("#pinRecoveryNew")?.value||"").trim(),confirm=($("#pinRecoveryConfirm")?.value||"").trim(),btn=$("#resetPinRecovery");
+        if(!/^\d{6}$/.test(code)){toast("Recovery code required","Enter the 6-digit code from WhatsApp.","warning");return;}
+        if(!/^\d{4}$/.test(next)){toast("PIN required","Choose a 4-digit PIN.","warning");return;}
+        if(next!==confirm){toast("PIN mismatch","The new PIN entries must match.","warning");return;}
+        if(!challengeId){toast("Recovery expired","Request a fresh recovery code.","warning");return;}
+        if(btn){btn.disabled=true;btn.textContent="RESETTING…";}
+        try{
+          const r=await fetch(`${backendBase()}/api/auth/pin/reset/verify`,{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({challengeId,code,newPin:next})});
+          const d=await r.json().catch(()=>({}));if(!r.ok||!d.token)throw new Error(d.error||"Unable to reset your PIN");
+          localStorage.setItem("zenitToken",d.token);localStorage.removeItem("zenitAuthMode");localStorage.removeItem("zenitRegistrationVerified");localStorage.removeItem("zenitPinChallenge");
+          if(typeof window.zenitLoadBackend==="function")await window.zenitLoadBackend(d.token);
+          backdrop.classList.remove("open");if(typeof window.startApp==="function")window.startApp();window.dispatchEvent(new CustomEvent("zenit:authenticated",{detail:{...d.user,token:d.token}}));toast("Access restored","Your PIN was reset and your ZENIT dashboard is ready.","success");
+        }catch(error){if(btn){btn.disabled=false;btn.textContent="RESET PIN & OPEN DASHBOARD →";}toast("PIN reset failed",error?.message||String(error),"error");}
+      });
+      requestAnimationFrame(()=>$("#pinRecoveryCode")?.focus());
+    };
+    requestView();backdrop.classList.add("open");
+  }
   function openReturningLogin(){
     const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
-    modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER</div><h2 id="modalTitle">Welcome back to ZENIT</h2><p>Use your phone biometrics first, or connect your wallet and use your 4-digit PIN.</p></div><button class="icon-btn" type="button" id="closeReturningLogin" aria-label="Close">×</button></div><div class="modal-body"><div class="biometric-actions"><button class="biometric-btn" type="button" id="useBiometricLogin">USE PHONE BIOMETRICS</button></div><div class="login-divider">OR USE WALLET + PIN</div><button class="btn primary" type="button" id="connectReturningWallet" style="width:100%;min-height:44px">CONNECT WALLET →</button><p style="margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.6">After your wallet signature, ZENIT will ask for your 4-digit security PIN.</p></div>';
-    backdrop.classList.remove("open");
-    requestAnimationFrame(()=>backdrop.classList.add("open"));
+    modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER</div><h2 id="modalTitle">Welcome back to ZENIT</h2><p>Use your phone biometrics first, or connect your wallet and use your 4-digit PIN.</p></div><button class="icon-btn" type="button" id="closeReturningLogin" aria-label="Close">×</button></div><div class="modal-body"><div class="biometric-actions"><button class="biometric-btn" type="button" id="useBiometricLogin">USE PHONE BIOMETRICS</button></div><div class="login-divider">OR USE WALLET + PIN</div><button class="btn primary" type="button" id="connectReturningWallet" style="width:100%;min-height:44px">CONNECT WALLET →</button><p style="margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.6">After your wallet signature, ZENIT will ask for your 4-digit security PIN.</p><button class="btn ghost" type="button" id="forgotPinAccess" style="width:100%;margin-top:10px">FORGOT PIN / ACCESS HELP</button></div>';
+    backdrop.classList.remove("open");requestAnimationFrame(()=>backdrop.classList.add("open"));
     $("#closeReturningLogin")?.addEventListener("click",()=>backdrop.classList.remove("open"));
     $("#connectReturningWallet")?.addEventListener("click",async()=>{localStorage.setItem("zenitAuthMode","existing");backdrop.classList.remove("open");try{await window.zenitOpenWallet?.();}catch(e){toast("Wallet unavailable",e?.message||String(e),"error");}});
     $("#useBiometricLogin")?.addEventListener("click",()=>biometricLogin());
+    $("#forgotPinAccess")?.addEventListener("click",()=>openPinRecoveryModal());
   }
   async function biometricLogin(){
     if(!window.PublicKeyCredential||!navigator.credentials){toast("Phone biometrics unavailable","This browser cannot call the phone authenticator here. Use wallet + PIN instead.","warning");return;}
