@@ -11,6 +11,9 @@ assert.doesNotMatch(html, /wallet-address-value" title="\$\{esc\(appState\.walle
 
 assert.match(html, /class="username-input-prefix"[^>]*>@<\/span>/);
 assert.match(html, /registrationUsername/);
+assert.match(html, /registrationWhatsapp/);
+assert.match(html, /registrationWhatsappUpdates/);
+assert.match(html, /src="\/whatsapp\.svg"/);
 assert.match(html, /replace\(\/\[\^a-z0-9_\]\/g,""\)/);
 
 assert.match(html, /\/api\/packages\/catalog/);
@@ -48,6 +51,13 @@ assert.match(html, /images\.unsplash\.com\/photo-1556761175-4b46a572b786/);
 assert.ok(html.includes('const hasSession=Boolean(localStorage.getItem("zenitToken"))'));
 assert.ok(html.includes('fetch(`${backendBase()}/api/me`'));
 assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
+assert.match(html, /showVerificationSentModal/);
+assert.match(html, /modalVerificationTimer/);
+assert.match(html, /api\/auth\/register\/resend/);
+assert.match(html, /FORGOT PIN \/ ACCESS HELP/);
+assert.match(html, /api\/auth\/pin\/reset\/request/);
+assert.match(html, /api\/auth\/pin\/reset\/verify/);
+assert.doesNotMatch(html, /zenitPendingRegistrationDraft",JSON\.stringify\(\{[^}]*pin/);
 assert.ok(html.includes('pubKeyCredParams:[{type:"public-key",alg:-7}]'));
 
 
@@ -88,6 +98,10 @@ const expectedBackendPaths = [
   "/api/dashboard/referrals",
   "/api/me",
   "/api/me/profile",
+  "/api/auth/register/request",
+  "/api/auth/register/resend",
+  "/api/auth/pin/reset/request",
+  "/api/auth/pin/reset/verify",
   "/api/me/notifications",
   "/api/me/notifications/read-all",
   "/api/me/preferences",
