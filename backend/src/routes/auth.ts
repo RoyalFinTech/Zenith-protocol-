@@ -63,7 +63,9 @@ router.post('/register/request', async (req, res, next) => {
     const username = String(req.body?.username ?? '').trim().toLowerCase();
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     const displayName = String(req.body?.displayName ?? '').trim();
-    const whatsappNumber = normalizeWhatsAppNumber(req.body?.whatsappNumber);
+    let whatsappNumber: string;
+    try { whatsappNumber = normalizeWhatsAppNumber(req.body?.whatsappNumber); }
+    catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Valid WhatsApp number required'); }
     const whatsappUpdatesEnabled = req.body?.whatsappUpdatesEnabled !== false;
     const pin = String(req.body?.pin ?? '');
     if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400, 'Username must be 3–24 characters using lowercase letters, numbers or underscores');
@@ -310,7 +312,9 @@ router.post('/pin/setup', async (req,res,next)=>{
 });
 router.post('/pin/reset/request', async (req,res,next)=>{
   try{
-    const whatsappNumber=normalizeWhatsAppNumber(req.body?.whatsappNumber);
+    let whatsappNumber: string;
+    try { whatsappNumber = normalizeWhatsAppNumber(req.body?.whatsappNumber); }
+    catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Valid WhatsApp number required'); }
     if(!env.whatsappEnabled) throw new HttpError(503,'WhatsApp PIN recovery is not configured yet');
     const existing=(await query<{id:string;username:string;wallet_address:string}>(
       `select id,username,wallet_address from app_users where whatsapp_number=$1 limit 1`,[whatsappNumber]
