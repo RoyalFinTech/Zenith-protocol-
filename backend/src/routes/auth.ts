@@ -87,8 +87,8 @@ router.post('/register/request', async (req, res, next) => {
       const message = error instanceof Error ? error.message : String(error);
       console.error('ZENIT verification email send failed', message);
       await query(`delete from pending_registrations where id=$1`, [id]);
-      if (message.includes('403')) {
-        throw new HttpError(403, 'Resend is in testing mode. Use the Resend account test recipient, or verify a sending domain before sending to other email addresses.');
+      if (message === 'EMAIL_PROVIDER_NOT_CONFIGURED') {
+        throw new HttpError(503, `Email verification provider is not configured (${env.emailProvider})`);
       }
       throw new HttpError(502, 'Verification email service is temporarily unavailable');
     }
