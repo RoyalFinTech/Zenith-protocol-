@@ -828,3 +828,19 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Removed the duplicate/dead onboarding gateway and routed existing-wallet-login directly to the single published returning-member gateway.
 - Kept registration wallet authentication separate: verified-email onboarding continues directly to wallet authentication, while returning members get the biometric/wallet choice first.
 - Added regression coverage preventing the duplicate gateway from returning and requiring both biometric and wallet+PIN choices in the returning-member modal.
+
+
+---
+
+# 2026-10-05 — Current engineering continuation checkpoint
+
+- Repository main is at merge commit 07182fe12f7030617df2e1187ad491ba11b727a1, produced by merged PR #26 (test: harden push self-test authentication).
+- GitHub Actions run #736 passed both backend and frontend jobs. Backend completed lint, automatic-admin provisioning guard, disposable database migration application, unit tests, and integration tests. Frontend completed build, login regression tests, and trust-UI tests.
+- Render Royal's workspace (tea-dadvf02d0e5s73eha320) is confirmed to own the production service Zenith-protocol- (srv-dajmafdg1s2s73ba8k5g). The service tracks main, has commit auto-deploy enabled, and is connected to RoyalFinTech/Zenith-protocol-.
+- Render deployment dep-db1bn2mq1p3s73f5iilg from commit 07182fe12f7030617df2e1187ad491ba11b727a1 is live and finished at 2026-10-04 20:50:02 UTC.
+- PR #26 adds an integration regression assertion that unauthenticated POST /api/me/push/test is rejected with HTTP 401. It does not change production financial, membership, withdrawal, ledger, package, or admin records.
+- Real-device Web Push acceptance remains open. Source implementation and the authenticated Test action are live, but actual native phone delivery has not been demonstrated. Do not mark this gate passed until a supported device subscribes and receives the test notification.
+- Render health-check configuration drift remains open: the live service reports a blank health-check path while repository render.yaml declares /health and the backend exposes GET /health. No unsupported production mutation has been made because the available Render action surface does not expose a service health-path update operation.
+- Production email acceptance remains gated on an operator-controlled, Resend-verified sender domain and a real mailbox delivery test. The Render application URL is not treated as an email sender domain.
+- First-admin provisioning remains intentionally operator-controlled.
+- No production financial, membership, package, withdrawal, ledger, or admin rows were modified during this continuation.
