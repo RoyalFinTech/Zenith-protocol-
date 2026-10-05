@@ -513,3 +513,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Fix commit: `d080938f7dc2fb7a5d6532ce2bfd36bc425d3599`.
 - PR #31 remains open, draft, unmerged, and not deployed to Render production. No production environment variables, database rows, or email-provider settings were changed.
 - The MailerSend API credential shared in chat is not present in repository files or Render configuration. It should be revoked/rotated before any use because it was exposed in chat.
+
+
+# 2026-10-05 — MailerSend SMTP CI green checkpoint
+
+- GitHub Actions **Zenit CI run #820** completed successfully on feature head `f0d0bdf95b706e6ff6db91d8700a89a8c0e95497`.
+- Backend lint, admin-provisioning guard, migration application, unit tests, and the remaining backend gates completed successfully after the `createHash` import fix; frontend build, login regression, and trust-UI regression also passed.
+- PR #31 remains draft, open, mergeable, and unmerged. It has not been deployed to Render production.
+- No production database records, Render environment variables, email-provider settings, or production credentials were changed.
+- The API token shared in chat remains intentionally unused; because it was exposed, it should be revoked/rotated before any future use.
