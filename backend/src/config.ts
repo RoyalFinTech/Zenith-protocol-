@@ -30,6 +30,9 @@ if (mailersendTransport !== 'api' && mailersendTransport !== 'smtp') {
   throw new Error('MAILERSEND_TRANSPORT must be either api or smtp');
 }
 const mailersendSmtpPort = Number(process.env.MAILERSEND_SMTP_PORT ?? 587);
+const mailersendWhatsAppFrom = process.env.MAILERSEND_WHATSAPP_FROM ?? '';
+const mailersendWhatsAppPinResetTemplateId = process.env.MAILERSEND_WHATSAPP_PIN_RESET_TEMPLATE_ID ?? '';
+const mailersendWhatsAppUpdateTemplateId = process.env.MAILERSEND_WHATSAPP_UPDATE_TEMPLATE_ID ?? '';
 if (!Number.isInteger(mailersendSmtpPort) || mailersendSmtpPort < 1 || mailersendSmtpPort > 65535) {
   throw new Error('MAILERSEND_SMTP_PORT must be a valid TCP port');
 }
@@ -109,5 +112,9 @@ export const env = {
   mailersendSmtpHost: process.env.MAILERSEND_SMTP_HOST ?? 'smtp.mailersend.net',
   mailersendSmtpPort,
   mailersendSmtpUser: process.env.MAILERSEND_SMTP_USER ?? '',
-  mailersendSmtpPassword: process.env.MAILERSEND_SMTP_PASSWORD ?? ''
+  mailersendSmtpPassword: process.env.MAILERSEND_SMTP_PASSWORD ?? '',
+  mailersendWhatsAppFrom,
+  mailersendWhatsAppPinResetTemplateId,
+  mailersendWhatsAppUpdateTemplateId,
+  whatsappEnabled: Boolean(mailersendApiKey && mailersendWhatsAppFrom && mailersendWhatsAppPinResetTemplateId)
 };
