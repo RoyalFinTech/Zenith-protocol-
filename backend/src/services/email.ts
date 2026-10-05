@@ -1,5 +1,6 @@
 import { env } from '../config.js';
 import nodemailer from 'nodemailer';
+import { createHash } from 'node:crypto';
 
 type WelcomeEmailInput = {
   to: string;
