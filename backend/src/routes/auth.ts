@@ -101,6 +101,35 @@ router.post('/register/request', async (req, res, next) => {
   } catch (e) { console.error('ZENIT registration request failed', e instanceof Error ? e.message : String(e)); next(e); }
 });
 
+router.post('/register/resend', async (req,res,next)=>{
+  try{
+    const email=String(req.body?.email??'').trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400,'Valid email address required');
+    const row=(await query<{id:string;username:string;email:string;display_name:string;updated_at:Date;token_hash:string;expires_at:Date}>(
+      `select id,username,email,display_name,updated_at,token_hash,expires_at
+       from pending_registrations
+       where lower(email)=lower($1) and verified_at is null and consumed_at is null
+       order by created_at desc limit 1`,[email]
+    )).rows[0];
+    if(!row){ res.status(202).json({accepted:true}); return; }
+    if(new Date(row.updated_at).getTime()>Date.now()-30_000) {
+      throw new HttpError(429,'Please wait before requesting another verification email');
+    }
+    const token=randomNonce()+randomNonce();
+    const tokenHash=createHash('sha256').update(token).digest('hex');
+    await query(`update pending_registrations set token_hash=$1,expires_at=now()+interval '30 minutes',updated_at=now() where id=$2`,[tokenHash,row.id]);
+    const verifyUrl=`${env.apiPublicUrl}/api/auth/register/verify?token=${encodeURIComponent(token)}`;
+    try{
+      await sendVerificationEmail({to:row.email,username:row.username,verifyUrl,registrationId:row.id,appOrigin:env.appOrigin});
+    }catch(error){
+      await query(`update pending_registrations set token_hash=$1,expires_at=$2,updated_at=$3 where id=$4`,[row.token_hash,row.expires_at,row.updated_at,row.id]).catch(()=>{});
+      console.error('ZENIT verification resend failed',error instanceof Error?error.message:String(error));
+      throw new HttpError(502,'Verification email service is temporarily unavailable');
+    }
+    res.status(202).json({accepted:true,email:row.email});
+  }catch(e){next(e);}
+});
+
 router.get('/register/verify', async (req, res, next) => {
   try {
     const token = String(req.query?.token ?? '');
