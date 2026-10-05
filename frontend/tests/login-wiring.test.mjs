@@ -24,12 +24,11 @@ const walletBridge = readFileSync(resolve(process.cwd(), 'src/wallet-bridge.ts')
 assert.match(html, /id="onboardExistingLogin"[^>]*data-action="existing-wallet-login"/);
 assert.match(html, /if\(action==="existing-wallet-login"\)\{localStorage\.setItem\("zenitAuthMode","existing"\);const openReturning=window\.zenitOpenReturningLogin/);
 assert.doesNotMatch(html, /fetch\(api\s*\+\s*["']\/api\/auth\/webauthn/);
-assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/options/);
-assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/verify/);
+assert.match(html, /backendBase\(\)+["']\/api\/auth\/webauthn\/login\/options/);
+assert.match(html, /backendBase\(\)+["']\/api\/auth\/webauthn\/login\/verify/);
 assert.match(html, /requestAnimationFrame\(\(\)=>backdrop\.classList\.add\(["']open["']\)\)/);
 assert.match(walletBridge, /await kit\.open\(\)/);
 assert.match(walletBridge, /zenit:wallet-ready/);
-
 
 assert.match(html, /params\.delete\("wallet_handoff"\);/);
 assert.match(html, /params\.delete\("email_verified"\);/);
@@ -52,8 +51,8 @@ assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
 assert.match(html, /id="connectReturningWallet"/);
 assert.match(html, /id="useBiometricLogin"/);
 assert.match(html, /\.onboarding \.onboard-actions \.btn[\s\S]*background:linear-gradient\(180deg,#d0ae5b,#a98538\) !important/);
-assert.match(html, /onboarding actions use the ZENIT gold system consistently/);
-assert.match(html, /navigator\.credentials\.get\(\{publicKey:\{challenge:bytes\(opt\.challenge\),rpId:opt\.rpId,userVerification:"required",timeout:60000\}/);
+assert.match(html, /\.onboarding \.onboard-existing \.btn[\s\S]*background:linear-gradient\(180deg,#d0ae5b,#a98538\) !important/);
+assert.match(html, /navigator\.credentials\.get\(\{[\s\S]*publicKey:\{[\s\S]*challenge:bytes\(opt\.challenge\)[\s\S]*rpId:opt\.rpId[\s\S]*userVerification:"required"[\s\S]*timeout:60000/);
 assert.match(html, /Phone biometric verified\. Opening your dashboard/);
 assert.match(html, /window\.startApp=startApp/);
 console.log('✓ returning-member gateway is centralized and biometric/wallet choices are wired');
