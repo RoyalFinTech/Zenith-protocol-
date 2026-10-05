@@ -38,6 +38,9 @@ describe('transactional email provider', () => {
     expect(payload.from).toEqual({ email: 'hello@trial-zenit.mlsend.com', name: 'ZENIT Protocol' });
     expect(payload.to).toEqual([{ email: 'recipient@example.com' }]);
     expect(payload.subject).toBe('Verify your email for ZENIT Protocol');
+    expect(payload.html).toContain('https://zenith-protocol-qvfe.onrender.com/zenit-logo.png?v=zenit-official-20260922');
+    expect(payload.html).toContain('alt="ZENIT Protocol"');
+    expect(payload.html).toContain('Confirm email address');
     expect(payload.text).toContain('Confirm that this email address belongs to you');
     expect(payload.tags).toEqual(['zenit', 'verification']);
   });
