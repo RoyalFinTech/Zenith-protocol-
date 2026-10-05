@@ -19,6 +19,11 @@ const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(
 const appOrigin = required('APP_ORIGIN', 'http://localhost:5173');
 const apiPublicUrl = required('API_PUBLIC_URL', appOrigin);
 const jwtSecret = required('JWT_SECRET');
+const emailProvider = (process.env.EMAIL_PROVIDER ?? 'resend').trim().toLowerCase();
+
+if (emailProvider !== 'resend' && emailProvider !== 'mailersend') {
+  throw new Error('EMAIL_PROVIDER must be either resend or mailersend');
+}
 
 if (nodeEnv === 'production') {
   if (jwtSecret.length < 32) throw new Error('JWT_SECRET must be at least 32 characters in production');
@@ -37,9 +42,19 @@ if (nodeEnv === 'production') {
   if (!Number.isInteger(nonceTtlMinutes) || nonceTtlMinutes < 1) {
     throw new Error('NONCE_TTL_MINUTES must be at least 1 minute');
   }
-  if ((Boolean(process.env.RESEND_API_KEY) || Boolean(process.env.RESEND_FROM)) &&
-      (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM)) {
+  if (emailProvider === 'resend' && ((Boolean(process.env.RESEND_API_KEY) || Boolean(process.env.RESEND_FROM)) &&
+      (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM))) {
     throw new Error('RESEND_API_KEY and RESEND_FROM must be configured together in production');
+  }
+  if (emailProvider === 'mailersend' && ((Boolean(process.env.MAILERSEND_API_KEY) || Boolean(process.env.MAILERSEND_FROM)) &&
+      (!process.env.MAILERSEND_API_KEY || !process.env.MAILERSEND_FROM))) {
+    throw new Error('MAILERSEND_API_KEY and MAILERSEND_FROM must be configured together in production');
+  }
+  if (emailProvider === 'mailersend' && (!process.env.MAILERSEND_API_KEY || !process.env.MAILERSEND_FROM)) {
+    throw new Error('MailerSend is selected but MAILERSEND_API_KEY/MAILERSEND_FROM are not configured');
+  }
+  if (emailProvider === 'resend' && (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM)) {
+    throw new Error('Resend is selected but RESEND_API_KEY/RESEND_FROM are not configured');
   }
 }
 
@@ -71,6 +86,10 @@ export const env = {
   vapidPublicKey,
   vapidPrivateKey,
   pushEnabled: Boolean(vapidSubject && vapidPublicKey && vapidPrivateKey),
+  emailProvider: emailProvider as 'resend' | 'mailersend',
   resendApiKey: process.env.RESEND_API_KEY ?? '',
-  resendFrom: process.env.RESEND_FROM ?? ''
+  resendFrom: process.env.RESEND_FROM ?? '',
+  mailersendApiKey: process.env.MAILERSEND_API_KEY ?? '',
+  mailersendFrom: process.env.MAILERSEND_FROM ?? '',
+  mailersendFromName: process.env.MAILERSEND_FROM_NAME ?? 'ZENIT Protocol'
 };
