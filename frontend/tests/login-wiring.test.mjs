@@ -53,7 +53,7 @@ assert.match(html, /onboard-brand-badge"><span class="badge-mark" aria-hidden="t
 assert.doesNotMatch(html, /onboardHeroImage[^>]+src="\/zenit-logo\.png/);
 assert.match(html, /onboarding \.onboard-actions \.btn,\s*\.onboarding \.onboard-existing \.btn[^}]*!important/);
 assert.match(html, /const hasSession=Boolean\(localStorage\.getItem\("zenitToken"\)\)/);
-assert.match(html, /fetch\(\\$\{backendBase\(\)\}\/api\/me/);
+assert.match(html, /fetch\(\$\{backendBase\(\)\}\/api\/me/);
 assert.match(html, /startApp\(\);\s*window\.dispatchEvent\(new CustomEvent\("zenit:authenticated"/);
 assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
 assert.match(html, /pubKeyCredParams:\[\{type:"public-key",alg:-7\}\]/);
