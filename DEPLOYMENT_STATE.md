@@ -408,3 +408,24 @@ The original package lifecycle/admin implementation was already merged into main
 - Current-head CI remains the release gate for this continuation; successful earlier runs do not certify commits made afterward.
 
 - The current feature branch also contains the premium gold 3D Wallet command-center surface and gold-aligned package/withdrawal lifecycle status docks; these remain feature-only and are not in production.
+
+
+---
+
+# 2026-10-05 — Current verified deployment state
+
+- Render workspace: Royal's workspace (tea-dadvf02d0e5s73eha320)
+- Service: Zenith-protocol- (srv-dajmafdg1s2s73ba8k5g)
+- Repository: RoyalFinTech/Zenith-protocol-
+- Tracked branch: main
+- Auto-deploy: enabled, trigger commit
+- Current main: 07182fe12f7030617df2e1187ad491ba11b727a1
+- Live deployment: dep-db1bn2mq1p3s73f5iilg
+- Deployment status: live, finished 2026-10-04 20:50:02 UTC
+- Build/start: npm ci && npm run build / npm start
+- CI: GitHub Actions run #736 passed backend and frontend jobs.
+- PR #26: merged security regression test for unauthenticated push self-test access; no production data mutation.
+- Health-check drift: live Render setting remains blank while repository render.yaml specifies /health; backend exposes GET /health.
+- Push gate: implementation is live, but real-device subscription and native notification delivery remain unverified.
+- Email gate: controlled sender-domain verification and real mailbox delivery remain pending.
+- Admin gate: first-admin provisioning remains intentionally operator-controlled.
