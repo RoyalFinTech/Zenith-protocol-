@@ -365,6 +365,7 @@
     .field-status{float:right;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
     .pin-field-wrap{position:relative}.pin-field-wrap .field{padding-right:44px}.pin-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:var(--muted);display:grid;place-items:center}.pin-toggle:hover{color:var(--text);background:rgba(255,255,255,.06)}.pin-toggle svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.biometric-actions{display:grid;gap:9px}.biometric-btn{width:100%;min-height:44px;border:1px solid rgba(97,214,163,.28);background:rgba(97,214,163,.08);color:var(--green);border-radius:10px;font-weight:800;font-size:11px;letter-spacing:.04em}.biometric-btn:hover{background:rgba(97,214,163,.14);border-color:rgba(97,214,163,.45)}.login-divider{display:flex;align-items:center;gap:10px;margin:15px 0;color:var(--muted-2);font-size:9px;text-transform:uppercase;letter-spacing:.1em}.login-divider:before,.login-divider:after{content:"";height:1px;flex:1;background:var(--line)}.identity-field.valid .field-status{display:inline-flex;align-items:center;gap:4px}.identity-field.valid .field-status:before{content:"";width:6px;height:6px;border-radius:50%;background:#43d17b;box-shadow:0 0 8px rgba(67,209,123,.6)}
     .field-status.ok{color:#43d17b}.field-status.bad{color:#e45f69}.field-status.checking{color:#caa652}
+    .whatsapp-field{position:relative}.whatsapp-label{display:flex;align-items:center;justify-content:space-between;gap:10px}.whatsapp-brand{display:inline-grid;place-items:center;width:24px;height:24px;color:#25d366;border:1px solid rgba(37,211,102,.24);border-radius:7px;background:rgba(37,211,102,.08)}.whatsapp-brand img{width:15px;height:15px;display:block;filter:none}.whatsapp-help{display:flex;gap:8px;align-items:flex-start;margin-top:7px;color:var(--muted);font-size:9px;line-height:1.55}.whatsapp-help .whatsapp-brand{flex:0 0 auto;width:22px;height:22px}.whatsapp-consent{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:10px 11px;border:1px solid var(--line-soft);border-radius:10px;background:rgba(255,255,255,.018);color:#c7ccd2;font-size:9px;line-height:1.55}.whatsapp-consent input{margin-top:2px;accent-color:#25d366}.verification-modal-card{display:grid;gap:15px}.verification-modal-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;color:var(--gold-bright);background:var(--gold-dim);border:1px solid rgba(240,207,114,.24);font-size:21px}.verification-modal-destination{padding:12px;border:1px solid rgba(240,207,114,.18);background:rgba(240,207,114,.05);border-radius:11px;font-size:11px;line-height:1.6}.verification-modal-destination strong{display:block;color:var(--gold-bright);font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}.recovery-whatsapp-note{display:flex;gap:9px;align-items:flex-start;padding:11px;border:1px solid rgba(37,211,102,.18);background:rgba(37,211,102,.045);border-radius:10px;color:#c9d0d6;font-size:9px;line-height:1.55}.recovery-code{letter-spacing:.28em;text-align:center}.recovery-success{padding:12px;border:1px solid rgba(67,209,123,.2);background:rgba(67,209,123,.05);border-radius:10px;color:#d7eadf;font-size:10px;line-height:1.55}
 
     /* Shared controls */
     .btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--text); font-size: 12px; font-weight: 700; transition: .2s ease; }
@@ -1001,14 +1002,15 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         <div class="onboard-step" id="registrationStep">05 / 06 · Identity</div>
         <h1 id="registrationTitle">Create your member identity</h1>
         <p id="registrationText">Choose your unique username and enter the email address you want ZENIT to use for verification.</p>
-        <div id="registrationForm">
-          <div class="form-field identity-field"><label for="registrationUsername">Username <span class="field-status" id="usernameStatus" aria-live="polite"></span></label><div class="username-input-wrap"><span class="username-input-prefix" aria-hidden="true">@</span><input class="field mono" id="registrationUsername" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24" placeholder="yourname" inputmode="lowercase"></div><small class="muted">Enter only the username. The @ is added automatically; lowercase letters, numbers and underscores.</small></div>
-          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationEmail">Email address <span class="field-status" id="emailStatus" aria-live="polite"></span></label><input class="field" id="registrationEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
-          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationDisplayName">Display name <span class="field-status" id="displayNameStatus" aria-live="polite"></span></label><input class="field" id="registrationDisplayName" autocomplete="name" maxlength="80" placeholder="Your name"></div>
-          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationPin">4-digit security PIN</label><input class="field mono" id="registrationPin" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="\\d{4}" placeholder="••••"><small class="muted">Your PIN is stored as a secure hash and is required when you return with this wallet.</small></div>
-          <div class="form-field identity-field" style="margin-top:13px"><label for="registrationPinConfirm">Confirm PIN</label><input class="field mono" id="registrationPinConfirm" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="\\d{4}" placeholder="••••"></div>
-          <button class="btn primary registration-submit" id="registrationSubmit">SEND VERIFICATION EMAIL <span>→</span></button>
-        </div>
+         <div id="registrationForm">
+           <div class="form-field identity-field"><label for="registrationUsername">Username <span class="field-status" id="usernameStatus" aria-live="polite"></span></label><div class="username-input-wrap"><span class="username-input-prefix" aria-hidden="true">@</span><input class="field mono" id="registrationUsername" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24" placeholder="yourname" inputmode="lowercase"></div><small class="muted">Enter only the username. The @ is added automatically; lowercase letters, numbers and underscores.</small></div>
+           <div class="form-field identity-field" style="margin-top:13px"><label for="registrationEmail">Email address <span class="field-status" id="emailStatus" aria-live="polite"></span></label><input class="field" id="registrationEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+           <div class="form-field identity-field whatsapp-field" style="margin-top:13px"><label class="whatsapp-label" for="registrationWhatsapp"><span>WhatsApp number</span><span class="whatsapp-brand" aria-hidden="true"><img src="/whatsapp.svg" alt=""></span></label><input class="field" id="registrationWhatsapp" type="tel" autocomplete="tel" inputmode="tel" placeholder="+220 3XX XXXX"><div class="whatsapp-help"><span class="whatsapp-brand" aria-hidden="true"><img src="/whatsapp.svg" alt=""></span><span>Use international format with country code. This number is used for important ZENIT account updates and PIN recovery.</span></div><label class="whatsapp-consent"><input id="registrationWhatsappUpdates" type="checkbox" checked><span>Send important ZENIT account and security updates to this WhatsApp number.</span></label></div>
+           <div class="form-field identity-field" style="margin-top:13px"><label for="registrationDisplayName">Display name <span class="field-status" id="displayNameStatus" aria-live="polite"></span></label><input class="field" id="registrationDisplayName" autocomplete="name" maxlength="80" placeholder="Your name"></div>
+           <div class="form-field identity-field" style="margin-top:13px"><label for="registrationPin">4-digit security PIN</label><input class="field mono" id="registrationPin" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="\d{4}" placeholder="••••"><small class="muted">Your PIN is stored as a secure hash and is required when you return with this wallet.</small></div>
+           <div class="form-field identity-field" style="margin-top:13px"><label for="registrationPinConfirm">Confirm PIN</label><input class="field mono" id="registrationPinConfirm" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="\d{4}" placeholder="••••"></div>
+           <button class="btn primary registration-submit" id="registrationSubmit">SEND VERIFICATION EMAIL <span>→</span></button>
+         </div>
         <div id="registrationStatus" class="registration-status hidden-screen" aria-live="polite"></div>
         <div class="registration-progress"><span class="active"></span><span></span><span></span></div>
         <div class="registration-footer"><span>Already have a ZENIT account?</span> <button type="button" data-action="existing-wallet-login">Connect wallet / Login</button><div class="registration-powered">Powered by Royal FinTech</div></div>
@@ -1067,7 +1069,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     const logoPath = "/zenit-logo.png?v=zenit-official-20260921"
     const appState = {
       frontendMode: false, network: "BNB Smart Chain", currency: "USDT", currentPage: "dashboard", selectedProgram: "2x4", selectedNode: 1, matrixZoom: 1,
-      currentUser: { name: "Zenit Member", username: "", email: "", id: "—", role: "Member", joinedAt: "—", avatarData: "" },
+      currentUser: { name: "Zenit Member", username: "", email: "", whatsappNumber: "", whatsappUpdatesEnabled: true, id: "—", role: "Member", joinedAt: "—", avatarData: "" },
       referral: { code: "", link: "", generatedAt: "" }, pendingReferral: "",
       programs: {
         "2x4": { name: "ZENIT 2×4", levels: 4, capacity: 30, occupied: 0, position: null, participants: 0, progress: 0, description: "A compact binary matrix for exploring the core placement architecture.", active: true },
@@ -1146,7 +1148,7 @@ async function loadBackendState(token){
         ]);
         if([meR,summaryR,teamR,refR,txR,notificationsR,leaderboardR,m24R,m26R].some(r=>r.status===401)) throw new Error('Session expired; please reconnect your wallet');
         const [me,summary,team,ref,txs,notifications,leaderboard,m24,m26]=await Promise.all([meR.json(),summaryR.json(),teamR.json(),refR.json(),txR.json(),notificationsR.json(),leaderboardR.json(),m24R.json(),m26R.json()]);
-        if(me.user){appState.currentUser={...appState.currentUser,name:me.user.display_name||'Zenit Member',username:me.user.username||'',email:me.user.email||'',id:me.user.id,role:me.user.role||'Member',joinedAt:new Date(me.user.created_at).toLocaleDateString(),avatarData:me.user.avatar_url||''};} const hn=document.getElementById('headerName'); const hr=document.getElementById('headerRole'); if(hn) hn.textContent=appState.currentUser.name; if(hr) hr.textContent=appState.currentUser.role;
+        if(me.user){appState.currentUser={...appState.currentUser,name:me.user.display_name||'Zenit Member',username:me.user.username||'',email:me.user.email||'',whatsappNumber:me.user.whatsapp_number||'',whatsappUpdatesEnabled:me.user.whatsapp_updates_enabled!==false,id:me.user.id,role:me.user.role||'Member',joinedAt:new Date(me.user.created_at).toLocaleDateString(),avatarData:me.user.avatar_url||''};} const hn=document.getElementById('headerName'); const hr=document.getElementById('headerRole'); if(hn) hn.textContent=appState.currentUser.name; if(hr) hr.textContent=appState.currentUser.role;
         const p=me.preference||{}; appState.preferences={theme:p.theme||'dark',compactDensity:p.compact_density!==false,activityNotifications:p.activity_notifications!==false,reducedMotion:p.reduced_motion===true}; applyTheme(appState.preferences.theme,false);
         const totals=summary.earnings||{total:'0',pending:'0',withdrawn:'0'};
         appState.earnings={total:String(totals.total||'0'),pending:String(totals.pending||'0'),available:String(Math.max(0,Number(totals.total||0)-Number(totals.reserved||totals.withdrawn||0))),withdrawn:String(totals.withdrawn||'0'),reserved:String(totals.reserved||totals.withdrawn||'0')};
@@ -1559,10 +1561,10 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     document.addEventListener("input",e=>{if(e.target?.id==="registrationUsername"||e.target?.id==="profileUsername"){const input=e.target;const clean=input.value.toLowerCase().replace(/[^a-z0-9_]/g,"");if(input.value!==clean)input.value=clean;}});
 
     let verificationCooldownTimer=0;
-    function startVerificationCooldown(seconds=30){
+    function startVerificationCooldown(seconds=30, buttonId="resendVerificationButton", timerId="verificationTimer"){
       clearInterval(verificationCooldownTimer);
       let remaining=seconds;
-      const btn=$("#resendVerificationButton"), timer=$("#verificationTimer");
+      const btn=$("#"+buttonId), timer=$("#"+timerId);
       if(btn) btn.disabled=true;
       const tick=()=>{
         if(timer) timer.textContent=remaining>0?`Resend available in ${remaining}s`:"You can resend now";
@@ -1573,51 +1575,49 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       verificationCooldownTimer=setInterval(tick,1000);
     }
 
-    async function requestRegistration({resend=false}={}){
-      let username=($("#registrationUsername")?.value||"").trim().toLowerCase();
-      let email=($("#registrationEmail")?.value||"").trim().toLowerCase();
-      let displayName=($("#registrationDisplayName")?.value||"").trim();
-      let pin=($("#registrationPin")?.value||"").trim();
-      if(resend){
-        try{
-          const saved=JSON.parse(localStorage.getItem("zenitPendingRegistrationDraft")||"null");
-          if(saved){username=saved.username||username;email=saved.email||email;displayName=saved.displayName||displayName;pin=saved.pin||pin;}
-        }catch(e){}
-      }
+    function internationalWhatsAppValid(value){return /^(?:\+|00)[1-9][0-9\s().-]{7,19}$/.test(String(value||"").trim());}
+    function showVerificationSentModal(email,resent=false){
+      const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
+      modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">EMAIL VERIFICATION</div><h2 id="modalTitle">'+(resent?"Verification email resent":"Verification email sent")+'</h2><p>We sent a secure confirmation link to your registered email address. Check your inbox and spam folder.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body"><div class="verification-modal-card"><div class="verification-modal-icon">✓</div><div class="verification-modal-destination"><strong>Sent to</strong><span>'+esc(email)+'</span></div><p class="muted" style="margin:0;font-size:10px;line-height:1.6">The verification link expires in 30 minutes and can be used once. After verification, return to ZENIT to connect your BNB Smart Chain wallet.</p><div class="verification-resend"><button id="modalResendVerification" type="button" disabled>RESEND VERIFICATION</button><span class="verification-timer" id="modalVerificationTimer">Resend available in 30s</span></div></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">Close</button></div>';
+      backdrop.classList.add("open");
+      $("#modalResendVerification")?.addEventListener("click",()=>resendVerificationEmail(email));
+      startVerificationCooldown(30,"modalResendVerification","modalVerificationTimer");
+    }
+    async function resendVerificationEmail(email){
+      const btn=$("#modalResendVerification");if(btn){btn.disabled=true;btn.textContent="SENDING…";}
+      try{
+        const response=await fetch(`${backendBase()}/api/auth/register/resend`,{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({email})});
+        const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Unable to resend the verification email");
+        localStorage.setItem("zenitPendingRegistrationEmail",email);showVerificationSentModal(email,true);toast("Verification resent","A new confirmation link was requested.","success");
+      }catch(error){if(btn){btn.disabled=false;btn.textContent="RESEND VERIFICATION";}toast("Resend failed",error?.message||String(error),"error");}
+    }
+    async function requestRegistration(){
+      const username=($("#registrationUsername")?.value||"").trim().toLowerCase();
+      const email=($("#registrationEmail")?.value||"").trim().toLowerCase();
+      const whatsappNumber=($("#registrationWhatsapp")?.value||"").trim();
+      const whatsappUpdatesEnabled=$("#registrationWhatsappUpdates")?.checked!==false;
+      const displayName=($("#registrationDisplayName")?.value||"").trim();
+      const pin=($("#registrationPin")?.value||"").trim();
+      const pinConfirm=($("#registrationPinConfirm")?.value||"").trim();
       if(!/^[a-z0-9_]{3,24}$/.test(username)){toast("Username required","Use 3–24 lowercase letters, numbers or underscores.","warning");return;}
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast("Email required","Enter a valid email address, for example name@gmail.com.","warning");return;}
+      if(!internationalWhatsAppValid(whatsappNumber)){toast("WhatsApp number required","Enter your WhatsApp number in international format, including country code.","warning");return;}
       if(displayName.length<2||displayName.length>80){toast("Name required","Use 2–80 characters.","warning");return;}
-      pin=($("#registrationPin")?.value||"").trim(); const pinConfirm=($("#registrationPinConfirm")?.value||"").trim();
-      if(!resend && !/^\d{4}$/.test(pin)){toast("PIN required","Create a 4-digit security PIN.","warning");return;}
-      if(!resend && pin!==pinConfirm){toast("PIN mismatch","The two PIN entries must match.","warning");return;}
-
-      if(!resend){
-        await checkRegistrationAvailability();
-        if(!registrationChecks.username||!registrationChecks.email||!registrationChecks.displayName){
-          toast("Identity check required","Username, email and display name must each show a green AVAILABLE check before continuing.","warning");return;
-        }
-      }
-
-      const button=$("#registrationSubmit");
-      if(!resend){button.disabled=true;button.innerHTML="SENDING VERIFICATION…";}
-
+      if(!/^\d{4}$/.test(pin)){toast("PIN required","Create a 4-digit security PIN.","warning");return;}
+      if(pin!==pinConfirm){toast("PIN mismatch","The two PIN entries must match.","warning");return;}
+      await checkRegistrationAvailability();
+      if(!registrationChecks.username||!registrationChecks.email||!registrationChecks.displayName){toast("Identity check required","Username, email and display name must each show a green AVAILABLE check before continuing.","warning");return;}
+      const button=$("#registrationSubmit");if(button){button.disabled=true;button.innerHTML="SENDING VERIFICATION…";}
       try{
-        const response=await fetch(`${backendBase()}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username,email,displayName,pin})});
-        const data=await response.json().catch(()=>({}));
-        if(!response.ok)throw new Error(data.error||"Unable to send verification email");
+        const response=await fetch(`${backendBase()}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({username,email,whatsappNumber,whatsappUpdatesEnabled,displayName,pin})});
+        const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Unable to send verification email");
         localStorage.setItem("zenitPendingRegistrationEmail",email);
-        localStorage.setItem("zenitPendingRegistrationDraft",JSON.stringify({username,email,displayName,pin}));
-        $("#registrationForm").classList.add("hidden-screen");
-        $("#registrationStatus").classList.remove("hidden-screen");
-        $("#registrationStatus").innerHTML=`<strong>Check your email</strong>We sent a verification link to <b>${esc(email)}</b>. Check your inbox or spam folder.<div class="verification-resend"><button id="resendVerificationButton" type="button" disabled>RESEND VERIFICATION</button><span class="verification-timer" id="verificationTimer">Resend available in 30s</span></div>`;
-        $("#resendVerificationButton")?.addEventListener("click",()=>requestRegistration({resend:true}));
-        startVerificationCooldown(30);
-        if(button) button.innerHTML="VERIFICATION SENT";
-        if(resend) toast("Verification resent","A new confirmation link was requested.","success");
-      }catch(error){
-        if(!resend){button.disabled=false;button.innerHTML="SEND VERIFICATION EMAIL <span>→</span>";}
-        toast("Registration failed",error?.message||String(error),"error");
-      }
+        localStorage.setItem("zenitPendingRegistrationDraft",JSON.stringify({username,email,whatsappNumber,whatsappUpdatesEnabled,displayName}));
+        $("#registrationForm").classList.add("hidden-screen");$("#registrationStatus").classList.remove("hidden-screen");
+        $("#registrationStatus").innerHTML=`<strong>Verification email sent</strong>We sent a confirmation link to <b>${esc(email)}</b>. Check your inbox or spam folder; you can resend from the confirmation window.`;
+        showVerificationSentModal(email,false);
+        if(button){button.innerHTML="VERIFICATION SENT";}
+      }catch(error){if(button){button.disabled=false;button.innerHTML="SEND VERIFICATION EMAIL <span>→</span>";}toast("Registration failed",error?.message||String(error),"error");}
     }
     function showWalletGate(){
       const params=new URLSearchParams(location.search);
