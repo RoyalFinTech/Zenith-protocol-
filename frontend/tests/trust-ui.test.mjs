@@ -41,7 +41,10 @@ assert.doesNotMatch(html, /const address=prompt\("Destination BNB Smart Chain ad
 
 assert.match(html, /action==="package-preview"/);
 assert.match(html, /images\.unsplash\.com\/photo-1762341121210-6bd877d766b0/);
-assert.match(html, /images\.unsplash\.com\/photo-1591696205602-2f950c417cb9/);
+assert.match(html, /images\.unsplash\.com\/photo-1494790108377-be9c29b29330/);
+assert.match(html, /images\.unsplash\.com\/photo-1551288049-bebda4e38f71/);
+assert.match(html, /images\.unsplash\.com\/photo-1556761175-b413da4baf72/);
+assert.match(html, /images\.unsplash\.com\/photo-1556761175-4b46a572b786/);
 assert.ok(html.includes('const hasSession=Boolean(localStorage.getItem("zenitToken"))'));
 assert.ok(html.includes('fetch(`${backendBase()}/api/me`'));
 assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
