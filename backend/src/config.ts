@@ -116,5 +116,5 @@ export const env = {
   mailersendWhatsAppFrom,
   mailersendWhatsAppPinResetTemplateId,
   mailersendWhatsAppUpdateTemplateId,
-  whatsappEnabled: Boolean(mailersendApiKey && mailersendWhatsAppFrom && mailersendWhatsAppPinResetTemplateId)
+  whatsappEnabled: Boolean((process.env.MAILERSEND_API_KEY ?? '') && mailersendWhatsAppFrom && mailersendWhatsAppPinResetTemplateId)
 };
