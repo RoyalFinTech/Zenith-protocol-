@@ -26,7 +26,11 @@ router.patch('/profile', async (req,res,next)=>{
     const username = String(req.body?.username ?? '').trim().toLowerCase();
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     const whatsappNumberRaw = req.body?.whatsappNumber == null ? '' : String(req.body.whatsappNumber).trim();
-    const whatsappNumber = whatsappNumberRaw ? normalizeWhatsAppNumber(whatsappNumberRaw) : null;
+    let whatsappNumber: string | null = null;
+    if (whatsappNumberRaw) {
+      try { whatsappNumber = normalizeWhatsAppNumber(whatsappNumberRaw); }
+      catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Valid WhatsApp number required'); }
+    }
     const whatsappUpdatesEnabled = req.body?.whatsappUpdatesEnabled !== false;
     if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400,'Username must be 3–24 characters using lowercase letters, numbers or underscores');
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400,'Valid email address required');
