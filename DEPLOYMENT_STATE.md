@@ -526,7 +526,16 @@ The original package lifecycle/admin implementation was already merged into main
 
 # 2026-10-05 — CI/install parity checkpoint
 
-- Changed GitHub Actions backend/frontend dependency installation from `npm install` to `npm ci` so CI validates the committed lockfile using the same clean-install mode used by the Render production service.
+- Changed the GitHub Actions backend dependency installation from `npm install` to `npm ci` so CI validates the backend lockfile using the same clean-install mode used by the Render production service. The frontend workflow remains on its existing `npm install` path because its lockfile currently has unrelated drift.
 - Added regression coverage for all three email-provider paths now supported by the adapter: MailerSend SMTP, MailerSend API, and the existing Resend API.
 - Removed an internal citation marker from repository documentation; source docs contain no chat-only citation syntax.
+- No production deployment, Render environment change, database mutation, or secret update occurred.
+
+
+# 2026-10-05 — CI lockfile drift checkpoint
+
+- Backend `npm ci` passed on the MailerSend branch, confirming the backend lockfile is compatible with the new Nodemailer dependency.
+- Frontend `npm ci` exposed pre-existing package-lock drift involving the existing Reown/WalletConnect dependency tree; this is unrelated to the MailerSend provider implementation.
+- Restored the frontend CI install command to `npm install` to avoid expanding this feature into an unrelated frontend dependency refresh.
+- Backend CI remains on `npm ci` to mirror Render's production install behavior.
 - No production deployment, Render environment change, database mutation, or secret update occurred.
