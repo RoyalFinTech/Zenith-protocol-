@@ -232,6 +232,7 @@ async function authenticate(address: `0x${string}`) {
 
 async function syncCurrentAccount() {
   if (!adapter) return;
+  authToken = localStorage.getItem('zenitToken') || authToken;
   // Wallet authentication is valid for both new verified registrations and
   // returning members. The auth mode decides whether a registration ID is
   // attached to the SIWE verification request.
