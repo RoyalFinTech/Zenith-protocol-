@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sendMail = vi.fn().mockResolvedValue({ messageId: 'test-message-id' });
 const createTransport = vi.fn(() => ({
@@ -62,6 +62,68 @@ describe('transactional email provider', () => {
     expect(payload.html).toContain('Confirm email address');
     expect(payload.text).toContain('Confirm that this email address belongs to you');
     expect(payload.headers['Message-ID']).toMatch(/^<.+@zenith-protocol-qvfe\.onrender\.com>$/);
+  });
+
+  it('sends a welcome email through the MailerSend API when API transport is selected', async () => {
+    process.env.MAILERSEND_TRANSPORT = 'api';
+    process.env.MAILERSEND_API_KEY = 'test-mailersend-api-key';
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 202 }));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.resetModules();
+
+    const { sendWelcomeEmail } = await import('../src/services/email.js');
+    await sendWelcomeEmail({
+      to: 'recipient@example.com',
+      username: 'member',
+      appOrigin: 'https://zenith-protocol-qvfe.onrender.com'
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.mailersend.com/v1/email');
+    const request = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(request.headers).toEqual(expect.objectContaining({
+      Authorization: 'Bearer test-mailersend-api-key',
+      'Content-Type': 'application/json'
+    }));
+    expect(JSON.parse(String(request.body))).toEqual(expect.objectContaining({
+      from: { email: 'no-reply@example.test', name: 'ZENIT Protocol' },
+      to: [{ email: 'recipient@example.com' }],
+      subject: 'Welcome to ZENIT Protocol',
+      text: expect.stringContaining('ZENIT Protocol')
+    }));
+  });
+
+  it('preserves the existing Resend endpoint when Resend is selected', async () => {
+    process.env.EMAIL_PROVIDER = 'resend';
+    process.env.RESEND_API_KEY = 'test-resend-api-key';
+    process.env.RESEND_FROM = 'no-reply@example.test';
+    delete process.env.MAILERSEND_API_KEY;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 200 })));
+    vi.resetModules();
+
+    const { sendVerificationEmail } = await import('../src/services/email.js');
+    await sendVerificationEmail({
+      to: 'recipient@example.com',
+      username: 'member',
+      verifyUrl: 'https://zenith-protocol-qvfe.onrender.com/api/auth/register/verify?token=test-token',
+      registrationId: 'registration-123',
+      appOrigin: 'https://zenith-protocol-qvfe.onrender.com'
+    });
+
+    const fetchMock = vi.mocked(fetch);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.resend.com/emails');
+    const request = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(request.headers).toEqual(expect.objectContaining({
+      Authorization: 'Bearer test-resend-api-key',
+      'Content-Type': 'application/json',
+      'Idempotency-Key': 'zenit-email-verification#registration-123'
+    }));
+    expect(JSON.parse(String(request.body))).toEqual(expect.objectContaining({
+      from: 'no-reply@example.test',
+      to: ['recipient@example.com'],
+      subject: 'Verify your email for ZENIT Protocol'
+    }));
   });
 
   it('does not use the Resend endpoint when MailerSend SMTP is selected', async () => {
