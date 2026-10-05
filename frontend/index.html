@@ -1497,23 +1497,6 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       button?.addEventListener("click",submit); input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});
     });
 
-    let onboardingStep=0;
-    const onboardingData=[
-      ["01 / 04 · Welcome","A premium digital wealth experience built around people.","Meet a human-first ZENIT workspace designed to make your network, identity and activity easier to understand.",["Human-first member experience","Premium financial workspace","Clear account journey"],"GET STARTED","https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200","Professional financial workspace","YOUR JOURNEY","A human-first financial workspace"],
-      ["02 / 04 · Wealth","SEE YOUR FUNDS CLEARLY","A visual language inspired by digital assets, USDT and transparent network participation — without clutter.",["USDT-focused workspace","BNB Smart Chain","Clear financial metrics"],"CONTINUE","https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&fm=jpg&q=82&w=1200","Market data on a laptop screen","DIGITAL WEALTH","USDT · FUNDS · PARTICIPATION"],
-      ["03 / 04 · Network","SEE THE STRUCTURE CLEARLY","Explore your matrix, team, activity and referral identity through a visual network experience.",["Network visualization","Matrix structure","Live activity"],"CONTINUE","https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200","Professional financial workspace","NETWORK VIEW","STRUCTURE · ACTIVITY · GROWTH"],
-      ["04 / 04 · Ready","READY TO CREATE YOUR IDENTITY","First choose your username and email. We verify the email, then you connect your wallet and enter the live metrics workspace.",["Username + email","Email verification","Wallet authentication"],"CREATE IDENTITY","https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200","Professional financial workspace","NEXT STEP","IDENTITY → EMAIL → WALLET"]
-    ];
-    function updateOnboarding(){
-      const d=onboardingData[onboardingStep];
-      $("#onboardStep").textContent=d[0];$("#onboardTitle").textContent=d[1];$("#onboardText").textContent=d[2];
-      $("#onboardPoints").innerHTML=d[3].map(x=>`<div class="onboard-point"><span class="check">✓</span>${x}</div>`).join("");
-      $("#onboardNext").innerHTML=`${d[4]} <span>→</span>`;
-      const img=$("#onboardHeroImage"); if(img){img.src=d[5];img.alt=d[6];}
-      const value=$("#onboardValueTitle"); if(value)value.textContent=d[7];
-      const valueText=$("#onboardValueText"); if(valueText)valueText.textContent=d[8];
-      $$(".page-dot").forEach((x,i)=>x.classList.toggle("active",i===onboardingStep));
-    }
     function showRegistration(){
       $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.remove("hidden-screen");$("#appShell").classList.add("hidden");
       const params=new URLSearchParams(location.search);
