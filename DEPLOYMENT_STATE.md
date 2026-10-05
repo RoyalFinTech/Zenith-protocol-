@@ -450,3 +450,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Render Royal's workspace service `Zenith-protocol-` is configured for `main`, auto-deploy enabled, rootDir `backend`. After CI verification, deployment `dep-db1ml6h42hec73dddpkg` was manually triggered to ensure the frontend bundled by the backend build is refreshed; at this checkpoint it remains `build_in_progress` and has not yet been called live.
 - No production database/member/financial/admin records were changed by PR #30 or this deployment trigger.
 - Live Render health-check drift remains unchanged: service configuration reports an empty health-check path while repository `render.yaml` declares `/health`; no unrelated configuration mutation was made.
+
+
+# 2026-10-05 — Continued release verification checkpoint
+
+- Verified the PR #30 runtime deployment is live in Royal's Workspace before continuing.
+- Confirmed production Supabase remains a fresh slate: no app members, admins, wallet accounts, active sessions, WebAuthn credentials, push subscriptions, package purchases, matrix memberships, withdrawals, or ledger transactions were present at the verification point.
+- Removed a dead duplicate onboarding controller from `frontend/index.html`; this does not alter the active onboarding flow. Commit: `4a9138b7a042ad1593549d6a087099a6b8a330fd`.
+- Triggered Render deployment `dep-db21aiss728c73an544g` for that commit in the correct Royal Workspace. Current state: `build_in_progress`; therefore the cleanup is not yet declared live.
+- Resend sender-domain audit: `zenitprotocol.com` exists in Resend but all reported DKIM/SPF records are currently failed. No DNS, domain, sender, or credential changes were made because ownership/control was not verified.
