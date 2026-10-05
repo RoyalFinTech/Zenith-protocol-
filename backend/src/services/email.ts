@@ -1,4 +1,5 @@
 import { env } from '../config.js';
+import nodemailer from 'nodemailer';
 
 type WelcomeEmailInput = {
   to: string;
@@ -33,7 +34,11 @@ function officialLogoUrl(appOrigin: string) {
 
 function providerConfigured() {
   return env.emailProvider === 'mailersend'
-    ? Boolean(env.mailersendApiKey && env.mailersendFrom)
+    ? Boolean(
+        env.mailersendFrom &&
+        ((env.mailersendTransport === 'smtp' && env.mailersendSmtpUser && env.mailersendSmtpPassword) ||
+         (env.mailersendTransport === 'api' && env.mailersendApiKey))
+      )
     : Boolean(env.resendApiKey && env.resendFrom);
 }
 
@@ -67,6 +72,46 @@ async function sendViaResend({ to, subject, html, text, idempotencyKey }: Transa
   }
 }
 
+async function sendViaMailerSendSmtp({ to, subject, html, text, idempotencyKey }: TransactionalEmailInput) {
+  const transporter = nodemailer.createTransport({
+    host: env.mailersendSmtpHost,
+    port: env.mailersendSmtpPort,
+    secure: false,
+    requireTLS: true,
+    auth: {
+      user: env.mailersendSmtpUser,
+      pass: env.mailersendSmtpPassword
+    },
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
+    tls: {
+      minVersion: 'TLSv1.2'
+    }
+  });
+
+  try {
+    await transporter.sendMail({
+      from: {
+        address: env.mailersendFrom,
+        name: env.mailersendFromName
+      },
+      to,
+      subject,
+      text,
+      html,
+      headers: {
+        'Message-ID': `<${createHash('sha256').update(idempotencyKey).digest('hex')}@${new URL(env.appOrigin).hostname}>`
+      }
+    });
+  } finally {
+    transporter.close();
+  }
+}
+
 async function sendViaMailerSend({ to, subject, html, text, tags }: TransactionalEmailInput) {
   const response = await fetch('https://api.mailersend.com/v1/email', {
     method: 'POST',
@@ -97,7 +142,11 @@ async function sendViaMailerSend({ to, subject, html, text, tags }: Transactiona
 async function sendTransactionalEmail(input: TransactionalEmailInput) {
   assertProviderConfigured();
   if (env.emailProvider === 'mailersend') {
-    await sendViaMailerSend(input);
+    if (env.mailersendTransport === 'smtp') {
+      await sendViaMailerSendSmtp(input);
+    } else {
+      await sendViaMailerSend(input);
+    }
   } else {
     await sendViaResend(input);
   }
