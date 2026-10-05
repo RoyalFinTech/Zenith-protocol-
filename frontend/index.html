@@ -376,7 +376,7 @@
     .onboarding .onboard-actions .btn,
     .onboarding .onboard-existing .btn { border:1px solid #a88336 !important; background:linear-gradient(180deg,#d0ae5b,#a98538) !important; color:#15130d !important; box-shadow:0 5px 18px rgba(202,166,82,.13) !important; }
     .onboarding .onboard-actions .btn:hover,
-    .onboarding .onboard-existing .btn:hover { border-color:#b99548; background:linear-gradient(180deg,#dfbe6b,#ba9746); }
+    .onboarding .onboard-existing .btn:hover { border-color:#b99548 !important; background:linear-gradient(180deg,#dfbe6b,#ba9746) !important; color:#15130d !important; }
     .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
     .btn.danger { color: var(--red); border-color: rgba(237,123,128,.25); }
     .icon-btn { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--muted); }
@@ -921,7 +921,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         <img id="onboardHeroImage" src="https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200" alt="Professional woman working at a modern office desk">
         <div class="onboard-human-scrim"></div>
         <div class="onboard-brand-badge"><span class="badge-mark" aria-hidden="true">✦</span><div><strong>ZENIT PROTOCOL</strong><small>MEMBER NETWORK EXPERIENCE</small></div></div>
-        <div class="onboard-value-badge"><span>01</span><div><strong id="onboardValueTitle">YOUR JOURNEY</strong><small id="onboardValueText">A human-first financial workspace.</small></div></div><div class="onboard-3d-finance" aria-hidden="true"><div class="onboard-coin-stack"><i style="--stack:0"></i><i style="--stack:1"></i><i style="--stack:2"></i></div><div class="onboard-trend"><span></span><span></span><span></span><span></span><span></span><b>↗</b></div><div class="onboard-float-badge"><strong>VISUAL</strong><small>ACCOUNT CONCEPT</small></div></div>
+        <div class="onboard-value-badge"><span>01</span><div><strong id="onboardValueTitle">YOUR JOURNEY</strong><small id="onboardValueText">A human-first financial workspace.</small></div></div>
         <div class="onboard-flow-card">
           <div class="flow-card-head"><span>NETWORK FLOW</span><span class="pill gold">STRUCTURE</span></div>
           <div class="flow-level"><i class="flow-node active">1</i><span></span><i class="flow-node">2</i><i class="flow-node">3</i><i class="flow-node">4</i><i class="flow-node">5</i></div>
@@ -949,10 +949,10 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
     (() => {
       let step = 0;
       const data = [
-        ["01 / 04 · Welcome","A premium digital wealth experience built around people.","Meet a human-first ZENIT workspace designed to make your network, identity and activity easier to understand.",["Human-first member experience","Premium financial workspace","Clear account journey"],"GET STARTED","https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200","Professional financial workspace","YOUR JOURNEY","A human-first financial workspace"],
-        ["02 / 04 · Wealth","SEE YOUR FUNDS CLEARLY","A visual language inspired by digital assets, USDT and transparent network participation — without clutter.",["USDT-focused workspace","BNB Smart Chain","Clear financial metrics"],"CONTINUE","https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&fm=jpg&q=82&w=1200","Market data on a laptop screen","DIGITAL WEALTH","USDT · FUNDS · PARTICIPATION"],
-        ["03 / 04 · Network","SEE THE STRUCTURE CLEARLY","Explore your matrix, team, activity and referral identity through a visual network experience.",["Network visualization","Matrix structure","Live activity"],"CONTINUE","https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200","Professional financial workspace","NETWORK VIEW","STRUCTURE · ACTIVITY · GROWTH"],
-        ["04 / 04 · Ready","READY TO CREATE YOUR IDENTITY","First choose your username and email. We verify the email, then you connect your wallet and enter the live metrics workspace.",["Username + email","Email verification","Wallet authentication"],"CREATE IDENTITY","https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200","Professional financial workspace","NEXT STEP","IDENTITY → EMAIL → WALLET"]
+        ["01 / 04 · Welcome","A premium digital wealth experience built around people.","A calm, human-first financial workspace for your identity, network and activity.",["Human-first member experience","Premium financial workspace","Clear account journey"],"GET STARTED","https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&fm=jpg&q=86&w=1400","Professional woman in a modern office","YOUR JOURNEY","A human-first financial workspace"],
+        ["02 / 04 · Wealth","SEE YOUR FUNDS CLEARLY","Follow your digital-asset activity with a clean visual language inspired by markets, USDT and transparent participation.",["USDT-focused workspace","BNB Smart Chain","Clear financial metrics"],"CONTINUE","https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&fm=jpg&q=86&w=1400","Financial analytics and market charts","DIGITAL WEALTH","USDT · FUNDS · PARTICIPATION"],
+        ["03 / 04 · Network","SEE THE STRUCTURE CLEARLY","Understand your matrix, team, activity and referral identity through a visual network experience.",["Network visualization","Matrix structure","Live activity"],"CONTINUE","https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&fm=jpg&q=86&w=1400","Professional team collaboration","NETWORK VIEW","STRUCTURE · ACTIVITY · GROWTH"],
+        ["04 / 04 · Ready","READY TO CREATE YOUR IDENTITY","Choose your username, email and 4-digit PIN. Verify your email, connect your wallet, then enter the live workspace.",["Username + email","Email verification","Wallet + PIN security"],"CREATE IDENTITY","https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&fm=jpg&q=86&w=1400","Modern professional financial workspace","NEXT STEP","IDENTITY → EMAIL → WALLET"]
       ];
       function paint(){
         const d=data[step];
@@ -1655,7 +1655,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       $("#registrationStatus").classList.add("hidden-screen");
       $(".registration-progress")?.querySelectorAll("span").forEach((x,i)=>x.classList.toggle("active",i>=1));
     }
-    function startApp(){ $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render(); }
+    function startApp(){ $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render(); } window.startApp=startApp;
     // The standalone splash bootstrap above owns startup timing.
     // This core script only handles deep-link routing after the splash is ready.
     window.addEventListener("zenit:splash-ready", async () => {
@@ -1746,19 +1746,33 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     $("#useBiometricLogin")?.addEventListener("click",()=>biometricLogin());
   }
   async function biometricLogin(){
-    if(!window.PublicKeyCredential||!navigator.credentials){toast("Biometrics unavailable","This browser does not support phone biometrics here. Use wallet + PIN instead.","warning");return;}
+    if(!window.PublicKeyCredential||!navigator.credentials){toast("Phone biometrics unavailable","This browser cannot call the phone authenticator here. Use wallet + PIN instead.","warning");return;}
     try{
       const optR=await fetch(backendBase()+"/api/auth/webauthn/login/options",{method:"POST",headers:{accept:"application/json"}});
-      const opt=await optR.json();if(!optR.ok)throw new Error(opt.error||"Unable to start biometric login");
-      const credential=await navigator.credentials.get({publicKey:{challenge:bytes(opt.challenge),rpId:opt.rpId,userVerification:"required"}});
-      if(!credential)throw new Error("Biometric login was cancelled");
-      const payload={id:credential.id,rawId:b64(credential.rawId),type:credential.type,response:{clientDataJSON:b64(credential.response.clientDataJSON),authenticatorData:b64(credential.response.authenticatorData),signature:b64(credential.response.signature),userHandle:credential.response.userHandle?b64(credential.response.userHandle):null}};
+      const opt=await optR.json().catch(()=>({}));
+      if(!optR.ok)throw new Error(opt.error||"Unable to prepare your phone biometric challenge");
+      if(!opt.challenge||!opt.rpId)throw new Error("The biometric service returned an incomplete challenge");
+      const credential=await navigator.credentials.get({
+        publicKey:{challenge:bytes(opt.challenge),rpId:opt.rpId,userVerification:"required",timeout:60000},
+        mediation:"optional"
+      });
+      if(!credential)throw new Error("No phone biometric credential was selected");
+      const response=credential.response;
+      const payload={id:credential.id,rawId:b64(credential.rawId),type:credential.type,response:{clientDataJSON:b64(response.clientDataJSON),authenticatorData:b64(response.authenticatorData),signature:b64(response.signature),userHandle:response.userHandle?b64(response.userHandle):null}};
       const verifyR=await fetch(backendBase()+"/api/auth/webauthn/login/verify",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({credential:payload})});
-      const data=await verifyR.json().catch(()=>({}));if(!verifyR.ok||!data.token)throw new Error(data.error||"Biometric verification failed");
-      localStorage.setItem("zenitToken",data.token);localStorage.removeItem("zenitAuthMode");localStorage.removeItem("zenitRegistrationVerified");window.zenitSetWallet?.(true,data.user?.walletAddress||"");
-      $("#modalBackdrop")?.classList.remove("open");window.dispatchEvent(new CustomEvent("zenit:authenticated",{detail:data.user}));
-      toast("Welcome back","Welcome back, "+(data.user?.displayName||data.user?.username||"member")+".","success");
-    }catch(e){toast("Biometric login unavailable",e?.message||"Use wallet + PIN instead.","warning");}
+      const data=await verifyR.json().catch(()=>({}));
+      if(!verifyR.ok||!data.token)throw new Error(data.error||"Phone biometric verification failed");
+      localStorage.setItem("zenitToken",data.token);localStorage.removeItem("zenitAuthMode");localStorage.removeItem("zenitRegistrationVerified");
+      window.zenitSetWallet?.(true,data.user?.walletAddress||"");
+      $("#modalBackdrop")?.classList.remove("open");
+      if(typeof window.zenitLoadBackend==="function")await window.zenitLoadBackend(data.token);
+      window.dispatchEvent(new CustomEvent("zenit:authenticated",{detail:data.user}));
+      if(typeof window.startApp==="function")window.startApp();
+      toast("Welcome back","Phone biometric verified. Opening your dashboard.","success");
+    }catch(e){
+      const message=e?.name==="NotAllowedError"?"Phone biometric authentication was cancelled or no saved ZENIT credential was available.":(e?.message||"Phone biometric verification failed");
+      toast("Biometric login unavailable",message+" Use wallet + PIN if needed.","warning");
+    }
   }
   async function enrollBiometric(){
     if(!window.PublicKeyCredential||!navigator.credentials||!localStorage.getItem("zenitToken"))return false;

@@ -30,7 +30,6 @@ assert.match(html, /requestAnimationFrame\(\(\)=>backdrop\.classList\.add\(["']o
 assert.match(walletBridge, /await kit\.open\(\)/);
 assert.match(walletBridge, /zenit:wallet-ready/);
 
-
 assert.match(html, /params\.delete\("wallet_handoff"\);/);
 assert.match(html, /params\.delete\("email_verified"\);/);
 assert.match(html, /history\.replaceState\(\{\},'',location\.pathname/);
@@ -51,6 +50,11 @@ assert.match(html, /if\(typeof openReturning==="function"\)\{openReturning\(\);\
 assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
 assert.match(html, /id="connectReturningWallet"/);
 assert.match(html, /id="useBiometricLogin"/);
+assert.match(html, /\.onboarding \.onboard-actions \.btn[\s\S]*background:linear-gradient\(180deg,#d0ae5b,#a98538\) !important/);
+assert.match(html, /\.onboarding \.onboard-existing \.btn[\s\S]*background:linear-gradient\(180deg,#d0ae5b,#a98538\) !important/);
+assert.match(html, /navigator\.credentials\.get\(\{[\s\S]*publicKey:\{[\s\S]*challenge:bytes\(opt\.challenge\)[\s\S]*rpId:opt\.rpId[\s\S]*userVerification:"required"[\s\S]*timeout:60000/);
+assert.match(html, /Phone biometric verified\. Opening your dashboard/);
+assert.match(html, /window\.startApp=startApp/);
 console.log('✓ returning-member gateway is centralized and biometric/wallet choices are wired');
 
 assert.match(html, /data-action="test-push"/);
