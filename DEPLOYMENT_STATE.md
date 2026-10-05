@@ -539,3 +539,13 @@ The original package lifecycle/admin implementation was already merged into main
 - Restored the frontend CI install command to `npm install` to avoid expanding this feature into an unrelated frontend dependency refresh.
 - Backend CI remains on `npm ci` to mirror Render's production install behavior.
 - No production deployment, Render environment change, database mutation, or secret update occurred.
+
+
+# 2026-10-05 — MailerSend release-gate validation checkpoint
+
+- GitHub Actions **Zenit CI run #835** completed successfully on the latest feature head ac9d50e44c41296d15eb462671b1a8e01ddb7d8c.
+- Backend validation passed with clean npm ci, TypeScript lint, automatic-admin provisioning guard, all migrations, unit tests, and integration tests.
+- Frontend validation passed with its existing npm install, production build, login regression, and trust-UI regression.
+- Email regression coverage now exercises MailerSend SMTP, MailerSend API, and the existing Resend API path.
+- PR #31 remains draft/open/unmerged and has not been deployed to Render. Production remains on the existing live deployment in Royal's Workspace.
+- No production environment variables, email-provider settings, secrets, database rows, or financial/member/admin records were changed.
