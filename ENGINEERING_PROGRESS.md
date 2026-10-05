@@ -924,3 +924,13 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Added regression coverage for SMTP transport creation and the custom ZENIT template, including the official logo URL and Message-ID behavior.
 - No production deployment, production email-provider switch, production database mutation, or secret update was performed.
 - Latest implementation remains isolated in draft PR #31.
+
+
+# 2026-10-05 — MailerSend SMTP CI correction checkpoint
+
+- GitHub Actions run #815 exposed a TypeScript lint failure in `backend/src/services/email.ts`: `createHash` was used for the deterministic SMTP `Message-ID` but was not imported.
+- Corrected the source by importing `createHash` from `node:crypto`; no authentication, database, provider-selection, or email-template behavior was otherwise changed.
+- Frontend CI for the affected PR was already green in run #815; backend failed only at TypeScript lint before unit/integration stages could run.
+- Fix commit: `d080938f7dc2fb7a5d6532ce2bfd36bc425d3599`.
+- PR #31 remains open, draft, unmerged, and not deployed to Render production. No production environment variables, database rows, or email-provider settings were changed.
+- The MailerSend API credential shared in chat is not present in repository files or Render configuration. It should be revoked/rotated before any use because it was exposed in chat.
