@@ -871,3 +871,12 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - No authentication architecture was replaced: wallet signature auth, backend JWT sessions, WebAuthn/passkeys, and PostgreSQL remain authoritative.
 - Render deployment `dep-db1ml6h42hec73dddpkg` was triggered after CI because the service root is `backend` and production serves the frontend bundled by `backend/scripts/build.mjs`. Deployment verification is still pending while Render reports `build_in_progress`.
 - Remaining acceptance: verify the live deployment serves the merged commit, inspect the actual onboarding HTML/CSS for gold actions and photography, and perform real-device WebAuthn acceptance. A successful CI run is not treated as proof of device biometric success.
+
+
+# 2026-10-05 — Continued engineering checkpoint
+
+- Confirmed PR #30's Render deployment is live before making the next repository cleanup.
+- Audited the current onboarding source and removed an obsolete duplicate onboarding controller so only the active flow remains authoritative.
+- Audited the returning WebAuthn architecture; it remains browser/platform WebAuthn with backend challenge verification and direct dashboard restoration. No private-key extraction or fake biometric layer exists.
+- Audited Resend: configured `zenitprotocol.com` is present but verification is failed for DKIM and SPF records. No sender-domain changes were made without verified operator control.
+- Triggered Render deployment `dep-db21aiss728c73an544g` for the cleanup commit. It remains `build_in_progress`; live verification is pending.
