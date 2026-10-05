@@ -51,6 +51,11 @@ assert.match(html, /if\(typeof openReturning==="function"\)\{openReturning\(\);\
 assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
 assert.match(html, /id="connectReturningWallet"/);
 assert.match(html, /id="useBiometricLogin"/);
+assert.match(html, /\.onboarding \.onboard-actions \.btn[\s\S]*background:linear-gradient\(180deg,#d0ae5b,#a98538\) !important/);
+assert.match(html, /onboarding actions use the ZENIT gold system consistently/);
+assert.match(html, /navigator\.credentials\.get\(\{publicKey:\{challenge:bytes\(opt\.challenge\),rpId:opt\.rpId,userVerification:"required",timeout:60000\}/);
+assert.match(html, /Phone biometric verified\. Opening your dashboard/);
+assert.match(html, /window\.startApp=startApp/);
 console.log('✓ returning-member gateway is centralized and biometric/wallet choices are wired');
 
 assert.match(html, /data-action="test-push"/);
