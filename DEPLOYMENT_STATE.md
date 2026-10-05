@@ -483,3 +483,23 @@ The original package lifecycle/admin implementation was already merged into main
 - Latest branch head is cfbd93b16b1709a05a70e715f7329c5ea8b4c2dc.
 - CI run #798 is executing against that latest head; no green result is claimed until the run completes.
 - No production deployment, production email-provider switch, production database mutation, or secret change occurred.
+
+# 2026-10-05 — MailerSend SMTP relay integration checkpoint
+
+- Added direct MailerSend SMTP relay support to the existing transactional email adapter.
+- MailerSend transport now supports STARTTLS over port 587, TLS 1.2 minimum, bounded SMTP connection pooling, and connection/greeting/socket timeouts.
+- The existing custom ZENIT HTML and plain-text templates are unchanged, including the official ZENIT logo URL, verification button, branding, and verification wording.
+- MailerSend SMTP authentication uses dedicated Render environment variables:
+  - MAILERSEND_SMTP_HOST
+  - MAILERSEND_SMTP_PORT
+  - MAILERSEND_SMTP_USER
+  - MAILERSEND_SMTP_PASSWORD
+  - MAILERSEND_FROM
+  - MAILERSEND_FROM_NAME
+- MAILERSEND_SMTP_PASSWORD is not committed to GitHub, logs, tests, or documentation.
+- The SMTP username/password supplied during this engineering session was not written into the repository or Render environment. MailerSend's security guidance recommends resetting SMTP credentials when they have been shared in plain text; a fresh SMTP password should therefore be generated before production configuration. citeturn968566search0
+- MailerSend requires the From address to match the verified/trial sending domain; the SMTP username itself is not the From address.
+- Added Nodemailer 10.0.13 as the SMTP transport library. Nodemailer currently supports Node.js 20+, matching the backend runtime requirement.
+- Added regression coverage for SMTP transport creation and the custom ZENIT template, including the official logo URL and Message-ID behavior.
+- No production deployment, production email-provider switch, production database mutation, or secret update was performed.
+- Latest implementation remains isolated in draft PR #31.
