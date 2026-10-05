@@ -48,15 +48,15 @@ assert.doesNotMatch(walletBridge, /await \(appKit as any\)\.open\(\{ view: ['"]C
 console.log('✓ cross-device onboarding, splash, and wallet-open regression checks passed');
 
 assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin/);
-assert.match(html, /onboardHeroImage[^>]+images\.unsplash\.com/);
-assert.match(html, /onboard-brand-badge"><span class="badge-mark" aria-hidden="true">✦/);
+assert.ok(html.includes("https://images.unsplash.com/photo-1762341121210-6bd877d766b0"), "onboarding hero must use real photography");
+assert.ok(html.includes("aria-hidden=\"true\">✦"), "onboarding badge must not use the logo image");
 assert.doesNotMatch(html, /onboardHeroImage[^>]+src="\/zenit-logo\.png/);
-assert.match(html, /onboarding \.onboard-actions \.btn,\s*\.onboarding \.onboard-existing \.btn[^}]*!important/);
-assert.match(html, /const hasSession=Boolean\(localStorage\.getItem\("zenitToken"\)\)/);
-assert.match(html, /fetch\(\$\{backendBase\(\)\}\/api\/me/);
-assert.match(html, /startApp\(\);\s*window\.dispatchEvent\(new CustomEvent\("zenit:authenticated"/);
+assert.ok(html.includes(".onboarding .onboard-actions .btn,") && html.includes("!important; background:linear-gradient(180deg,#d0ae5b,#a98538) !important;"), "onboarding actions must stay gold");
+assert.ok(html.includes('const hasSession=Boolean(localStorage.getItem("zenitToken"))'));
+assert.ok(html.includes('fetch(`${backendBase()}/api/me`'));
+assert.ok(html.includes('startApp();\n            window.dispatchEvent(new CustomEvent("zenit:authenticated"')) || html.includes('startApp();window.dispatchEvent(new CustomEvent("zenit:authenticated"')), "stored session must route to authenticated app");
 assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
-assert.match(html, /pubKeyCredParams:\[\{type:"public-key",alg:-7\}\]/);
+assert.ok(html.includes('pubKeyCredParams:[{type:"public-key",alg:-7}]'));
 assert.match(html, /if\(typeof openReturning==="function"\)\{openReturning\(\);\}else\{toast\("Login is still loading"/);
 assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
 assert.match(html, /id="connectReturningWallet"/);
