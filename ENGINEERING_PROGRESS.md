@@ -844,3 +844,18 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Production email acceptance remains gated on an operator-controlled, Resend-verified sender domain and a real mailbox delivery test. The Render application URL is not treated as an email sender domain.
 - First-admin provisioning remains intentionally operator-controlled.
 - No production financial, membership, package, withdrawal, ledger, or admin rows were modified during this continuation.
+
+
+## 2026-10-05 — Onboarding visual + returning-member authentication hardening
+
+- Feature branch: `fix/onboarding-real-images-returning-auth-20261005`.
+- Reworked the full onboarding art surface so the onboarding hero no longer displays the official ZENIT logo as the main artwork. It now uses real office/financial photography with dark-gold overlays; the second onboarding step uses a real market-chart photograph.
+- Removed the legacy onboarding image rule that forced the hero into a contained logo treatment and introduced a blue visual filter. The hero image now fills its frame with responsive `object-fit: cover` behavior on desktop and mobile.
+- Onboarding action buttons are hard-locked to the ZENIT gold treatment with `!important` on border/background/text/shadow so an unrelated shared button rule cannot turn them blue.
+- Returning sessions now validate the stored ZENIT session against `GET /api/me` immediately after the splash. A valid session bypasses onboarding and opens the dashboard directly; an invalid session is cleared and the normal onboarding/registration route resumes.
+- Returning-member wallet login remains centralized through the existing returning-member modal. Wallet + 4-digit PIN continues to dispatch the authenticated route directly to the dashboard.
+- Phone biometric registration no longer depends on `AuthenticatorAttestationResponse.getPublicKey()`; the backend already parses the attestation object, so the frontend now sends only the standard WebAuthn client-data and attestation payload. Registration is restricted to the backend-supported ES256 credential algorithm.
+- Successful biometric login explicitly synchronizes the returned account wallet address into the frontend state before opening the authenticated dashboard.
+- Added frontend regression assertions for real onboarding photography, removal of the onboarding logo image, gold action enforcement, stored-session resume, and the WebAuthn registration changes.
+- No production financial, membership, package, withdrawal, ledger, or admin database rows were changed by this branch.
+- CI remains the release gate before merge/deployment.

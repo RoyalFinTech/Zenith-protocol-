@@ -40,7 +40,12 @@ assert.doesNotMatch(html, /const amount=prompt\("Withdrawal amount in USDT"\)/);
 assert.doesNotMatch(html, /const address=prompt\("Destination BNB Smart Chain address"\)/);
 
 assert.match(html, /action==="package-preview"/);
-assert.doesNotMatch(html, /images\.unsplash\.com/);
+assert.match(html, /images\.unsplash\.com\/photo-1762341121210-6bd877d766b0/);
+assert.match(html, /images\.unsplash\.com\/photo-1591696205602-2f950c417cb9/);
+assert.ok(html.includes('const hasSession=Boolean(localStorage.getItem("zenitToken"))'));
+assert.ok(html.includes('fetch(`${backendBase()}/api/me`'));
+assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
+assert.ok(html.includes('pubKeyCredParams:[{type:"public-key",alg:-7}]'));
 
 
 assert.match(html, /aria-expanded="false" aria-controls="sidebar"/);

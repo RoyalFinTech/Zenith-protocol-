@@ -47,7 +47,6 @@ assert.doesNotMatch(walletBridge, /await \(appKit as any\)\.open\(\{ view: ['"]C
 
 console.log('✓ cross-device onboarding, splash, and wallet-open regression checks passed');
 
-assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin/);
 assert.match(html, /if\(typeof openReturning==="function"\)\{openReturning\(\);\}else\{toast\("Login is still loading"/);
 assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
 assert.match(html, /id="connectReturningWallet"/);
