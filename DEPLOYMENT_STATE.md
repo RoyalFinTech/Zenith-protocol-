@@ -549,3 +549,16 @@ The original package lifecycle/admin implementation was already merged into main
 - Email regression coverage now exercises MailerSend SMTP, MailerSend API, and the existing Resend API path.
 - PR #31 remains draft/open/unmerged and has not been deployed to Render. Production remains on the existing live deployment in Royal's Workspace.
 - No production environment variables, email-provider settings, secrets, database rows, or financial/member/admin records were changed.
+
+
+# 2026-10-05 — Registration confirmation + WhatsApp PIN recovery checkpoint
+
+- Registration now captures a normalized international WhatsApp number and an explicit preference for important ZENIT account/security updates. The number is persisted through pending registration and wallet handoff into the member profile.
+- Registration submission now shows a dedicated confirmation modal with the destination email and a 30-second resend countdown. Resend uses a dedicated server endpoint and does not require the PIN to be retained in browser storage.
+- Returning-member login now exposes **FORGOT PIN / ACCESS HELP**. Recovery requires the registered WhatsApp number, a one-time 6-digit code, and creation of a new 4-digit PIN. Recovery challenges are short-lived, attempt-limited, one-time, and recovery revokes existing active sessions before issuing a fresh session.
+- PIN recovery attempts are audited as account-security events. Recovery requests and verification are independently rate-limited.
+- MailerSend WhatsApp delivery is implemented against its WhatsApp API. Production sending requires an enabled WhatsApp add-on, connected WhatsApp sender, approved template(s), and an API token with the `whatsapp_full` scope. The sender/template identifiers remain environment-configured and are not invented in source.
+- A real WhatsApp brand SVG is included at `frontend/public/whatsapp.svg` and used in registration/profile/recovery UI.
+- Important provider boundary: MailerSend cannot create the WhatsApp sender or approved templates through the current API. Those are operator-managed in the MailerSend dashboard.
+- Current Render production has not been switched to MailerSend/WhatsApp because no fresh rotated credential, connected sender identifier, or approved template IDs have been configured. No production database records were changed.
+- A test-file mistake briefly caused two automatic main-branch Render deploys; the file was immediately removed and the reverted main commit is the intended pre-feature source state. The feature itself remains on draft PR #31 only.
