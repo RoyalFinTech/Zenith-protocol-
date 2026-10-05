@@ -24,8 +24,8 @@ const walletBridge = readFileSync(resolve(process.cwd(), 'src/wallet-bridge.ts')
 assert.match(html, /id="onboardExistingLogin"[^>]*data-action="existing-wallet-login"/);
 assert.match(html, /if\(action==="existing-wallet-login"\)\{localStorage\.setItem\("zenitAuthMode","existing"\);const openReturning=window\.zenitOpenReturningLogin/);
 assert.doesNotMatch(html, /fetch\(api\s*\+\s*["']\/api\/auth\/webauthn/);
-assert.match(html, /backendBase\(\)+["']\/api\/auth\/webauthn\/login\/options/);
-assert.match(html, /backendBase\(\)+["']\/api\/auth\/webauthn\/login\/verify/);
+assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/options/);
+assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/verify/);
 assert.match(html, /requestAnimationFrame\(\(\)=>backdrop\.classList\.add\(["']open["']\)\)/);
 assert.match(walletBridge, /await kit\.open\(\)/);
 assert.match(walletBridge, /zenit:wallet-ready/);
