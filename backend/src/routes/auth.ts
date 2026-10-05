@@ -199,8 +199,8 @@ router.post('/verify', async (req, res, next) => {
     let registration: { id:string; username:string; email:string; display_name:string; whatsapp_number:string; whatsapp_updates_enabled:boolean; pin_hash:string|null } | undefined;
     if (walletHandoffToken) {
       const handoffHash = createHash('sha256').update(walletHandoffToken).digest('hex');
-      registration = (await client.query<{ id:string; username:string; email:string; display_name:string; pin_hash:string|null }>(`
-        select id,username,email,display_name,pin_hash
+      registration = (await client.query<{ id:string; username:string; email:string; display_name:string; whatsapp_number:string; whatsapp_updates_enabled:boolean; pin_hash:string|null }>(`
+        select id,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash
         from pending_registrations
         where wallet_handoff_token_hash=$1
           and verified_at is not null
