@@ -562,3 +562,12 @@ The original package lifecycle/admin implementation was already merged into main
 - Important provider boundary: MailerSend cannot create the WhatsApp sender or approved templates through the current API. Those are operator-managed in the MailerSend dashboard.
 - Current Render production has not been switched to MailerSend/WhatsApp because no fresh rotated credential, connected sender identifier, or approved template IDs have been configured. No production database records were changed.
 - A test-file mistake briefly caused two automatic main-branch Render deploys; the file was immediately removed and the reverted main commit is the intended pre-feature source state. The feature itself remains on draft PR #31 only.
+
+
+# 2026-10-05 — Final UX/auth hardening checkpoint
+
+- Registration no longer persists a draft copy of the PIN in browser storage; resend uses the server-side pending registration and email address only.
+- Legacy members without a registered WhatsApp number are prompted to complete recovery/update setup from the profile flow.
+- Successful PIN recovery now refreshes the wallet bridge's in-memory auth token from local storage so subsequent wallet operations use the new session.
+- MailerSend WhatsApp sender configuration documentation now accepts either the connected phone-number identifier or MailerSend sender ID, matching the provider API.
+- No production database, Render environment, or provider credential changes were made.
