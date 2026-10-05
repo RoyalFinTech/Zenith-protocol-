@@ -459,3 +459,17 @@ The original package lifecycle/admin implementation was already merged into main
 - Removed a dead duplicate onboarding controller from `frontend/index.html`; this does not alter the active onboarding flow. Commit: `4a9138b7a042ad1593549d6a087099a6b8a330fd`.
 - Triggered Render deployment `dep-db21aiss728c73an544g` for that commit in the correct Royal Workspace. Current state: `build_in_progress`; therefore the cleanup is not yet declared live.
 - Resend sender-domain audit: `zenitprotocol.com` exists in Resend but all reported DKIM/SPF records are currently failed. No DNS, domain, sender, or credential changes were made because ownership/control was not verified.
+
+# 2026-10-05 — MailerSend free-domain email-provider checkpoint
+
+- Added a provider-selectable transactional email path without changing ZENIT registration, email-verification token, wallet handoff, wallet authentication, or database architecture.
+- backend/src/services/email.ts now supports both the existing Resend API and MailerSend's Email API, selected by EMAIL_PROVIDER.
+- MailerSend sends to POST https://api.mailersend.com/v1/email and uses the provider's verified/trial-domain sender. The integration includes both HTML and plain-text bodies for verification and welcome messages.
+- backend/src/routes/auth.ts now returns a controlled 503 configuration response when the selected email provider is not configured, instead of exposing provider-specific implementation errors.
+- backend/.env.example documents EMAIL_PROVIDER, MAILERSEND_API_KEY, MAILERSEND_FROM, and MAILERSEND_FROM_NAME. No real API key or secret was committed.
+- Added backend/tests/email.test.ts covering the MailerSend endpoint, authorization header, sender/recipient payload, verification subject/text, tags, and provider selection.
+- MailerSend's current Sandbox mode provides a trial domain and supports testing without the operator owning a separate sending domain; account approval is needed to lift the Sandbox recipient restriction beyond the initial two recipients. The current free plan is 500 emails/month after approval. citeturn133067search0turn133067search4
+- No MailerSend account was created or connected from the engineering environment, and no provider credential was added to Render. Production email therefore remains on the existing Resend configuration until the operator creates/approves the MailerSend account and supplies the API token and trial-domain sender.
+- No production database rows or financial/member/admin records were changed.
+- Next operator action for this branch: create/sign into MailerSend using the existing mailbox, copy the MailerSend trial-domain sender address, create an API token, then configure Render with EMAIL_PROVIDER=mailersend, MAILERSEND_API_KEY, MAILERSEND_FROM, and MAILERSEND_FROM_NAME=ZENIT Protocol. The existing Gmail address can remain the recipient for a real registration verification test.
+- Release status: feature branch only; no merge or production deployment claimed at this checkpoint.
