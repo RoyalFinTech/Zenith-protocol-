@@ -894,3 +894,13 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - No production database rows or financial/member/admin records were changed.
 - Next operator action for this branch: create/sign into MailerSend using the existing mailbox, copy the MailerSend trial-domain sender address, create an API token, then configure Render with EMAIL_PROVIDER=mailersend, MAILERSEND_API_KEY, MAILERSEND_FROM, and MAILERSEND_FROM_NAME=ZENIT Protocol. The existing Gmail address can remain the recipient for a real registration verification test.
 - Release status: feature branch only; no merge or production deployment claimed at this checkpoint.
+
+# 2026-10-05 — Email-provider regression checkpoint
+
+- CI exposed a stale frontend trust assertion that still expected an onboarding image URL removed by the current approved onboarding imagery.
+- Updated frontend/tests/trust-ui.test.mjs to assert the four current onboarding image sources used by the active zenitOnboardingBootstrap instead of the obsolete source.
+- Preserved the trust-test purpose: the test still proves that onboarding contains the intended real imagery rather than removing the imagery assertion.
+- Added email template regression coverage in backend/tests/email.test.ts confirming the verification payload contains the official ZENIT logo URL, official logo alt text, custom confirmation button markup, and MailerSend delivery endpoint when MailerSend is selected.
+- Latest branch head is cfbd93b16b1709a05a70e715f7329c5ea8b4c2dc.
+- CI run #798 is executing against that latest head; no green result is claimed until the run completes.
+- No production deployment, production email-provider switch, production database mutation, or secret change occurred.
