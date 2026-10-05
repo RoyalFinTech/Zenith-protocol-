@@ -859,3 +859,15 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Added frontend regression assertions for real onboarding photography, removal of the onboarding logo image, gold action enforcement, stored-session resume, and the WebAuthn registration changes.
 - No production financial, membership, package, withdrawal, ledger, or admin database rows were changed by this branch.
 - CI remains the release gate before merge/deployment.
+
+
+# 2026-10-05 — Onboarding gold + returning authentication checkpoint
+
+- Verified that `main` had advanced beyond PR #28 and that the current production deploy was still the PR #28 commit; the repository contained PR #29/PR #30 work not yet represented in the live Render deployment.
+- PR #30 was reviewed and merged after fixing its frontend regression-test assertion. Final CI run #778 passed both frontend and backend jobs.
+- Onboarding now has explicit gold action styling for both primary and existing-member action groups, including hover states that previously could inherit blue/ghost styling.
+- Onboarding hero visuals now use realistic financial/professional photography rather than the removed decorative coin/logo overlay stack. The official ZENIT logo remains available for branding and splash use.
+- Returning-member phone login now validates the WebAuthn challenge response more defensively, uses required user verification with a bounded timeout, gives clearer cancellation/device-credential errors, restores the authenticated backend state, closes the login modal, and calls the existing dashboard startup path directly.
+- No authentication architecture was replaced: wallet signature auth, backend JWT sessions, WebAuthn/passkeys, and PostgreSQL remain authoritative.
+- Render deployment `dep-db1ml6h42hec73dddpkg` was triggered after CI because the service root is `backend` and production serves the frontend bundled by `backend/scripts/build.mjs`. Deployment verification is still pending while Render reports `build_in_progress`.
+- Remaining acceptance: verify the live deployment serves the merged commit, inspect the actual onboarding HTML/CSS for gold actions and photography, and perform real-device WebAuthn acceptance. A successful CI run is not treated as proof of device biometric success.
