@@ -6,8 +6,10 @@ import { randomNonce, randomReferralCode } from '../utils/crypto.js';
 import { issueSession } from '../services/jwt.js';
 import { HttpError } from '../utils/http.js';
 import { v4 as uuid } from 'uuid';
-import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual, createPublicKey, verify as verifySignature } from 'node:crypto';
+import { createHash, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { sendVerificationEmail, sendWelcomeEmail } from '../services/email.js';
+import { sendWhatsAppPinResetCode } from '../services/whatsapp.js';
+import { normalizeWhatsAppNumber } from '../utils/phone.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -61,25 +63,28 @@ router.post('/register/request', async (req, res, next) => {
     const username = String(req.body?.username ?? '').trim().toLowerCase();
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     const displayName = String(req.body?.displayName ?? '').trim();
+    const whatsappNumber = normalizeWhatsAppNumber(req.body?.whatsappNumber);
+    const whatsappUpdatesEnabled = req.body?.whatsappUpdatesEnabled !== false;
     const pin = String(req.body?.pin ?? '');
     if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400, 'Username must be 3–24 characters using lowercase letters, numbers or underscores');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Valid email address required');
     if (displayName.length < 2 || displayName.length > 80) throw new HttpError(400, 'Display name must be 2–80 characters');
     if (!PIN_PATTERN.test(pin)) throw new HttpError(400, 'A 4-digit PIN is required');
 
-    const conflict = await query<{username:string; email:string|null}>(`select username,email from app_users where lower(username)=lower($1) or lower(email)=lower($2) limit 1`, [username,email]);
+    const conflict = await query<{username:string; email:string|null; whatsapp_number:string|null}>(`select username,email,whatsapp_number from app_users where lower(username)=lower($1) or lower(email)=lower($2) or whatsapp_number=$3 limit 1`, [username,email,whatsappNumber]);
     if (conflict.rows[0]) {
       if (conflict.rows[0].username?.toLowerCase() === username) throw new HttpError(409, 'That username is already in use');
-      throw new HttpError(409, 'That email address is already registered');
+      if (conflict.rows[0].email?.toLowerCase() === email) throw new HttpError(409, 'That email address is already registered');
+      throw new HttpError(409, 'That WhatsApp number is already registered');
     }
 
-    await query(`delete from pending_registrations where verified_at is null and (lower(username)=lower($1) or lower(email)=lower($2))`, [username,email]);
+    await query(`delete from pending_registrations where verified_at is null and (lower(username)=lower($1) or lower(email)=lower($2) or whatsapp_number=$3)`, [username,email,whatsappNumber]);
 
     const pinHash = await hashPin(pin);
     const token = randomNonce() + randomNonce();
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const id = uuid();
-    await query(`insert into pending_registrations (id,username,email,display_name,pin_hash,token_hash,expires_at) values ($1,$2,$3,$4,$5,$6,now()+interval '30 minutes')`, [id,username,email,displayName,pinHash,tokenHash]);
+    await query(`insert into pending_registrations (id,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash,token_hash,expires_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,now()+interval '30 minutes')`, [id,username,email,displayName,whatsappNumber,whatsappUpdatesEnabled,pinHash,tokenHash]);
     const verifyUrl = `${env.apiPublicUrl}/api/auth/register/verify?token=${encodeURIComponent(token)}`;
     try {
       await sendVerificationEmail({to:email,username,verifyUrl,registrationId:id,appOrigin:env.appOrigin});
@@ -160,7 +165,7 @@ router.post('/verify', async (req, res, next) => {
     if (!valid) throw new HttpError(401, 'Wallet signature verification failed');
 
     let user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`select u.id,u.role,u.username,u.email,u.display_name,u.pin_hash from app_users u where u.wallet_address=$1 or exists (select 1 from wallet_accounts wa where wa.user_id=u.id and lower(wa.address)=lower($1) and wa.chain_id=$2) limit 1`, [address, env.chainId])).rows[0];
-    let registration: { id:string; username:string; email:string; display_name:string; pin_hash:string|null } | undefined;
+    let registration: { id:string; username:string; email:string; display_name:string; whatsapp_number:string; whatsapp_updates_enabled:boolean; pin_hash:string|null } | undefined;
     if (walletHandoffToken) {
       const handoffHash = createHash('sha256').update(walletHandoffToken).digest('hex');
       registration = (await client.query<{ id:string; username:string; email:string; display_name:string; pin_hash:string|null }>(`
@@ -178,10 +183,10 @@ router.post('/verify', async (req, res, next) => {
       const username = registration?.username ?? `zenit_${address.slice(2,10).toLowerCase()}`;
       const email = registration?.email ?? null;
       const displayName = registration?.display_name ?? `Member ${address.slice(0,6)}…${address.slice(-4)}`;
-      user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`insert into app_users (wallet_address,username,email,display_name,pin_hash,role,referral_code) values ($1,$2,$3,$4,$5,'Member',$6) returning id,role,username,email,display_name,pin_hash`, [address,username,email,displayName,registration?.pin_hash ?? null,randomReferralCode()])).rows[0]!;
+      user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`insert into app_users (wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash,role,referral_code) values ($1,$2,$3,$4,$5,$6,$7,'Member',$8) returning id,role,username,email,display_name,pin_hash`, [address,username,email,displayName,registration?.whatsapp_number ?? null,registration?.whatsapp_updates_enabled ?? true,registration?.pin_hash ?? null,randomReferralCode()])).rows[0]!;
     } else if (registration) {
       try {
-        user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`update app_users set username=$1,email=$2,display_name=$3,updated_at=now() where id=$4 returning id,role,username,email,display_name,pin_hash`, [registration.username,registration.email,registration.display_name,user.id])).rows[0]!;
+        user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`update app_users set username=$1,email=$2,display_name=$3,whatsapp_number=$4,whatsapp_updates_enabled=$5,updated_at=now() where id=$6 returning id,role,username,email,display_name,pin_hash`, [registration.username,registration.email,registration.display_name,registration.whatsapp_number,registration.whatsapp_updates_enabled,user.id])).rows[0]!;
       } catch (error:any) {
         if (error?.code === '23505') throw new HttpError(409, 'That username or email is already in use');
         throw error;
@@ -274,6 +279,75 @@ router.post('/pin/setup', async (req,res,next)=>{
   }catch(e){await client.query('rollback').catch(()=>{});next(e);}
   finally{client.release();}
 });
+router.post('/pin/reset/request', async (req,res,next)=>{
+  try{
+    const whatsappNumber=normalizeWhatsAppNumber(req.body?.whatsappNumber);
+    if(!env.whatsappEnabled) throw new HttpError(503,'WhatsApp PIN recovery is not configured yet');
+    const existing=(await query<{id:string;username:string;wallet_address:string}>(
+      `select id,username,wallet_address from app_users where whatsapp_number=$1 limit 1`,[whatsappNumber]
+    )).rows[0];
+    await query(`update pin_reset_challenges set consumed_at=now() where whatsapp_number=$1 and consumed_at is null`,[whatsappNumber]);
+    const challengeId=uuid();
+    const code=String(randomInt(0,1000000)).padStart(6,'0');
+    const otpHash=createHash('sha256').update(code).digest('hex');
+    await query(`insert into pin_reset_challenges(id,user_id,whatsapp_number,otp_hash,expires_at) values($1,$2,$3,$4,now()+interval '10 minutes')`,[challengeId,existing?.id ?? null,whatsappNumber,otpHash]);
+    if(existing){
+      try{
+        const result=await sendWhatsAppPinResetCode(whatsappNumber,code);
+        if(!result.sent) throw new Error('WHATSAPP_PROVIDER_NOT_CONFIGURED');
+      }catch(error){
+        await query(`delete from pin_reset_challenges where id=$1`,[challengeId]);
+        const message=error instanceof Error?error.message:String(error);
+        console.error('ZENIT PIN reset WhatsApp send failed',message);
+        throw new HttpError(502,'Unable to send the PIN recovery code right now');
+      }
+    }
+    res.status(202).json({accepted:true,challengeId});
+  }catch(e){next(e);}
+});
+
+router.post('/pin/reset/verify', async (req,res,next)=>{
+  const client=await pool.connect();
+  try{
+    const challengeId=String(req.body?.challengeId??'');
+    const code=String(req.body?.code??'').trim();
+    const newPin=String(req.body?.newPin??'').trim();
+    if(!/^[0-9a-fA-F-]{36}$/.test(challengeId)||!/^[0-9]{6}$/.test(code)||!PIN_PATTERN.test(newPin)) throw new HttpError(400,'Enter the 6-digit recovery code and a new 4-digit PIN');
+    await client.query('begin');
+    const row=(await client.query<{id:string;user_id:string|null;whatsapp_number:string;otp_hash:string;attempts:number;expires_at:Date;consumed_at:Date|null}>(
+      `select id,user_id,whatsapp_number,otp_hash,attempts,expires_at,consumed_at from pin_reset_challenges where id=$1 for update`,[challengeId]
+    )).rows[0];
+    if(!row||row.consumed_at) throw new HttpError(400,'This recovery code is invalid or has already been used');
+    if(new Date(row.expires_at).getTime()<Date.now()) throw new HttpError(400,'This recovery code has expired. Request a new code.');
+    if(row.attempts>=5) throw new HttpError(429,'Too many incorrect recovery attempts. Request a new code.');
+    const supplied=createHash('sha256').update(code).digest('hex');
+    const expected=Buffer.from(row.otp_hash,'hex');
+    const valid=expected.length===supplied.length&&timingSafeEqual(expected,Buffer.from(supplied,'hex'));
+    if(!valid){
+      const attempts=row.attempts+1;
+      await client.query(`update pin_reset_challenges set attempts=$1,consumed_at=case when $1>=5 then now() else consumed_at end where id=$2`,[attempts,row.id]);
+      await client.query('commit');
+      throw new HttpError(401,'Incorrect recovery code');
+    }
+    if(!row.user_id) { await client.query(`update pin_reset_challenges set consumed_at=now() where id=$1`,[row.id]); await client.query('commit'); throw new HttpError(400,'We could not complete PIN recovery for this number'); }
+    const user=(await client.query<{id:string;role:string;username:string;email:string|null;display_name:string;wallet_address:string;whatsapp_number:string|null}>(
+      `select id,role,username,email,display_name,wallet_address,whatsapp_number from app_users where id=$1 for update`,[row.user_id]
+    )).rows[0];
+    if(!user) throw new HttpError(400,'We could not complete PIN recovery for this number');
+    const pinHash=await hashPin(newPin);
+    await client.query(`update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2`,[pinHash,user.id]);
+    await client.query(`update user_sessions set revoked_at=now() where user_id=$1 and revoked_at is null`,[user.id]);
+    await client.query(`update pin_reset_challenges set consumed_at=now() where id=$1 and consumed_at is null`,[row.id]);
+    await client.query(`insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'pin_reset','app_user',$1,$2)`,[user.id,JSON.stringify({channel:'whatsapp'})]);
+    const sessionId=uuid();
+    await client.query(`insert into user_sessions(id,user_id,wallet_address,expires_at,ip_address,user_agent) values($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`,[sessionId,user.id,user.wallet_address,env.sessionTtlMinutes,req.ip,req.get('user-agent')??null]);
+    await client.query('commit');
+    const token=await issueSession({userId:user.id,walletAddress:user.wallet_address,role:user.role,sessionId});
+    res.json({token,user:{id:user.id,role:user.role,username:user.username,email:user.email,displayName:user.display_name,walletAddress:user.wallet_address}});
+  }catch(e){await client.query('rollback').catch(()=>{});next(e);}
+  finally{client.release();}
+});
+
 router.post('/webauthn/register/options', requireAuth, async (req,res,next)=>{
   try{
     const user=(await query<{id:string;username:string;display_name:string}>(`select id,username,display_name from app_users where id=$1`,[req.auth!.userId])).rows[0];
