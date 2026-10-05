@@ -188,7 +188,7 @@ router.post('/verify', async (req, res, next) => {
       try {
         user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`update app_users set username=$1,email=$2,display_name=$3,whatsapp_number=$4,whatsapp_updates_enabled=$5,updated_at=now() where id=$6 returning id,role,username,email,display_name,pin_hash`, [registration.username,registration.email,registration.display_name,registration.whatsapp_number,registration.whatsapp_updates_enabled,user.id])).rows[0]!;
       } catch (error:any) {
-        if (error?.code === '23505') throw new HttpError(409, 'That username or email is already in use');
+        if (error?.code === '23505') throw new HttpError(409, 'That username, email address, or WhatsApp number is already in use');
         throw error;
       }
     }
