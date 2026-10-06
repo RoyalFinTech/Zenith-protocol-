@@ -571,3 +571,13 @@ The original package lifecycle/admin implementation was already merged into main
 - Successful PIN recovery now refreshes the wallet bridge's in-memory auth token from local storage so subsequent wallet operations use the new session.
 - MailerSend WhatsApp sender configuration documentation now accepts either the connected phone-number identifier or MailerSend sender ID, matching the provider API.
 - No production database, Render environment, or provider credential changes were made.
+
+
+# 2026-10-06 — Optional WhatsApp registration / PIN recovery checkpoint
+
+- Feature branch feat/mailersend-email-provider-20261005 now treats registration WhatsApp as optional.
+- The registration UI provides a professional security reminder when the user attempts to continue without WhatsApp; the user can add it immediately or continue without it.
+- The reminder explicitly states that only the WhatsApp number stored on the account can be used for PIN recovery.
+- Backend registration accepts null WhatsApp values and does not apply a uniqueness conflict check when no number is supplied.
+- PIN recovery remains bound to app_users.whatsapp_number; an unrecognized number does not identify an account and cannot complete PIN recovery.
+- This checkpoint is feature-branch only. Production main and Render Royal Workspace have not been changed by this work.
