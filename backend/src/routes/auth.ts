@@ -63,24 +63,27 @@ router.post('/register/request', async (req, res, next) => {
     const username = String(req.body?.username ?? '').trim().toLowerCase();
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     const displayName = String(req.body?.displayName ?? '').trim();
-    let whatsappNumber: string;
-    try { whatsappNumber = normalizeWhatsAppNumber(req.body?.whatsappNumber); }
-    catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Valid WhatsApp number required'); }
-    const whatsappUpdatesEnabled = req.body?.whatsappUpdatesEnabled !== false;
+    const rawWhatsAppNumber = String(req.body?.whatsappNumber ?? '').trim();
+    let whatsappNumber: string | null = null;
+    if (rawWhatsAppNumber) {
+      try { whatsappNumber = normalizeWhatsAppNumber(rawWhatsAppNumber); }
+      catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Valid WhatsApp number required'); }
+    }
+    const whatsappUpdatesEnabled = whatsappNumber ? req.body?.whatsappUpdatesEnabled !== false : false;
     const pin = String(req.body?.pin ?? '');
     if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400, 'Username must be 3–24 characters using lowercase letters, numbers or underscores');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Valid email address required');
     if (displayName.length < 2 || displayName.length > 80) throw new HttpError(400, 'Display name must be 2–80 characters');
     if (!PIN_PATTERN.test(pin)) throw new HttpError(400, 'A 4-digit PIN is required');
 
-    const conflict = await query<{username:string; email:string|null; whatsapp_number:string|null}>(`select username,email,whatsapp_number from app_users where lower(username)=lower($1) or lower(email)=lower($2) or whatsapp_number=$3 limit 1`, [username,email,whatsappNumber]);
+    const conflict = await query<{username:string; email:string|null; whatsapp_number:string|null}>(`select username,email,whatsapp_number from app_users where lower(username)=lower($1) or lower(email)=lower($2) or ($3 is not null and whatsapp_number=$3) limit 1`, [username,email,whatsappNumber]);
     if (conflict.rows[0]) {
       if (conflict.rows[0].username?.toLowerCase() === username) throw new HttpError(409, 'That username is already in use');
       if (conflict.rows[0].email?.toLowerCase() === email) throw new HttpError(409, 'That email address is already registered');
       throw new HttpError(409, 'That WhatsApp number is already registered');
     }
 
-    await query(`delete from pending_registrations where verified_at is null and (lower(username)=lower($1) or lower(email)=lower($2) or whatsapp_number=$3)`, [username,email,whatsappNumber]);
+    await query(`delete from pending_registrations where verified_at is null and (lower(username)=lower($1) or lower(email)=lower($2) or ($3 is not null and whatsapp_number=$3))`, [username,email,whatsappNumber]);
 
     const pinHash = await hashPin(pin);
     const token = randomNonce() + randomNonce();
