@@ -13,6 +13,10 @@ assert.match(html, /class="username-input-prefix"[^>]*>@<\/span>/);
 assert.match(html, /registrationUsername/);
 assert.match(html, /registrationWhatsapp/);
 assert.match(html, /registrationWhatsappUpdates/);
+assert.match(html, /WhatsApp number <em class="muted">\(optional\)<\/em>/);
+assert.match(html, /showRegistrationWhatsAppReminder/);
+assert.match(html, /Continue without WhatsApp/);
+assert.match(html, /An unregistered number cannot be used to reset your PIN/);
 assert.match(html, /src="\/whatsapp\.svg"/);
 assert.match(html, /replace\(\/\[\^a-z0-9_\]\/g,""\)/);
 
