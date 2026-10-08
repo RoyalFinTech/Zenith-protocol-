@@ -5,7 +5,7 @@ alter table public.app_users
 
 alter table public.pending_registrations
   add column if not exists whatsapp_number text,
-  add column if not exists whatsapp_updates_enabled boolean not null default true;
+  add column if not exists whatsapp_updates_enabled boolean not null default false;
 
 create unique index if not exists idx_app_users_whatsapp_number
   on public.app_users(whatsapp_number)
