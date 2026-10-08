@@ -31,7 +31,7 @@ router.patch('/profile', async (req,res,next)=>{
       try { whatsappNumber = normalizeWhatsAppNumber(whatsappNumberRaw); }
       catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Valid WhatsApp number required'); }
     }
-    const whatsappUpdatesEnabled = req.body?.whatsappUpdatesEnabled !== false;
+    const whatsappUpdatesEnabled = Boolean(whatsappNumber) && req.body?.whatsappUpdatesEnabled !== false;
     if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400,'Username must be 3–24 characters using lowercase letters, numbers or underscores');
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400,'Valid email address required');
     const avatarUrl = req.body?.avatarUrl == null ? null : String(req.body.avatarUrl);
