@@ -3,6 +3,9 @@ import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 
 const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+const whatsappSvg = readFileSync(resolve(process.cwd(), 'public/whatsapp.svg'), 'utf8');
+assert.match(whatsappSvg, /<path fill="#ffffff" d="/);
+assert.match(whatsappSvg, /<title>WhatsApp<\/title>/);
 
 assert.match(html, /function formatWalletAddress\(address\)/);
 assert.match(html, /data-action="copy"/);
@@ -14,10 +17,16 @@ assert.match(html, /registrationUsername/);
 assert.match(html, /registrationEmail/);
 assert.match(html, /registrationWhatsapp/);
 assert.match(html, /id="registrationWhatsappCountry"/);
-assert.match(html, /🇵🇰 Pakistan \(\+92\)/);
+assert.match(html, /Pakistan \(\+92\)/);
 assert.match(html, /placeholder="3XX XXXXXXX"/);
 assert.doesNotMatch(html, /placeholder="\+220/);
 assert.match(html, /function whatsappCountryOptions\(selected="PK"\)/);
+assert.match(html, /function countryFlagUrl\(iso\)/);
+assert.match(html, /https:\/\/flagcdn\.com\/w40\/pk\.png/);
+const countryBlockStart = html.indexOf("const WHATSAPP_COUNTRIES = [");
+const countryBlockEnd = html.indexOf("].map(([iso,name,dial])=>", countryBlockStart);
+const countryBlock = countryBlockStart >= 0 && countryBlockEnd > countryBlockStart ? html.slice(countryBlockStart, countryBlockEnd) : "";
+assert.ok((countryBlock.match(/\["[A-Z]{2}"/g) ?? []).length >= 200, "WhatsApp country picker must retain a broad country list");
 assert.match(html, /function bindWhatsAppPicker\(/);
 assert.match(html, /registrationWhatsappUpdates/);
 assert.match(html, /WhatsApp number <em class="muted">\(optional\)<\/em>/);
