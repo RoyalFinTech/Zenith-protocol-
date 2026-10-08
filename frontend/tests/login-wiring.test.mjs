@@ -30,10 +30,10 @@ assert.match(html, /requestAnimationFrame\(\(\)=>backdrop\.classList\.add\(["']o
 assert.match(walletBridge, /await kit\.open\(\)/);
 assert.match(walletBridge, /zenit:wallet-ready/);
 
-assert.match(html, /params\.delete\("wallet_handoff"\);/);
-assert.match(html, /params\.delete\("email_verified"\);/);
-assert.match(html, /history\.replaceState\(\{\},'',location\.pathname/);
-assert.match(html, /localStorage\.setItem\("zenitWalletHandoffToken",walletHandoff\)/);
+assert.doesNotMatch(html, /params\.delete\("wallet_handoff"\);/);
+assert.doesNotMatch(html, /params\.delete\("email_verified"\);/);
+assert.match(html, /localStorage\.setItem\("zenitWalletHandoffToken",data\.walletHandoffToken\)/);
+assert.match(html, /localStorage\.setItem\("zenitAuthMode","onboarding"\)/);
 
 assert.match(html, /grid-template-columns:1fr;\s*grid-template-rows:minmax\(250px,42dvh\)/);
 assert.match(html, /@media \(max-width:820px\)/);
