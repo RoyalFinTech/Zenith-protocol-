@@ -54,26 +54,9 @@ if (nodeEnv === 'production') {
   if (!Number.isInteger(nonceTtlMinutes) || nonceTtlMinutes < 1) {
     throw new Error('NONCE_TTL_MINUTES must be at least 1 minute');
   }
-  if (emailProvider === 'resend' && ((Boolean(process.env.RESEND_API_KEY) || Boolean(process.env.RESEND_FROM)) &&
-      (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM))) {
-    throw new Error('RESEND_API_KEY and RESEND_FROM must be configured together in production');
-  }
-  if (emailProvider === 'mailersend' && mailersendTransport === 'api' && ((Boolean(process.env.MAILERSEND_API_KEY) || Boolean(process.env.MAILERSEND_FROM)) &&
-      (!process.env.MAILERSEND_API_KEY || !process.env.MAILERSEND_FROM))) {
-    throw new Error('MAILERSEND_API_KEY and MAILERSEND_FROM must be configured together in production');
-  }
-  if (emailProvider === 'mailersend' && mailersendTransport === 'api' && (!process.env.MAILERSEND_API_KEY || !process.env.MAILERSEND_FROM)) {
-    throw new Error('MailerSend API transport is selected but MAILERSEND_API_KEY/MAILERSEND_FROM are not configured');
-  }
-  if (emailProvider === 'mailersend' && mailersendTransport === 'smtp' &&
-      (!process.env.MAILERSEND_SMTP_HOST || !process.env.MAILERSEND_SMTP_USER || !process.env.MAILERSEND_SMTP_PASSWORD || !process.env.MAILERSEND_FROM)) {
-    throw new Error('MailerSend SMTP transport is selected but SMTP credentials and MAILERSEND_FROM are not configured');
-  }
-  if (emailProvider === 'resend' && (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM)) {
-    throw new Error('Resend is selected but RESEND_API_KEY/RESEND_FROM are not configured');
-  }
+  // Email delivery is optional and must never block production startup or member registration.
+  // WhatsApp PIN recovery is independently enabled only when its sender/template credentials are configured.
 }
-
 export const env = {
   nodeEnv,
   port,
