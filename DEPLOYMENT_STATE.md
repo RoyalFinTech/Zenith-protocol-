@@ -581,3 +581,15 @@ The original package lifecycle/admin implementation was already merged into main
 - Backend registration accepts null WhatsApp values and does not apply a uniqueness conflict check when no number is supplied.
 - PIN recovery remains bound to app_users.whatsapp_number; an unrecognized number does not identify an account and cannot complete PIN recovery.
 - This checkpoint is feature-branch only. Production main and Render Royal Workspace have not been changed by this work.
+
+
+# 2026-10-08 — Production-first authentication checkpoint
+
+- Removed the email-verification gate from the registration and wallet onboarding path.
+- Email remains a required registration field, but registration no longer waits for a verification message or email callback.
+- New registration receives a short-lived server-issued wallet handoff token directly and proceeds to wallet signature authentication.
+- WhatsApp remains optional at registration, with the existing reminder and strict account-bound PIN recovery implementation retained.
+- Resend/email-verification routes and their frontend callers were retired.
+- Email provider configuration remains available for future transactional messages but no longer blocks backend startup or member registration.
+- The additive WhatsApp/PIN recovery migration is still pending on production at this checkpoint; no production rows were changed by these code edits.
+- Target production context remains Royal Workspace / Zenith-protocol- Render service on main.
