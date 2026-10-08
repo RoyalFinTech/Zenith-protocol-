@@ -17,9 +17,15 @@ assert.equal((html.match(/function openReturningLogin\(\)/g) ?? []).length, 1);
 assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin;/);
 assert.match(html, /window\.zenitOpenExistingLogin=\(\)=>openReturningLogin\(\);/);
 assert.match(html, /<button type="button"[^>]*id="registrationSubmit"[^>]*data-action="registration-submit"/);
+const pickerFunctionPos = html.indexOf('function bindWhatsAppPicker(');
+const pickerBindingPos = html.indexOf('bindWhatsAppPicker("#registrationWhatsappCountry"');
+assert.ok(pickerFunctionPos >= 0 && pickerBindingPos > pickerFunctionPos, "WhatsApp picker must bind only after its country data/functions are initialized");
+assert.match(html, /function countryFlagUrl\(iso\)/);
+assert.match(html, /class="whatsapp-flag-image"/);
 assert.match(html, /if\(action==="registration-submit"\)\{e\.preventDefault\(\);void requestRegistration\(\);return;\}/);
 assert.match(html, /function internationalWhatsAppValid\(value\)/);
 assert.match(html, /function composeWhatsAppNumber\(selectId,inputId\)/);
+assert.match(html, /https:\/\/flagcdn\.com\/w40\/pk\.png/);
 assert.match(html, /\.modal-backdrop \{ position: fixed; z-index: 110;/);
 assert.doesNotMatch(html, /event\.stopImmediatePropagation\(\);openReturningLogin\(\);return;/);
 
