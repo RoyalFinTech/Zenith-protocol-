@@ -35,6 +35,31 @@ if (!existsSync(builtIndex)) {
 // artifact is served. The root "YOU" is outside the numbered matrix nodes:
 // positions 1-2 are level 1, 3-6 level 2, 7-14 level 3, etc.
 const indexHtml = readFileSync(builtIndex, 'utf8');
+
+// The Render service's rootDir is backend, but this build intentionally bundles the
+// sibling frontend directory. Guard that the registration WhatsApp country picker
+// contract is present before publishing the bundled HTML; otherwise a stale or
+// partially updated selector can ship as a one-option Pakistan fallback.
+const countryDataStart = indexHtml.indexOf('const WHATSAPP_COUNTRIES = [');
+const countryDataEnd = indexHtml.indexOf('].map(([iso,name,dial])=>', countryDataStart);
+const countryCount = countryDataStart >= 0 && countryDataEnd > countryDataStart
+  ? (indexHtml.slice(countryDataStart, countryDataEnd).match(/\["[A-Z]{2}"/g) ?? []).length
+  : 0;
+const pickerFunctionIndex = indexHtml.indexOf('function bindWhatsAppPicker(');
+const registrationBindingIndex = indexHtml.indexOf('bindWhatsAppPicker("#registrationWhatsappCountry"');
+if (countryCount < 200) {
+  throw new Error(`Frontend country picker contract failed: expected at least 200 countries, found ${countryCount}`);
+}
+if (pickerFunctionIndex < 0 || registrationBindingIndex <= pickerFunctionIndex) {
+  throw new Error('Frontend country picker contract failed: registration binding must follow picker initialization helpers');
+}
+if (!indexHtml.includes('function countryFlagUrl(iso)') || !indexHtml.includes('https://flagcdn.com/w40/pk.png')) {
+  throw new Error('Frontend country picker contract failed: image-based country flag rendering is missing');
+}
+const bundledWhatsAppSvg = readFileSync(path.join(frontendDist, 'whatsapp.svg'), 'utf8');
+if (!bundledWhatsAppSvg.includes('<title>WhatsApp</title>') || !bundledWhatsAppSvg.includes('<path fill="#ffffff" d="')) {
+  throw new Error('Frontend country picker contract failed: official WhatsApp glyph asset is missing or malformed');
+}
 let patchedIndex = indexHtml;
 
 // Backend rows must use the zero-based index within their binary level.
