@@ -1,3 +1,15 @@
+# 2026-10-08 — WhatsApp country picker / flag rendering correction
+
+- Root cause confirmed in the frontend source: the registration WhatsApp picker was bound before the `WHATSAPP_COUNTRIES` const was initialized. Because the data is a `const`, this triggered a temporal-dead-zone `ReferenceError` during page initialization. The selector therefore remained on its fallback Pakistan option and later inline event-handler registration could be interrupted.
+- Corrected by moving the registration picker binding below the country data and helper declarations rather than adding a superficial click workaround.
+- Kept Pakistan as the first/default country and retained the broad country list; the visible selected-country flag now uses an actual flag image instead of relying on Windows/Chrome emoji rendering.
+- Replaced the previous custom WhatsApp SVG mark with the maintained WhatsApp brand glyph and rendered it visibly as the white WhatsApp mark on WhatsApp green.
+- Added regression coverage for picker initialization order, country-list breadth, flag image rendering, and the WhatsApp SVG asset. PR #32 passed frontend build/login/trust-UI and backend lint/migration/unit/integration CI, then was squash-merged to `main` as `9840698902798c7566634ef69bbed0b2dcd640f4`.
+- Render **Royal's Workspace** service `Zenith-protocol-` remains configured for `main` with auto-deploy enabled. At the checkpoint, Render had not yet created a deployment for merge commit `9840698902798c7566634ef69bbed0b2dcd640f4`; the last confirmed live deployment remained `dep-db3t05p42hec73ev2c70` from `8904345f6cde5e5211a23832d4c1d2f0e56de4d6`.
+- No manual Render deploy was triggered because auto-deploy is enabled. No authentication, wallet, financial, package, withdrawal, ledger, membership, or admin behavior was changed by this correction.
+
+---
+
 # 2026-10-03 — Engineering hygiene + production-gate checkpoint
 
 - Re-verified the production Render service in **Royal's workspace** (`tea-dadvf02d0e5s73eha320`): `Zenith-protocol-` tracks `main`, auto-deploy is enabled for commits, and the current live deployment is `dep-db06mk5ckfvc73chhkj0` from commit `d243938a4e196556f1822244df80e5237504056d`.
