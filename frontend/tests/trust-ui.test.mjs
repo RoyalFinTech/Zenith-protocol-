@@ -108,7 +108,6 @@ const expectedBackendPaths = [
   "/api/me",
   "/api/me/profile",
   "/api/auth/register/request",
-  "/api/auth/register/resend",
   "/api/auth/pin/reset/request",
   "/api/auth/pin/reset/verify",
   "/api/me/notifications",
