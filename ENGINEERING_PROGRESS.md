@@ -1,3 +1,11 @@
+# 2026-10-08 23:52 UTC — Next-chat handover published
+
+- Added `HANDOFF_NEXT_CHAT_2026-10-08.md` at the repository root. It records the current runtime SHA/deployment, the three-part WhatsApp-picker incident, verified CI, registration/authentication behavior, database safety baseline, provider setup requirements, Render root-directory/health-check drift, push acceptance gate, and an ordered next-work checklist.
+- Current runtime release remains PR #33 commit `924a18099ce402c87ac276362f5140d4626b0a85`, verified `live` on Render deploy `dep-db42kho473hc7382h9j0` in Royal's Workspace. Latest main CI at handover before this documentation update was run #964 and passed; documentation-only changes after the live release are not runtime changes.
+- Next Chat must read the handoff plus this file and `DEPLOYMENT_STATE.md` before making changes; avoid repeating PR #32/#33, verify the user's real browser state after hard refresh, then prioritize Render root-directory/health-path cleanup and device/provider acceptance.
+
+---
+
 # 2026-10-08 — WhatsApp picker production follow-up: root cause + live deployment
 
 - User's follow-up screenshot still showed a Pakistan-only selector and text-style country mark because Render was serving the older frontend bundle. Verified the live Render service was still on commit `8904345f6cde5e5211a23832d4c1d2f0e56de4d6` even after frontend-only commits were merged.
