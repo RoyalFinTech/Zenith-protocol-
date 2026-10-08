@@ -1621,8 +1621,8 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       if(displayName.length<2||displayName.length>80){toast("Name required","Use 2–80 characters.","warning");return;}
       if(!/^\d{4}$/.test(pin)){toast("PIN required","Create a 4-digit security PIN.","warning");return;}
       if(pin!==pinConfirm){toast("PIN mismatch","The two PIN entries must match.","warning");return;}
-      await checkRegistrationAvailability();
-      if(!registrationChecks.username||!registrationChecks.email||!registrationChecks.displayName){toast("Identity check required","Username, email and display name must each show a green AVAILABLE check before continuing.","warning");return;}
+      // Server-side registration is authoritative for uniqueness. Availability indicators are advisory and must not block submission.
+      void checkRegistrationAvailability().catch(()=>{});
       const button=$("#registrationSubmit");if(button){button.disabled=true;button.innerHTML="SAVING REGISTRATION…";}
       try{
         const response=await fetch(`${backendBase()}/api/auth/register/request`,{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({username,email,whatsappNumber:whatsappNumber||null,whatsappUpdatesEnabled,displayName,pin})});
