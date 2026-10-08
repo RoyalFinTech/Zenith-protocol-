@@ -1558,7 +1558,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     function renderWhatsAppCountryFlag(flagId,iso){const flag=$(flagId);if(!flag)return;const c=countryByIso(iso);flag.innerHTML='<img class="whatsapp-flag-image" src="'+countryFlagUrl(c.iso)+'" alt="" width="24" height="18" decoding="async">';const img=flag.querySelector("img");img?.addEventListener("error",()=>{flag.textContent=countryFlag(c.iso);},{once:true});}
     function countryByIso(iso){ return WHATSAPP_COUNTRIES.find(x=>x.iso===iso)||WHATSAPP_COUNTRIES[0]; }
     function whatsappCountryOptions(selected="PK"){
-      return WHATSAPP_COUNTRIES.map(c=>'<option value="'+c.iso+'" '+(c.iso===selected?"selected":"")+'">'+c.name+' (+'+c.dial+')</option>').join("");
+      return WHATSAPP_COUNTRIES.map(c=>`<option value="${c.iso}"${c.iso===selected?" selected":""}>${c.name} (+${c.dial})</option>`).join("");
     }
     function setWhatsAppPicker(selectId,flagId,codeId,iso="PK"){
       const select=$(selectId);if(!select)return;
