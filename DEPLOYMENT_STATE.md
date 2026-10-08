@@ -1,3 +1,12 @@
+# 2026-10-08 23:52 UTC — Handover / current release guard
+
+- Handover instructions: `HANDOFF_NEXT_CHAT_2026-10-08.md` (repository root). It contains the end-to-end engineering context and ordered continuation plan.
+- **Verified runtime live:** deployment `dep-db42kho473hc7382h9j0`, commit `924a18099ce402c87ac276362f5140d4626b0a85`, status `live` in Royal's Workspace. The current `main` may advance with docs-only commits; do not mistake those for a new runtime deployment.
+- PR #33 CI run #961 and main run #962 passed; latest main CI run #964 passed before this documentation update. The picker/build-contract source has passed CI and the backend build included the corrected frontend bundle.
+- Open release/config gates remain: real-browser visual acceptance after hard refresh; permanent Render root-directory correction (current root is `backend`, so frontend-only changes can be ignored by auto-deploy); Render health check currently blank while repository config declares `/health`; real-device push delivery; operator configuration of MailerSend WhatsApp sender/templates. First-admin provisioning remains operator controlled.
+
+---
+
 # 2026-10-08 23:44 UTC — WhatsApp country-picker fix confirmed live
 
 - **Repository main:** `924a18099ce402c87ac276362f5140d4626b0a85` (PR #33)
