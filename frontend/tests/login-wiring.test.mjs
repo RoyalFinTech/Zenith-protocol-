@@ -16,6 +16,10 @@ assert.match(html, /@media \(max-width:820px\)[\s\S]*?\.onboard-art \{\s*display
 assert.equal((html.match(/function openReturningLogin\(\)/g) ?? []).length, 1);
 assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin;/);
 assert.match(html, /window\.zenitOpenExistingLogin=\(\)=>openReturningLogin\(\);/);
+assert.match(html, /id="registrationSubmit"[^>]*type="button"[^>]*data-action="registration-submit"/);
+assert.match(html, /if\(action==="registration-submit"\)\{e\.preventDefault\(\);void requestRegistration\(\);return;\}/);
+assert.match(html, /function internationalWhatsAppValid\(value\)/);
+assert.match(html, /function composeWhatsAppNumber\(selectId,inputId\)/);
 assert.match(html, /\.modal-backdrop \{ position: fixed; z-index: 110;/);
 assert.doesNotMatch(html, /event\.stopImmediatePropagation\(\);openReturningLogin\(\);return;/);
 
