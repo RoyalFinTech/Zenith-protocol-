@@ -1,5 +1,5 @@
 # ZENIT Protocol — Engineering Handover for Next Chat
-**Handover timestamp:** 2026-10-08 23:52 UTC  
+**Handover timestamp:** 2026-10-08 23:57 UTC (refreshed against GitHub and Render)  
 **Repository:** `RoyalFinTech/Zenith-protocol-`  
 **Production branch:** `main`  
 **Production Render workspace:** Royal's Workspace (`tea-dadvf02d0e5s73eha320`)
@@ -8,8 +8,22 @@
 
 ## 1. Current state at handover
 
+## 1A. Fresh repository + Render verification — 2026-10-08 23:57 UTC
+
+This section records a new read-only verification pass made for the requested next-chat handoff. It does not replace the detailed historical engineering record below.
+
+- **Repository:** `RoyalFinTech/Zenith-protocol-`, default/production branch `main`. The pre-refresh main tip was `a4db4bf41380667263de1d68ff73fffe46c6bccf`; subsequent commits from this pass are Markdown-only changes to the three handoff/status files. Re-resolve HEAD at the start of the next chat.
+- **Render workspace:** Royal's Workspace, ID `tea-dadvf02d0e5s73eha320`.
+- **Render service:** `Zenith-protocol-`, ID `srv-dajmafdg1s2s73ba8k5g`, URL `https://zenith-protocol-qvfe.onrender.com`, dashboard `https://dashboard.render.com/web/srv-dajmafdg1s2s73ba8k5g`.
+- **Latest deployment confirmed by the live service's deploy list:** `dep-db42kho473hc7382h9j0`; status `live`; runtime commit `924a18099ce402c87ac276362f5140d4626b0a85`; finished `2026-10-08T23:43:50.537827Z`. No newer deployment appeared in the list during this verification. Do not mistake newer Markdown commits on `main` for a new application runtime.
+- **Current Render settings read from the service:** branch `main`; auto-deploy enabled on commits; root directory `backend`; build command `npm ci && npm run build`; start command `npm start`; health-check path is blank. Repository `render.yaml` specifies `/health`, and backend source implements `GET /health`. Root-directory and health-path drift are still unresolved.
+- **CI evidence:** the prior handover records PR #33 run `#961`, main run `#962`, and latest main run `#964` as passed before that documentation checkpoint. This pass did not run a new build or test suite; all commits made here are documentation-only. Do not claim this refresh itself has fresh runtime test evidence.
+- **Database safety boundary:** the last recorded 2026-10-08 production-slate checkpoint reported zero rows in the named user/auth/wallet/push/financial tables listed below, but this pass did not re-query Supabase and cannot guarantee the counts are unchanged. No database query, insert, delete, migration, wallet action, or admin provisioning was performed in this pass. Re-check with read-only counts before any data cleanup; never repeat a destructive reset merely to reproduce a prior test state.
+- **No production runtime state was changed by this handoff refresh.** The three files being maintained are `ENGINEERING_PROGRESS.md`, `DEPLOYMENT_STATE.md`, and this handoff. The root-directory misconfiguration means documentation-only root changes do not trigger Render auto-deploy.
+
+
 ### GitHub and CI
-- Latest observed `main` commit: `b24844e91e6da8b43881a7a7f771e7f7a2833657`. The latest changes on this commit are engineering/deployment documentation checkpoints.
+- **Main tip observed before this refresh:** `a4db4bf41380667263de1d68ff73fffe46c6bccf` (`docs: link current engineering handoff and release gates`, 2026-10-08 23:54:16 UTC). It superseded `b24844e...` through documentation-only commits: `1fdac8d...` added this handoff, `d30d98b...` updated `ENGINEERING_PROGRESS.md`, and `a4db4bf...` updated `DEPLOYMENT_STATE.md`. This refresh also changes only Markdown. Resolve the live `main` HEAD again on the next chat rather than treating any prior docs SHA as the current tip.
 - Runtime fix merged through **PR #33**: `924a18099ce402c87ac276362f5140d4626b0a85`.
 - CI: PR run **#961** passed all frontend and backend gates; main-branch run **#962** passed for the PR #33 runtime merge; latest main run **#964** passed for commit `b24844e...`.
 - The country-picker code change has been merged. Do not recreate the PR or revert it.
@@ -152,3 +166,13 @@ The backend build script already runs/bundles frontend into `backend/frontend-di
 ## 9. First message to the next ChatGPT
 
 Continue the ZENIT Protocol engineering work from this handover. First verify current `main`, read the top of `ENGINEERING_PROGRESS.md` and `DEPLOYMENT_STATE.md`, and confirm Render's live deployment in Royal's Workspace. PR #33's WhatsApp country-picker fix is already deployed live on commit `924a18099ce402c87ac276362f5140d4626b0a85`; do not repeat its code changes. Help the user validate the visible picker after hard refresh, then prioritize permanent Render root-directory/health-check cleanup, real-device push acceptance, and WhatsApp sender setup while preserving wallet authentication and financial data integrity. Update both engineering Markdown files after each gate.
+
+
+## 10. Additional frontend acceptance items from the user's continuing brief
+
+Alongside the current country-picker acceptance gate, preserve the user's broader frontend requirements when validating the live site:
+
+- The user previously reported mobile onboarding content that was oversized/overlapping, a splash screen that appeared absent, and uncertainty about the returning-member Connect Wallet/login route and its biometrics option. Verify the present source and real rendered behavior before deciding these are still broken or already fixed; do not implement mock wallet/auth flows.
+- Returning users with an existing wallet should retain the intended login/biometrics path into the dashboard, while new users use the real backend registration/wallet-handoff flow. Do not regress the wallet signature/session boundary.
+- The desired visual system is premium dark + gold, with gold primary actions and semantic green reserved for WhatsApp/success/connected states. Validate actual rendered button colors and spacing rather than relying on source descriptions. Check phone-sized layouts and desktop/tablet breakpoints without unnecessary redesign.
+- Keep the current P0 country-picker test first: user must hard-refresh/reopen the live site, then confirm the open dropdown shows the full list, the visible image flag updates with selected country, the dial code changes, and the WhatsApp glyph is clear. If any symptom remains, collect browser console and served-bundle evidence before patching.
