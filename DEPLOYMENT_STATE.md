@@ -604,3 +604,11 @@ The original package lifecycle/admin implementation was already merged into main
 - Replaced the low-contrast WhatsApp SVG with a visible green/white logo treatment.
 - Added frontend regression coverage for the corrected registration action and WhatsApp selector.
 - No production financial/member/admin rows were changed.
+
+
+# 2026-10-08 — Create Account reliability hardening
+
+- Removed the client-side availability check as a submission gate.
+- Backend uniqueness validation remains authoritative; the UI now submits valid registration data directly and surfaces the backend response.
+- Create Account remains explicitly type=button and delegated through the main action handler.
+- No production data rows were changed.
