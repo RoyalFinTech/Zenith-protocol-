@@ -953,7 +953,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         ["01 / 04 · Welcome","A premium digital wealth experience built around people.","A calm, human-first financial workspace for your identity, network and activity.",["Human-first member experience","Premium financial workspace","Clear account journey"],"GET STARTED","https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&fm=jpg&q=86&w=1400","Professional woman in a modern office","YOUR JOURNEY","A human-first financial workspace"],
         ["02 / 04 · Wealth","SEE YOUR FUNDS CLEARLY","Follow your digital-asset activity with a clean visual language inspired by markets, USDT and transparent participation.",["USDT-focused workspace","BNB Smart Chain","Clear financial metrics"],"CONTINUE","https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&fm=jpg&q=86&w=1400","Financial analytics and market charts","DIGITAL WEALTH","USDT · FUNDS · PARTICIPATION"],
         ["03 / 04 · Network","SEE THE STRUCTURE CLEARLY","Understand your matrix, team, activity and referral identity through a visual network experience.",["Network visualization","Matrix structure","Live activity"],"CONTINUE","https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&fm=jpg&q=86&w=1400","Professional team collaboration","NETWORK VIEW","STRUCTURE · ACTIVITY · GROWTH"],
-        ["04 / 04 · Ready","READY TO CREATE YOUR IDENTITY","Choose your username, email and 4-digit PIN. Verify your email, connect your wallet, then enter the live workspace.",["Username + email","Email verification","Wallet + PIN security"],"CREATE IDENTITY","https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&fm=jpg&q=86&w=1400","Modern professional financial workspace","NEXT STEP","IDENTITY → EMAIL → WALLET"]
+        ["04 / 04 · Ready","READY TO CREATE YOUR IDENTITY","Choose your username, mandatory email and 4-digit PIN. Connect your wallet, then enter the live workspace.",["Username + mandatory email","Optional WhatsApp recovery","Wallet + PIN security"],"CREATE IDENTITY","https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&fm=jpg&q=86&w=1400","Modern professional financial workspace","NEXT STEP","IDENTITY → EMAIL → WALLET"]
       ];
       function paint(){
         const d=data[step];
@@ -1502,23 +1502,10 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
 
     function showRegistration(){
       $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.remove("hidden-screen");$("#appShell").classList.add("hidden");
-      const params=new URLSearchParams(location.search);
-      const verified=params.get("email_verified")==="1";
-      const verificationError=params.get("email_verification")==="error";
-      if(verified){showWalletGate();return;}
-      if(verificationError){
-        $("#registrationTitle").textContent="Verification link expired";
-        $("#registrationText").textContent="That confirmation link is invalid or has expired. Request a fresh verification email and continue safely.";
-        $("#registrationForm").classList.remove("hidden-screen");
-        $("#registrationForm").innerHTML='<div class="registration-status"><strong>EMAIL VERIFICATION</strong>Your previous link can no longer be used.</div><button class="btn primary registration-submit" id="restartRegistrationButton" type="button">REQUEST NEW VERIFICATION <span>→</span></button>';
-        $("#registrationStatus").classList.add("hidden-screen");
-        $("#restartRegistrationButton")?.addEventListener("click",()=>{
-          history.replaceState({},'',location.pathname);
-          showRegistration();
-          setTimeout(()=>$("#registrationUsername")?.focus(),80);
-        },{once:true});
-        return;
-      }
+      $("#registrationTitle").textContent="Create your member identity";
+      $("#registrationText").textContent="Email is required for your account profile. WhatsApp is optional and gives you a recovery route if you ever forget your PIN.";
+      $("#registrationForm")?.classList.remove("hidden-screen");
+      $("#registrationStatus")?.classList.add("hidden-screen");
       setTimeout(()=>$("#registrationUsername")?.focus(),80);
     }
     const registrationChecks={username:false,email:false,displayName:false};
@@ -1630,11 +1617,8 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
         localStorage.removeItem("zenitRegistrationVerified");
         localStorage.removeItem("zenitAuthMode");
       }
-      const params = new URLSearchParams(location.search);
-      if (params.has("email_verified") || params.has("email_verification") || params.has("wallet_handoff")) {
-        history.replaceState({}, document.title, location.pathname + location.hash);
-      }
       document.getElementById("onboarding")?.classList.remove("hidden-screen");
+
     }, { once: true });
   </script>
 <script id="zenitRegistrationQaController">
