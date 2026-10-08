@@ -1,7 +1,7 @@
 -- Registered WhatsApp identity, update preference, and one-time PIN recovery challenges.
 alter table public.app_users
   add column if not exists whatsapp_number text,
-  add column if not exists whatsapp_updates_enabled boolean not null default true;
+  add column if not exists whatsapp_updates_enabled boolean not null default false;
 
 alter table public.pending_registrations
   add column if not exists whatsapp_number text,
