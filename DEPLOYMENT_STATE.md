@@ -1,3 +1,17 @@
+# 2026-10-08 — WhatsApp country picker / flag rendering release checkpoint
+
+- **Repository:** `RoyalFinTech/Zenith-protocol-`
+- **Main commit:** `9840698902798c7566634ef69bbed0b2dcd640f4` (PR #32 squash merge)
+- **Render workspace:** Royal's Workspace (`tea-dadvf02d0e5s73eha320`)
+- **Render service:** `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`)
+- **Branch / auto-deploy:** `main` / enabled
+- **CI:** PR #32 workflow #951 completed successfully: frontend build + login/trust-UI tests and backend lint, migration validation, unit tests, and integration tests all passed.
+- **Production source correction:** WhatsApp picker initialization order is fixed; Pakistan remains first/default; the broad country list is restored at runtime; selected flags render from image assets; WhatsApp logo uses the real brand glyph asset.
+- **Render status at checkpoint:** no deployment for `9840698902798c7566634ef69bbed0b2dcd640f4` had appeared yet. Last confirmed live deployment: `dep-db3t05p42hec73ev2c70`, commit `8904345f6cde5e5211a23832d4c1d2f0e56de4d6`, status `live`.
+- No manual deployment was triggered. Existing Render health-check drift (live setting blank vs repository `/health`) remains separate and unchanged.
+
+---
+
 # 2026-10-03 — Engineering hygiene + production-gate checkpoint
 
 - Re-verified the production Render service in **Royal's workspace** (`tea-dadvf02d0e5s73eha320`): `Zenith-protocol-` tracks `main`, auto-deploy is enabled for commits, and the current live deployment is `dep-db06mk5ckfvc73chhkj0` from commit `d243938a4e196556f1822244df80e5237504056d`.
