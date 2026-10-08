@@ -7,7 +7,7 @@ import { issueSession } from '../services/jwt.js';
 import { HttpError } from '../utils/http.js';
 import { v4 as uuid } from 'uuid';
 import { createHash, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual, createPublicKey, verify as verifySignature } from 'node:crypto';
-import { sendVerificationEmail, sendWelcomeEmail } from '../services/email.js';
+import { sendWelcomeEmail } from '../services/email.js';
 import { sendWhatsAppPinResetCode } from '../services/whatsapp.js';
 import { normalizeWhatsAppNumber } from '../utils/phone.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -72,98 +72,52 @@ router.post('/register/request', async (req, res, next) => {
     const whatsappUpdatesEnabled = whatsappNumber ? req.body?.whatsappUpdatesEnabled !== false : false;
     const pin = String(req.body?.pin ?? '');
     if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400, 'Username must be 3–24 characters using lowercase letters, numbers or underscores');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Valid email address required');
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, 'Valid email address required');
     if (displayName.length < 2 || displayName.length > 80) throw new HttpError(400, 'Display name must be 2–80 characters');
     if (!PIN_PATTERN.test(pin)) throw new HttpError(400, 'A 4-digit PIN is required');
 
-    const conflict = await query<{username:string; email:string|null; whatsapp_number:string|null}>(`select username,email,whatsapp_number from app_users where lower(username)=lower($1) or lower(email)=lower($2) or ($3 is not null and whatsapp_number=$3) limit 1`, [username,email,whatsappNumber]);
+    const conflict = await query<{username:string; email:string|null; whatsapp_number:string|null}>(
+      `select username,email,whatsapp_number
+       from app_users
+       where lower(username)=lower($1)
+          or lower(email)=lower($2)
+          or ($3 is not null and whatsapp_number=$3)
+       limit 1`,
+      [username,email,whatsappNumber]
+    );
     if (conflict.rows[0]) {
       if (conflict.rows[0].username?.toLowerCase() === username) throw new HttpError(409, 'That username is already in use');
       if (conflict.rows[0].email?.toLowerCase() === email) throw new HttpError(409, 'That email address is already registered');
       throw new HttpError(409, 'That WhatsApp number is already registered');
     }
 
-    await query(`delete from pending_registrations where verified_at is null and (lower(username)=lower($1) or lower(email)=lower($2) or ($3 is not null and whatsapp_number=$3))`, [username,email,whatsappNumber]);
+    await query(
+      `delete from pending_registrations
+       where consumed_at is null
+         and expires_at > now()
+         and (lower(username)=lower($1)
+           or lower(email)=lower($2)
+           or ($3 is not null and whatsapp_number=$3))`,
+      [username,email,whatsappNumber]
+    );
 
     const pinHash = await hashPin(pin);
-    const token = randomNonce() + randomNonce();
-    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const walletHandoffToken = randomNonce() + randomNonce();
+    const walletHandoffHash = createHash('sha256').update(walletHandoffToken).digest('hex');
     const id = uuid();
-    await query(`insert into pending_registrations (id,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash,token_hash,expires_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,now()+interval '30 minutes')`, [id,username,email,displayName,whatsappNumber,whatsappUpdatesEnabled,pinHash,tokenHash]);
-    const verifyUrl = `${env.apiPublicUrl}/api/auth/register/verify?token=${encodeURIComponent(token)}`;
-    try {
-      await sendVerificationEmail({to:email,username,verifyUrl,registrationId:id,appOrigin:env.appOrigin});
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('ZENIT verification email send failed', message);
-      await query(`delete from pending_registrations where id=$1`, [id]);
-      if (message === 'EMAIL_PROVIDER_NOT_CONFIGURED') {
-        throw new HttpError(503, `Email verification provider is not configured (${env.emailProvider})`);
-      }
-      throw new HttpError(502, 'Verification email service is temporarily unavailable');
-    }
-    res.status(202).json({email});
-  } catch (e) { console.error('ZENIT registration request failed', e instanceof Error ? e.message : String(e)); next(e); }
-});
 
-router.post('/register/resend', async (req,res,next)=>{
-  try{
-    const email=String(req.body?.email??'').trim().toLowerCase();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400,'Valid email address required');
-    const row=(await query<{id:string;username:string;email:string;display_name:string;updated_at:Date;token_hash:string;expires_at:Date}>(
-      `select id,username,email,display_name,updated_at,token_hash,expires_at
-       from pending_registrations
-       where lower(email)=lower($1) and verified_at is null and consumed_at is null
-       order by created_at desc limit 1`,[email]
-    )).rows[0];
-    if(!row){ res.status(202).json({accepted:true}); return; }
-    if(new Date(row.updated_at).getTime()>Date.now()-30_000) {
-      throw new HttpError(429,'Please wait before requesting another verification email');
-    }
-    const token=randomNonce()+randomNonce();
-    const tokenHash=createHash('sha256').update(token).digest('hex');
-    await query(`update pending_registrations set token_hash=$1,expires_at=now()+interval '30 minutes',updated_at=now() where id=$2`,[tokenHash,row.id]);
-    const verifyUrl=`${env.apiPublicUrl}/api/auth/register/verify?token=${encodeURIComponent(token)}`;
-    try{
-      await sendVerificationEmail({to:row.email,username:row.username,verifyUrl,registrationId:row.id,appOrigin:env.appOrigin});
-    }catch(error){
-      await query(`update pending_registrations set token_hash=$1,expires_at=$2,updated_at=$3 where id=$4`,[row.token_hash,row.expires_at,row.updated_at,row.id]).catch(()=>{});
-      console.error('ZENIT verification resend failed',error instanceof Error?error.message:String(error));
-      throw new HttpError(502,'Verification email service is temporarily unavailable');
-    }
-    res.status(202).json({accepted:true,email:row.email});
-  }catch(e){next(e);}
-});
+    await query(
+      `insert into pending_registrations
+       (id,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash,token_hash,wallet_handoff_token_hash,wallet_handoff_expires_at,expires_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$8,now()+interval '10 minutes',now()+interval '30 minutes')`,
+      [id,username,email,displayName,whatsappNumber,whatsappUpdatesEnabled,pinHash,walletHandoffHash]
+    );
 
-router.get('/register/verify', async (req, res, next) => {
-  try {
-    const token = String(req.query?.token ?? '');
-    if (!token) throw new HttpError(400, 'Verification token is required');
-    const tokenHash = createHash('sha256').update(token).digest('hex');
-    const handoffToken = randomNonce() + randomNonce();
-    const handoffHash = createHash('sha256').update(handoffToken).digest('hex');
-    const row = (await query<{id:string}>(`
-      update pending_registrations
-      set verified_at=now(),
-          wallet_handoff_token_hash=$2,
-          wallet_handoff_expires_at=now()+interval '10 minutes',
-          updated_at=now()
-      where token_hash=$1
-        and verified_at is null
-        and expires_at > now()
-      returning id
-    `, [tokenHash, handoffHash])).rows[0];
-    const target = new URL(env.appOrigin);
-    if (!row) {
-      target.searchParams.set('email_verification', 'error');
-      target.searchParams.set('reason', 'invalid_or_expired');
-      res.redirect(target.toString());
-      return;
-    }
-    target.searchParams.set('wallet_handoff', handoffToken);
-    target.searchParams.set('email_verified', '1');
-    res.redirect(target.toString());
-  } catch (e) { next(e); }
+    res.status(202).json({ email, registrationId: id, walletHandoffToken });
+  } catch (e) {
+    console.error('ZENIT registration request failed', e instanceof Error ? e.message : String(e));
+    next(e);
+  }
 });
 
 router.post('/nonce', async (req, res, next) => {
@@ -187,7 +141,7 @@ router.post('/verify', async (req, res, next) => {
     const nonce = String(req.body?.nonce ?? '');
     const walletHandoffToken = String(req.body?.walletHandoffToken ?? '');
     if (!/^0x[a-fA-F0-9]{40}$/.test(raw) || !/^0x[0-9a-fA-F]+$/.test(signature) || !nonce) throw new HttpError(400, 'address, signature and nonce are required');
-    if (walletHandoffToken && walletHandoffToken.length > 256) throw new HttpError(400, 'Invalid email verification handoff');
+    if (walletHandoffToken && walletHandoffToken.length > 256) throw new HttpError(400, 'Invalid registration handoff');
     const address = getAddress(raw);
     await client.query('begin');
     const nonceResult = await client.query<{ id: string; message: string; expires_at: Date; used_at: Date | null }>(`select id,message,expires_at,used_at from auth_nonces where nonce=$1 and address=$2 for update`, [nonce,address]);
@@ -199,25 +153,25 @@ router.post('/verify', async (req, res, next) => {
     if (!valid) throw new HttpError(401, 'Wallet signature verification failed');
 
     let user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`select u.id,u.role,u.username,u.email,u.display_name,u.pin_hash from app_users u where u.wallet_address=$1 or exists (select 1 from wallet_accounts wa where wa.user_id=u.id and lower(wa.address)=lower($1) and wa.chain_id=$2) limit 1`, [address, env.chainId])).rows[0];
-    let registration: { id:string; username:string; email:string; display_name:string; whatsapp_number:string; whatsapp_updates_enabled:boolean; pin_hash:string|null } | undefined;
+    let registration: { id:string; username:string; email:string; display_name:string; whatsapp_number:string|null; whatsapp_updates_enabled:boolean; pin_hash:string|null } | undefined;
     if (walletHandoffToken) {
       const handoffHash = createHash('sha256').update(walletHandoffToken).digest('hex');
-      registration = (await client.query<{ id:string; username:string; email:string; display_name:string; whatsapp_number:string; whatsapp_updates_enabled:boolean; pin_hash:string|null }>(`
+      registration = (await client.query<{ id:string; username:string; email:string; display_name:string; whatsapp_number:string|null; whatsapp_updates_enabled:boolean; pin_hash:string|null }>(`
         select id,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash
         from pending_registrations
         where wallet_handoff_token_hash=$1
-          and verified_at is not null
           and wallet_handoff_expires_at > now()
+          and expires_at > now()
           and consumed_at is null
         for update
       `, [handoffHash])).rows[0];
-      if (!registration) throw new HttpError(400, 'Email verification is required before wallet authentication');
+      if (!registration) throw new HttpError(400, 'Registration handoff is invalid or expired');
     }
     if (!user) {
       const username = registration?.username ?? `zenit_${address.slice(2,10).toLowerCase()}`;
       const email = registration?.email ?? null;
       const displayName = registration?.display_name ?? `Member ${address.slice(0,6)}…${address.slice(-4)}`;
-      user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`insert into app_users (wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash,role,referral_code) values ($1,$2,$3,$4,$5,$6,$7,'Member',$8) returning id,role,username,email,display_name,pin_hash`, [address,username,email,displayName,registration?.whatsapp_number ?? null,registration?.whatsapp_updates_enabled ?? true,registration?.pin_hash ?? null,randomReferralCode()])).rows[0]!;
+      user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`insert into app_users (wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash,role,referral_code) values ($1,$2,$3,$4,$5,$6,$7,'Member',$8) returning id,role,username,email,display_name,pin_hash`, [address,username,email,displayName,registration?.whatsapp_number ?? null,registration?.whatsapp_updates_enabled ?? false,registration?.pin_hash ?? null,randomReferralCode()])).rows[0]!;
     } else if (registration) {
       try {
         user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`update app_users set username=$1,email=$2,display_name=$3,whatsapp_number=$4,whatsapp_updates_enabled=$5,updated_at=now() where id=$6 returning id,role,username,email,display_name,pin_hash`, [registration.username,registration.email,registration.display_name,registration.whatsapp_number,registration.whatsapp_updates_enabled,user.id])).rows[0]!;
