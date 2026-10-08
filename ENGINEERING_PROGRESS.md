@@ -1014,3 +1014,16 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - The existing MailerSend WhatsApp PIN recovery implementation remains in the branch and is ready to use once the operator configures a connected sender, approved template, and fresh API credential. No credentials are committed or deployed.
 - No production database mutation occurred in this source-control checkpoint. The production database still needs the additive WhatsApp/PIN recovery migration after the release code is ready.
 - Release intent: merge this production-first authentication change, deploy through Royal Workspace, apply the additive WhatsApp identity/PIN recovery migration, and verify the live service before declaring the feature live.
+
+
+# 2026-10-08 — Registration Create Account / WhatsApp UX incident checkpoint
+
+- Production feedback identified that the Create Account action appeared unresponsive when a WhatsApp number was entered.
+- Root cause was confirmed in the merged production frontend: requestRegistration() called internationalWhatsAppValid(), but that helper was not defined anywhere in the frontend source. The resulting ReferenceError aborted the registration path before the wallet handoff step.
+- Replaced the fragile direct button binding with document-level action delegation using a type="button" registration action. The submit path is now available even if the registration panel is dynamically replaced.
+- Registration submission remains mandatory-email / optional-WhatsApp. The availability check is still server-backed and no PIN is stored in browser storage.
+- Added a country-code picker with flags, Pakistan (+92) first/default, and a broad country/territory list. The registration input now uses a Pakistan-local-number placeholder rather than the previous Gambian-format placeholder.
+- Added shared E.164 composition/validation and reused it for registration, Profile, and WhatsApp PIN recovery.
+- Replaced the low-contrast transparent WhatsApp asset with a visible green circular WhatsApp mark and white glyph.
+- Frontend regression tests now assert the registration action wiring, WhatsApp validation helper, Pakistan-first selector, country flags, and removal of the Gambian placeholder.
+- No financial/member/admin records were modified by this source change.
