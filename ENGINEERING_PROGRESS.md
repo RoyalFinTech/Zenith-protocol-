@@ -1002,3 +1002,15 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - PIN recovery remains strictly account-bound: recovery requires the WhatsApp number already stored on the target member account; an arbitrary/unrecognized number cannot be used to reset another user's PIN.
 - Added frontend trust-test coverage for the optional label and reminder language.
 - No production deployment or production database mutation was performed in this checkpoint.
+
+
+# 2026-10-08 — Remove email verification gate / production-first checkpoint
+
+- Registration no longer requires email verification. The email field remains mandatory and is stored as part of the member identity.
+- New registration now creates a short-lived server-side pending-registration record and returns a one-time wallet handoff token directly. The wallet signature remains the authentication boundary; no email link is required.
+- The existing WhatsApp registration field remains optional. The security reminder remains in the registration flow, and the backend only accepts a WhatsApp PIN recovery request when the submitted number matches an existing account's stored WhatsApp number.
+- MailerSend/Resend transactional email adapter code is retained for future account messaging, but email-provider configuration is no longer a production startup or registration release gate.
+- Retired the registration email-resend and email-verification HTTP routes and removed their frontend callers/UI.
+- The existing MailerSend WhatsApp PIN recovery implementation remains in the branch and is ready to use once the operator configures a connected sender, approved template, and fresh API credential. No credentials are committed or deployed.
+- No production database mutation occurred in this source-control checkpoint. The production database still needs the additive WhatsApp/PIN recovery migration after the release code is ready.
+- Release intent: merge this production-first authentication change, deploy through Royal Workspace, apply the additive WhatsApp identity/PIN recovery migration, and verify the live service before declaring the feature live.
