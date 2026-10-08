@@ -1027,3 +1027,11 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Replaced the low-contrast transparent WhatsApp asset with a visible green circular WhatsApp mark and white glyph.
 - Frontend regression tests now assert the registration action wiring, WhatsApp validation helper, Pakistan-first selector, country flags, and removal of the Gambian placeholder.
 - No financial/member/admin records were modified by this source change.
+
+
+# 2026-10-08 — Create Account reliability hardening follow-up
+
+- After the initial production Create Account fix, the remaining registration reliability risk was found in the client-side availability preflight. The UI treated the asynchronous username/email/display-name availability indicators as a hard prerequisite even though the backend is authoritative for uniqueness.
+- Create Account now performs local format validation and submits directly to `/api/auth/register/request`. Availability checks remain advisory for user feedback and no longer make the primary action appear dead when that background request is delayed or unavailable.
+- The registration action remains delegated through the document click handler and the button is explicitly `type="button"`.
+- This is a source-only reliability correction; no member, financial, ledger, withdrawal, or admin records were changed.
