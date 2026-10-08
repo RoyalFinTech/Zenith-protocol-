@@ -11,6 +11,14 @@ assert.doesNotMatch(html, /wallet-address-value" title="\$\{esc\(appState\.walle
 
 assert.match(html, /class="username-input-prefix"[^>]*>@<\/span>/);
 assert.match(html, /registrationUsername/);
+assert.match(html, /registrationEmail/);
+assert.match(html, /registrationWhatsapp/);
+assert.match(html, /registrationWhatsappUpdates/);
+assert.match(html, /WhatsApp number <em class="muted">\(optional\)<\/em>/);
+assert.match(html, /showRegistrationWhatsAppReminder/);
+assert.match(html, /Continue without WhatsApp/);
+assert.match(html, /An unregistered number cannot be used to reset your PIN/);
+assert.match(html, /src="\/whatsapp\.svg"/);
 assert.match(html, /replace\(\/\[\^a-z0-9_\]\/g,""\)/);
 
 assert.match(html, /\/api\/packages\/catalog/);
@@ -41,10 +49,24 @@ assert.doesNotMatch(html, /const address=prompt\("Destination BNB Smart Chain ad
 
 assert.match(html, /action==="package-preview"/);
 assert.match(html, /images\.unsplash\.com\/photo-1762341121210-6bd877d766b0/);
-assert.match(html, /images\.unsplash\.com\/photo-1591696205602-2f950c417cb9/);
+assert.match(html, /images\.unsplash\.com\/photo-1494790108377-be9c29b29330/);
+assert.match(html, /images\.unsplash\.com\/photo-1551288049-bebda4e38f71/);
+assert.match(html, /images\.unsplash\.com\/photo-1556761175-b413da4baf72/);
+assert.match(html, /images\.unsplash\.com\/photo-1556761175-4b46a572b786/);
 assert.ok(html.includes('const hasSession=Boolean(localStorage.getItem("zenitToken"))'));
 assert.ok(html.includes('fetch(`${backendBase()}/api/me`'));
 assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
+assert.doesNotMatch(html, /showVerificationSentModal/);
+assert.doesNotMatch(html, /modalVerificationTimer/);
+assert.doesNotMatch(html, /api\/auth\/register\/resend/);
+assert.match(html, /FORGOT PIN \/ ACCESS HELP/);
+assert.match(html, /api\/auth\/pin\/reset\/request/);
+assert.match(html, /api\/auth\/pin\/reset\/verify/);
+assert.doesNotMatch(html, /SEND VERIFICATION EMAIL/);
+assert.doesNotMatch(html, /EMAIL VERIFICATION/);
+assert.doesNotMatch(html, /email_verified/);
+assert.doesNotMatch(html, /email_verification/);
+assert.doesNotMatch(html, /zenitPendingRegistrationDraft",JSON\.stringify\(\{[^}]*pin/);
 assert.ok(html.includes('pubKeyCredParams:[{type:"public-key",alg:-7}]'));
 
 
@@ -85,6 +107,9 @@ const expectedBackendPaths = [
   "/api/dashboard/referrals",
   "/api/me",
   "/api/me/profile",
+  "/api/auth/register/request",
+  "/api/auth/pin/reset/request",
+  "/api/auth/pin/reset/verify",
   "/api/me/notifications",
   "/api/me/notifications/read-all",
   "/api/me/preferences",

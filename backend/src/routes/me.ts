@@ -6,13 +6,14 @@ import { sendWelcomeEmail } from '../services/email.js';
 import { env } from '../config.js';
 import { validatePushSubscriptionInput } from '../services/web-push.js';
 import { sendUserPushTestNotification } from '../services/notifications.js';
+import { normalizeWhatsAppNumber } from '../utils/phone.js';
 
 const router = Router();
 router.use(requireAuth);
 
 router.get('/', async (req,res,next)=>{
   try {
-    const user = (await query(`select id,wallet_address,username,email,display_name,role,referral_code,avatar_url,created_at from app_users where id=$1`, [req.auth!.userId])).rows[0];
+    const user = (await query(`select id,wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,role,referral_code,avatar_url,created_at from app_users where id=$1`, [req.auth!.userId])).rows[0];
     if (!user) throw new HttpError(404,'User not found');
     const preference = (await query(`select theme,compact_density,activity_notifications,reduced_motion from user_preferences where user_id=$1`, [req.auth!.userId])).rows[0];
     res.json({ user, preference });
@@ -24,6 +25,13 @@ router.patch('/profile', async (req,res,next)=>{
     const displayName = String(req.body?.displayName ?? '').trim();
     const username = String(req.body?.username ?? '').trim().toLowerCase();
     const email = String(req.body?.email ?? '').trim().toLowerCase();
+    const whatsappNumberRaw = req.body?.whatsappNumber == null ? '' : String(req.body.whatsappNumber).trim();
+    let whatsappNumber: string | null = null;
+    if (whatsappNumberRaw) {
+      try { whatsappNumber = normalizeWhatsAppNumber(whatsappNumberRaw); }
+      catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Valid WhatsApp number required'); }
+    }
+    const whatsappUpdatesEnabled = Boolean(whatsappNumber) && req.body?.whatsappUpdatesEnabled !== false;
     if (!/^[a-z0-9_]{3,24}$/.test(username)) throw new HttpError(400,'Username must be 3–24 characters using lowercase letters, numbers or underscores');
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400,'Valid email address required');
     const avatarUrl = req.body?.avatarUrl == null ? null : String(req.body.avatarUrl);
@@ -31,9 +39,9 @@ router.patch('/profile', async (req,res,next)=>{
     const existing = (await query<{email:string|null}>(`select email from app_users where id=$1`, [req.auth!.userId])).rows[0];
     let user;
     try {
-      user = (await query(`update app_users set username=$1,email=nullif($2,''),display_name=$3,avatar_url=coalesce($4,avatar_url),updated_at=now() where id=$5 returning id,wallet_address,username,email,display_name,role,referral_code,avatar_url,created_at`, [username,email,displayName,avatarUrl,req.auth!.userId])).rows[0];
+      user = (await query(`update app_users set username=$1,email=nullif($2,''),display_name=$3,whatsapp_number=$4,whatsapp_updates_enabled=$5,avatar_url=coalesce($6,avatar_url),updated_at=now() where id=$7 returning id,wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,role,referral_code,avatar_url,created_at`, [username,email,displayName,whatsappNumber,whatsappUpdatesEnabled,avatarUrl,req.auth!.userId])).rows[0];
     } catch (error:any) {
-      if (error?.code === '23505') throw new HttpError(409,'That username is already in use');
+      if (error?.code === '23505') throw new HttpError(409,'That username, email address, or WhatsApp number is already in use');
       throw error;
     }
     if (email && email !== (existing?.email ?? null)) {

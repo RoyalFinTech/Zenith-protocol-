@@ -880,3 +880,137 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Audited the returning WebAuthn architecture; it remains browser/platform WebAuthn with backend challenge verification and direct dashboard restoration. No private-key extraction or fake biometric layer exists.
 - Audited Resend: configured `zenitprotocol.com` is present but verification is failed for DKIM and SPF records. No sender-domain changes were made without verified operator control.
 - Triggered Render deployment `dep-db21aiss728c73an544g` for the cleanup commit. It remains `build_in_progress`; live verification is pending.
+
+# 2026-10-05 — MailerSend free-domain email-provider checkpoint
+
+- Added a provider-selectable transactional email path without changing ZENIT registration, email-verification token, wallet handoff, wallet authentication, or database architecture.
+- backend/src/services/email.ts now supports both the existing Resend API and MailerSend's Email API, selected by EMAIL_PROVIDER.
+- MailerSend sends to POST https://api.mailersend.com/v1/email and uses the provider's verified/trial-domain sender. The integration includes both HTML and plain-text bodies for verification and welcome messages.
+- backend/src/routes/auth.ts now returns a controlled 503 configuration response when the selected email provider is not configured, instead of exposing provider-specific implementation errors.
+- backend/.env.example documents EMAIL_PROVIDER, MAILERSEND_API_KEY, MAILERSEND_FROM, and MAILERSEND_FROM_NAME. No real API key or secret was committed.
+- Added backend/tests/email.test.ts covering the MailerSend endpoint, authorization header, sender/recipient payload, verification subject/text, tags, and provider selection.
+- MailerSend's current Sandbox mode provides a trial domain and supports testing without the operator owning a separate sending domain; account approval is needed to lift the Sandbox recipient restriction beyond the initial two recipients. The current free plan is 500 emails/month after approval.
+- No MailerSend account was created or connected from the engineering environment, and no provider credential was added to Render. Production email therefore remains on the existing Resend configuration until the operator creates/approves the MailerSend account and supplies the API token and trial-domain sender.
+- No production database rows or financial/member/admin records were changed.
+- Next operator action for this branch: create/sign into MailerSend using the existing mailbox, copy the MailerSend trial-domain sender address, create an API token, then configure Render with EMAIL_PROVIDER=mailersend, MAILERSEND_API_KEY, MAILERSEND_FROM, and MAILERSEND_FROM_NAME=ZENIT Protocol. The existing Gmail address can remain the recipient for a real registration verification test.
+- Release status: feature branch only; no merge or production deployment claimed at this checkpoint.
+
+# 2026-10-05 — Email-provider regression checkpoint
+
+- CI exposed a stale frontend trust assertion that still expected an onboarding image URL removed by the current approved onboarding imagery.
+- Updated frontend/tests/trust-ui.test.mjs to assert the four current onboarding image sources used by the active zenitOnboardingBootstrap instead of the obsolete source.
+- Preserved the trust-test purpose: the test still proves that onboarding contains the intended real imagery rather than removing the imagery assertion.
+- Added email template regression coverage in backend/tests/email.test.ts confirming the verification payload contains the official ZENIT logo URL, official logo alt text, custom confirmation button markup, and MailerSend delivery endpoint when MailerSend is selected.
+- Latest branch head is cfbd93b16b1709a05a70e715f7329c5ea8b4c2dc.
+- CI run #798 is executing against that latest head; no green result is claimed until the run completes.
+- No production deployment, production email-provider switch, production database mutation, or secret change occurred.
+
+# 2026-10-05 — MailerSend SMTP relay integration checkpoint
+
+- Added direct MailerSend SMTP relay support to the existing transactional email adapter.
+- MailerSend transport now supports STARTTLS over port 587, TLS 1.2 minimum, bounded SMTP connection pooling, and connection/greeting/socket timeouts.
+- The existing custom ZENIT HTML and plain-text templates are unchanged, including the official ZENIT logo URL, verification button, branding, and verification wording.
+- MailerSend SMTP authentication uses dedicated Render environment variables:
+  - MAILERSEND_SMTP_HOST
+  - MAILERSEND_SMTP_PORT
+  - MAILERSEND_SMTP_USER
+  - MAILERSEND_SMTP_PASSWORD
+  - MAILERSEND_FROM
+  - MAILERSEND_FROM_NAME
+- MAILERSEND_SMTP_PASSWORD is not committed to GitHub, logs, tests, or documentation.
+- The SMTP username/password supplied during this engineering session was not written into the repository or Render environment. MailerSend's security guidance recommends resetting SMTP credentials when they have been shared in plain text; a fresh SMTP password should therefore be generated before production configuration.
+- MailerSend requires the From address to match the verified/trial sending domain; the SMTP username itself is not the From address.
+- Added Nodemailer 10.0.13 as the SMTP transport library. Nodemailer currently supports Node.js 20+, matching the backend runtime requirement.
+- Added regression coverage for SMTP transport creation and the custom ZENIT template, including the official logo URL and Message-ID behavior.
+- No production deployment, production email-provider switch, production database mutation, or secret update was performed.
+- Latest implementation remains isolated in draft PR #31.
+
+
+# 2026-10-05 — MailerSend SMTP CI correction checkpoint
+
+- GitHub Actions run #815 exposed a TypeScript lint failure in `backend/src/services/email.ts`: `createHash` was used for the deterministic SMTP `Message-ID` but was not imported.
+- Corrected the source by importing `createHash` from `node:crypto`; no authentication, database, provider-selection, or email-template behavior was otherwise changed.
+- Frontend CI for the affected PR was already green in run #815; backend failed only at TypeScript lint before unit/integration stages could run.
+- Fix commit: `d080938f7dc2fb7a5d6532ce2bfd36bc425d3599`.
+- PR #31 remains open, draft, unmerged, and not deployed to Render production. No production environment variables, database rows, or email-provider settings were changed.
+- The MailerSend API credential shared in chat is not present in repository files or Render configuration. It should be revoked/rotated before any use because it was exposed in chat.
+
+
+# 2026-10-05 — MailerSend SMTP CI green checkpoint
+
+- GitHub Actions **Zenit CI run #820** completed successfully on feature head `f0d0bdf95b706e6ff6db91d8700a89a8c0e95497`.
+- Backend lint, admin-provisioning guard, migration application, unit tests, and the remaining backend gates completed successfully after the `createHash` import fix; frontend build, login regression, and trust-UI regression also passed.
+- PR #31 remains draft, open, mergeable, and unmerged. It has not been deployed to Render production.
+- No production database records, Render environment variables, email-provider settings, or production credentials were changed.
+- The API token shared in chat remains intentionally unused; because it was exposed, it should be revoked/rotated before any future use.
+
+
+# 2026-10-05 — CI/install parity checkpoint
+
+- Changed the GitHub Actions backend dependency installation from `npm install` to `npm ci` so CI validates the backend lockfile using the same clean-install mode used by the Render production service. The frontend workflow remains on its existing `npm install` path because its lockfile currently has unrelated drift.
+- Added regression coverage for all three email-provider paths now supported by the adapter: MailerSend SMTP, MailerSend API, and the existing Resend API.
+- Removed an internal citation marker from repository documentation; source docs contain no chat-only citation syntax.
+- No production deployment, Render environment change, database mutation, or secret update occurred.
+
+
+# 2026-10-05 — CI lockfile drift checkpoint
+
+- Backend `npm ci` passed on the MailerSend branch, confirming the backend lockfile is compatible with the new Nodemailer dependency.
+- Frontend `npm ci` exposed pre-existing package-lock drift involving the existing Reown/WalletConnect dependency tree; this is unrelated to the MailerSend provider implementation.
+- Restored the frontend CI install command to `npm install` to avoid expanding this feature into an unrelated frontend dependency refresh.
+- Backend CI remains on `npm ci` to mirror Render's production install behavior.
+- No production deployment, Render environment change, database mutation, or secret update occurred.
+
+
+# 2026-10-05 — MailerSend release-gate validation checkpoint
+
+- GitHub Actions **Zenit CI run #835** completed successfully on the latest feature head ac9d50e44c41296d15eb462671b1a8e01ddb7d8c.
+- Backend validation passed with clean npm ci, TypeScript lint, automatic-admin provisioning guard, all migrations, unit tests, and integration tests.
+- Frontend validation passed with its existing npm install, production build, login regression, and trust-UI regression.
+- Email regression coverage now exercises MailerSend SMTP, MailerSend API, and the existing Resend API path.
+- PR #31 remains draft/open/unmerged and has not been deployed to Render. Production remains on the existing live deployment in Royal's Workspace.
+- No production environment variables, email-provider settings, secrets, database rows, or financial/member/admin records were changed.
+
+
+# 2026-10-05 — Registration confirmation + WhatsApp PIN recovery checkpoint
+
+- Registration now captures a normalized international WhatsApp number and an explicit preference for important ZENIT account/security updates. The number is persisted through pending registration and wallet handoff into the member profile.
+- Registration submission now shows a dedicated confirmation modal with the destination email and a 30-second resend countdown. Resend uses a dedicated server endpoint and does not require the PIN to be retained in browser storage.
+- Returning-member login now exposes **FORGOT PIN / ACCESS HELP**. Recovery requires the registered WhatsApp number, a one-time 6-digit code, and creation of a new 4-digit PIN. Recovery challenges are short-lived, attempt-limited, one-time, and recovery revokes existing active sessions before issuing a fresh session.
+- PIN recovery attempts are audited as account-security events. Recovery requests and verification are independently rate-limited.
+- MailerSend WhatsApp delivery is implemented against its WhatsApp API. Production sending requires an enabled WhatsApp add-on, connected WhatsApp sender, approved template(s), and an API token with the `whatsapp_full` scope. The sender/template identifiers remain environment-configured and are not invented in source.
+- A real WhatsApp brand SVG is included at `frontend/public/whatsapp.svg` and used in registration/profile/recovery UI.
+- Important provider boundary: MailerSend cannot create the WhatsApp sender or approved templates through the current API. Those are operator-managed in the MailerSend dashboard.
+- Current Render production has not been switched to MailerSend/WhatsApp because no fresh rotated credential, connected sender identifier, or approved template IDs have been configured. No production database records were changed.
+- A test-file mistake briefly caused two automatic main-branch Render deploys; the file was immediately removed and the reverted main commit is the intended pre-feature source state. The feature itself remains on draft PR #31 only.
+
+
+# 2026-10-05 — Final UX/auth hardening checkpoint
+
+- Registration no longer persists a draft copy of the PIN in browser storage; resend uses the server-side pending registration and email address only.
+- Legacy members without a registered WhatsApp number are prompted to complete recovery/update setup from the profile flow.
+- Successful PIN recovery now refreshes the wallet bridge's in-memory auth token from local storage so subsequent wallet operations use the new session.
+- MailerSend WhatsApp sender configuration documentation now accepts either the connected phone-number identifier or MailerSend sender ID, matching the provider API.
+- No production database, Render environment, or provider credential changes were made.
+
+
+# 2026-10-06 — Optional WhatsApp registration security checkpoint
+
+- Registration WhatsApp is now explicitly optional: users may complete registration without a WhatsApp number.
+- If a user leaves WhatsApp blank, the registration flow presents a security reminder explaining that WhatsApp provides the PIN-recovery route, offers Add WhatsApp or Continue without WhatsApp, and allows the number to be added later from Profile.
+- Backend registration now accepts a null WhatsApp number and only checks WhatsApp uniqueness when a number is supplied.
+- PIN recovery remains strictly account-bound: recovery requires the WhatsApp number already stored on the target member account; an arbitrary/unrecognized number cannot be used to reset another user's PIN.
+- Added frontend trust-test coverage for the optional label and reminder language.
+- No production deployment or production database mutation was performed in this checkpoint.
+
+
+# 2026-10-08 — Remove email verification gate / production-first checkpoint
+
+- Registration no longer requires email verification. The email field remains mandatory and is stored as part of the member identity.
+- New registration now creates a short-lived server-side pending-registration record and returns a one-time wallet handoff token directly. The wallet signature remains the authentication boundary; no email link is required.
+- The existing WhatsApp registration field remains optional. The security reminder remains in the registration flow, and the backend only accepts a WhatsApp PIN recovery request when the submitted number matches an existing account's stored WhatsApp number.
+- MailerSend/Resend transactional email adapter code is retained for future account messaging, but email-provider configuration is no longer a production startup or registration release gate.
+- Retired the registration email-resend and email-verification HTTP routes and removed their frontend callers/UI.
+- The existing MailerSend WhatsApp PIN recovery implementation remains in the branch and is ready to use once the operator configures a connected sender, approved template, and fresh API credential. No credentials are committed or deployed.
+- No production database mutation occurred in this source-control checkpoint. The production database still needs the additive WhatsApp/PIN recovery migration after the release code is ready.
+- Release intent: merge this production-first authentication change, deploy through Royal Workspace, apply the additive WhatsApp identity/PIN recovery migration, and verify the live service before declaring the feature live.

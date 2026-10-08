@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { query } from '../db.js';
 import { sendPushToSubscription, type PushSubscriptionInput } from './web-push.js';
+import { sendUserWhatsAppUpdate } from './whatsapp.js';
 
 export async function createUserNotification(
   client: PoolClient,
@@ -12,7 +13,13 @@ export async function createUserNotification(
     `insert into notifications(user_id,title,message) values($1,$2,$3) returning id`,
     [userId, title, message]
   );
-  return result.rows[0]?.id;
+  const notificationId = result.rows[0]?.id;
+  if (notificationId) {
+    void sendUserWhatsAppUpdate(userId, title, message).catch(error => {
+      console.warn('ZENIT WhatsApp notification delivery failed', error instanceof Error ? error.message : String(error));
+    });
+  }
+  return notificationId;
 }
 
 export async function sendUserPushNotification(
