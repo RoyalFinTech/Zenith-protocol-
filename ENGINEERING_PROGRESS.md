@@ -1,3 +1,15 @@
+# 2026-10-08 23:57 UTC — Requested handoff refresh; production state rechecked
+
+- Re-read the root handoff and the leading engineering/deployment notes, then re-queried GitHub and Render. Repository: `RoyalFinTech/Zenith-protocol-`; default branch: `main`. Main tip immediately before this refresh was `a4db4bf41380667263de1d68ff73fffe46c6bccf` (documentation-only status-link commit). The commits immediately before it were `1fdac8d...` (handoff file) and `d30d98b...` (this file's earlier handoff link); these superseded `b24844e...`. The current refresh updates Markdown only.
+- **Runtime stays on PR #33 commit `924a18099ce402c87ac276362f5140d4626b0a85`**: Render deployment `dep-db42kho473hc7382h9j0` was still the latest deployment found, status `live`, completed at `2026-10-08T23:43:50.537827Z`. Do not represent the newer documentation commits as runtime deployments.
+- Re-verified Royal's Workspace (`tea-dadvf02d0e5s73eha320`) service `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`), URL `https://zenith-protocol-qvfe.onrender.com`, branch `main`, auto-deploy `yes`, root directory `backend`, build `npm ci && npm run build`, start `npm start`, health-check path blank. Drift remains versus repository `render.yaml` (`/health`) and backend `GET /health`.
+- The previous handover reports CI PR run #961, main run #962 and latest main run #964 passed before its documentation update. No new CI/build/device acceptance was run by this documentation-only refresh.
+- The 2026-10-08 clean-slate checkpoint previously recorded zero rows in key app/auth/wallet/push/financial tables. This refresh did not re-query Supabase and made no database changes; those counts must be treated as **last recorded**, not guaranteed current values. Before future cleanup, use read-only verification first and do not repeat destructive changes without explicit operator intent.
+- Immediate ordered gates: (1) obtain user's live-browser confirmation of the WhatsApp dropdown/flag/dial-code/glyph after hard refresh; if still wrong, inspect console and the served bundle; (2) fix Render root-directory and health-check drift in the dashboard/operator UI, then verify a deployment at the same URL; (3) accept push only after a real-device native notification arrives; (4) configure a legitimate MailerSend WhatsApp sender, approved templates and required token scope, then test recovery safely; (5) continue mobile/splash/returning-wallet flow acceptance and read-only financial/ledger/withdrawal audit. Keep first-admin provisioning operator-controlled.
+- Detailed continuity brief: [`HANDOFF_NEXT_CHAT_2026-10-08.md`](HANDOFF_NEXT_CHAT_2026-10-08.md). No application source, credentials, deployment settings, or production rows were changed in this pass.
+
+---
+
 # 2026-10-08 23:52 UTC — Next-chat handover published
 
 - Added `HANDOFF_NEXT_CHAT_2026-10-08.md` at the repository root. It records the current runtime SHA/deployment, the three-part WhatsApp-picker incident, verified CI, registration/authentication behavior, database safety baseline, provider setup requirements, Render root-directory/health-check drift, push acceptance gate, and an ordered next-work checklist.
