@@ -1,3 +1,16 @@
+# 2026-10-08 — WhatsApp picker production follow-up: root cause + live deployment
+
+- User's follow-up screenshot still showed a Pakistan-only selector and text-style country mark because Render was serving the older frontend bundle. Verified the live Render service was still on commit `8904345f6cde5e5211a23832d4c1d2f0e56de4d6` even after frontend-only commits were merged.
+- Root cause: Render service `srv-dajmafdg1s2s73ba8k5g` is configured with `rootDir=backend`. Render auto-deploy rules ignore commits that only affect files outside the root directory. The prior picker fix changed only `frontend/` and documentation, so it was not deployed.
+- Corrected the dynamic country option generator to emit valid option markup, maintained Pakistan as the default and the 211-entry country list, and retained image-based country flags plus the official WhatsApp glyph asset.
+- Added a fail-closed frontend bundle contract in `backend/scripts/build.mjs`: production build verifies country-list size, picker helper/binding order, image flag helper, and WhatsApp SVG. Added CI assertion for valid country option markup and CI syntax-check for the build script.
+- PR #33 merged as `924a18099ce402c87ac276362f5140d4626b0a85`. CI run #961 passed frontend build/login/trust-UI tests and backend lint/migration/unit/integration/syntax checks; main CI run #962 passed.
+- Render **Royal's Workspace** deployment `dep-db42kho473hc7382h9j0` is confirmed `live` on commit `924a18099ce402c87ac276362f5140d4626b0a85`, finished at 2026-10-08 23:43:50 UTC. Build logs confirmed frontend bundling and the API started normally.
+- No authentication, wallet, member, package, withdrawal, ledger, admin, or production database state was changed by this UI fix.
+- **Infrastructure follow-up remains:** to stop this recurring auto-deploy gap permanently, Render's service root directory should be moved from `backend` to the repository root, with build/start commands updated to `cd backend && npm ci && npm run build` and `cd backend && npm start`. The connected Render action surface can read service settings but does not expose a root-directory update action, so this settings change remains an operator/dashboard task. Until then, any frontend-only production change must include a meaningful file change under `backend/` to trigger Render.
+
+---
+
 # 2026-10-08 — WhatsApp country picker / flag rendering correction
 
 - Root cause confirmed in the frontend source: the registration WhatsApp picker was bound before the `WHATSAPP_COUNTRIES` const was initialized. Because the data is a `const`, this triggered a temporal-dead-zone `ReferenceError` during page initialization. The selector therefore remained on its fallback Pakistan option and later inline event-handler registration could be interrupted.
