@@ -1,3 +1,16 @@
+# 2026-10-08 23:44 UTC — WhatsApp country-picker fix confirmed live
+
+- **Repository main:** `924a18099ce402c87ac276362f5140d4626b0a85` (PR #33)
+- **Render workspace:** Royal's Workspace (`tea-dadvf02d0e5s73eha320`)
+- **Render service:** `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`)
+- **Deployment:** `dep-db42kho473hc7382h9j0`, status `live`, finished at `2026-10-08T23:43:50Z`
+- **CI:** PR run #961 passed; main run #962 passed.
+- **Release correction:** fixed malformed country-option markup; Pakistan stays first/default; 211 country entries are retained; selected flags use image assets; the official WhatsApp glyph is bundled. The backend frontend-bundle step now asserts this contract to prevent silently shipping the one-option fallback.
+- **Why the prior fix was not visible:** the live service's configured root directory is `backend`; Render skipped the frontend-only merge because paths outside that directory do not trigger an auto-deploy. The new release included a backend build-script contract change, which triggered a deployment.
+- **Pending permanent infrastructure cleanup:** switch Render root directory to the repository root and update build/start commands to `cd backend && npm ci && npm run build` / `cd backend && npm start`. This setting cannot be updated through the currently available Render action interface, so it remains a dashboard/operator task. No unrelated Render setting was changed.
+
+---
+
 # 2026-10-08 — WhatsApp country picker / flag rendering release checkpoint
 
 - **Repository:** `RoyalFinTech/Zenith-protocol-`
