@@ -1,3 +1,15 @@
+# 2026-10-08 23:57 UTC — Runtime/deployment reconfirmed for next-chat handoff
+
+- **Repository:** `RoyalFinTech/Zenith-protocol-`, branch `main`. Pre-refresh main tip: `a4db4bf41380667263de1d68ff73fffe46c6bccf`; this documentation update creates later Markdown-only commits. Always resolve current main HEAD at the start of follow-up work.
+- **Workspace:** Royal's Workspace (`tea-dadvf02d0e5s73eha320`). **Service:** `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`), [Render dashboard](https://dashboard.render.com/web/srv-dajmafdg1s2s73ba8k5g), [live URL](https://zenith-protocol-qvfe.onrender.com).
+- **Latest deployment found:** `dep-db42kho473hc7382h9j0`, status `live`, deployed runtime commit `924a18099ce402c87ac276362f5140d4626b0a85`, completed `2026-10-08T23:43:50.537827Z`. The PR #33 WhatsApp picker country-option markup/build-contract fix remains the deployed runtime release. The newer main commits are docs-only and no new deploy was observed.
+- **Live config as queried:** branch `main`; auto-deploy `yes`; root directory `backend`; build `npm ci && npm run build`; start `npm start`; health-check path blank. The repository's `render.yaml` expects `/health`; API source provides `GET /health`. Both root directory and health path remain outstanding operator/dashboard changes. Do not create a duplicate service or alter unrelated production configuration.
+- Prior notes record CI runs #961, #962 and #964 as passed before this refresh; no new build/test was executed for the documentation-only update.
+- No database or runtime setting was changed in this pass. Last recorded 2026-10-08 production-slate counts were zero in the listed application/auth/wallet/push/financial tables, but this pass did not query Supabase again. Verify current data read-only before any cleanup or account-creation testing.
+- **Continue from:** `HANDOFF_NEXT_CHAT_2026-10-08.md`, then this file and the top of `ENGINEERING_PROGRESS.md`. The next concrete steps are the user's hard-refresh browser acceptance of the country picker; operator correction of Render rootDir/health path; real-phone push notification acceptance; and MailerSend WhatsApp sender/template setup. Preserve backend wallet auth and financial invariants; no auto-admin provisioning.
+
+---
+
 # 2026-10-08 23:52 UTC — Handover / current release guard
 
 - Handover instructions: `HANDOFF_NEXT_CHAT_2026-10-08.md` (repository root). It contains the end-to-end engineering context and ordered continuation plan.
