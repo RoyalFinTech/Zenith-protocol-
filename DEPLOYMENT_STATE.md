@@ -593,3 +593,14 @@ The original package lifecycle/admin implementation was already merged into main
 - Email provider configuration remains available for future transactional messages but no longer blocks backend startup or member registration.
 - The additive WhatsApp/PIN recovery migration is still pending on production at this checkpoint; no production rows were changed by these code edits.
 - Target production context remains Royal Workspace / Zenith-protocol- Render service on main.
+
+
+# 2026-10-08 — Registration action and WhatsApp UX correction
+
+- Production Create Account issue traced to an undefined WhatsApp validation helper referenced by the registration flow.
+- Registration submit is now delegated through the main action handler and explicitly rendered as type="button".
+- Added shared WhatsApp country selection with flags; Pakistan (+92) is first/default, Gambia remains available in the list.
+- Replaced the Gambian phone placeholder with the Pakistan-local format and standardized E.164 composition across registration/profile/recovery.
+- Replaced the low-contrast WhatsApp SVG with a visible green/white logo treatment.
+- Added frontend regression coverage for the corrected registration action and WhatsApp selector.
+- No production financial/member/admin rows were changed.
