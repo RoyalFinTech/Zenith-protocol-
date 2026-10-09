@@ -10,6 +10,7 @@ const BSC_CHAIN_ID = 56;
 
 let appKit: ReturnType<typeof createAppKit> | null = null;
 let adapter: WagmiAdapter | null = null;
+let appKitConnectedAddress = '';
 let authToken = localStorage.getItem('zenitToken') || '';
 let initPromise: Promise<void> | null = null;
 let lastAddress = '';
@@ -73,10 +74,16 @@ async function init() {
       const chainId = state?.chainId == null ? undefined : Number(state.chainId);
 
       if (!state?.isConnected || !address) {
+        appKitConnectedAddress = '';
         if (authToken || lastAddress) clearLocalSession();
         (window as any).zenitSetWallet?.(false, '', 'Not connected');
         return;
       }
+
+      // Track AppKit's own connection event as well as Wagmi's account state.
+      // On some mobile returns AppKit updates first while the signing connector
+      // takes longer to become available.
+      appKitConnectedAddress = address;
 
       if (chainId && chainId !== BSC_CHAIN_ID) {
         (window as any).zenitSetWallet?.(false, address || '', 'Wrong network');
@@ -387,6 +394,10 @@ async function waitForConnectedAccount(timeoutMs = 1800) {
   return account?.isConnected && account.address ? account : null;
 }
 
+function hasAppKitConnection() {
+  return Boolean(appKitConnectedAddress);
+}
+
 async function completeWalletLogin(timeoutMs = 12000) {
   authRetryAt = 0;
   const deadline = Date.now() + timeoutMs;
@@ -425,7 +436,21 @@ async function tryExistingWalletLogin(): Promise<'authenticated' | 'connected' |
 
   // Providers can restore their session shortly after AppKit initialization.
   // Give that state time to settle before deciding that the selector is needed.
-  const account = await waitForConnectedAccount(2200);
+  let account = await waitForConnectedAccount(2200);
+  if ((!account?.isConnected || !account.address) && hasAppKitConnection()) {
+    // AppKit can confirm the wallet is already connected before Wagmi exposes
+    // its connector. Wait for connector hydration instead of opening a second
+    // wallet selector that only repeats "already connected".
+    account = await waitForConnectedAccount(5000);
+    if (!account?.isConnected || !account.address) {
+      (window as any).zenitToast?.(
+        'Wallet connection is syncing',
+        'This wallet is already connected. Wait a moment for the secure signing provider, then retry sign-in.',
+        'info'
+      );
+      return 'connected';
+    }
+  }
   if (!account?.isConnected || !account.address) return 'disconnected';
 
   if (account.chainId && Number(account.chainId) !== BSC_CHAIN_ID) {
@@ -452,7 +477,18 @@ async function openWallet(onNeedWalletSelector?: () => void) {
     // First try the currently connected/reconnecting wallet. Calling AppKit's
     // modal while already connected can produce an "already connected" view and
     // leave the member stranded when they cancel it.
-    const existing = await waitForConnectedAccount(1800);
+    let existing = await waitForConnectedAccount(1800);
+    if ((!existing?.isConnected || !existing.address) && hasAppKitConnection()) {
+      existing = await waitForConnectedAccount(5000);
+      if (!existing?.isConnected || !existing.address) {
+        (window as any).zenitToast?.(
+          'Wallet connection is syncing',
+          'Your wallet is already connected. The secure signing provider is still initializing; retry shortly.',
+          'info'
+        );
+        return false;
+      }
+    }
     if (existing?.isConnected && existing.address) {
       const authenticated = await completeWalletLogin();
       if (authenticated) return true;
