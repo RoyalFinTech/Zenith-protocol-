@@ -1,3 +1,18 @@
+## Registration failure incident — fixed and deployed — 2026-10-09 00:48 UTC
+
+- **User-visible symptom:** the registration UI displayed `Registration failed` after the user confirmed the country picker and WhatsApp logo were fixed.
+- **Production evidence:** Render application logs recorded `ZENIT registration request failed could not determine data type of parameter $3` twice at `2026-10-09T00:40:28.296926395Z` and `2026-10-09T00:40:44.664724086Z`. The failure occurred in `POST /api/auth/register/request` before a pending registration was inserted.
+- **Source root cause:** `backend/src/routes/auth.ts` used optional parameter `$3` in `($3 is not null and whatsapp_number=$3)` in both the existing-account duplicate check and the pending-registration cleanup query. PostgreSQL could not infer the parameter's type for the statement.
+- **Fix merged in PR #35:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/35. Both predicates now explicitly cast the optional parameter to text: `($3::text is not null and whatsapp_number=$3::text)`. Optional WhatsApp stays optional; this does not alter email policy, PIN hashing, wallet-signature authentication, handoff/JWT handling, or session authorization.
+- **Regression test:** added a PostgreSQL-backed integration test that submits `/api/auth/register/request` with `whatsappNumber: null`; asserts HTTP 202, email and wallet handoff fields, a persisted pending-registration row, scrypt PIN hash, hashed wallet-handoff token, and test-row cleanup in `finally`.
+- **CI:** PR run #980 and post-merge main run **#982** passed (https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/37866445086). Frontend build/login/trust tests passed; backend lint, admin-provision safety guard, migration validation, unit tests, and PostgreSQL integration suite passed.
+- **Render live verification:** Royal's Workspace (`tea-dadvf02d0e5s73eha320`), existing service `srv-dajmafdg1s2s73ba8k5g`, deployment `dep-db43ikf40ujc73e32vqg`, status `live`, runtime SHA `efce47fe85114c4b07b9e5e9ab5429f829b3c32c`, finished `2026-10-09T00:48:01.226686Z`. Build succeeded and logs report `Zenit API listening on 0.0.0.0:10000`; URL remains https://zenith-protocol-qvfe.onrender.com.
+- **Current read-only production counts after deployment:** `app_users=0`, `pending_registrations=0`, `user_sessions=0`, `auth_nonces=0`, `wallet_accounts=0`. This confirms the failing attempts left no partial application-registration rows. No production account or financial/membership data was created, deleted, or rewritten.
+- **Remaining acceptance gate:** ask the user to retry Create Account once against the live URL. Do not submit a test account or delete production rows. If it fails again, capture the exact visible error, corresponding UTC time, browser Network response from `POST /api/auth/register/request`, and fresh Render error logs before any additional change.
+- **Other known infrastructure drift remains untouched:** Render root directory is still `backend` and service health-check path is blank; `render.yaml` expects `/health`. The registration fix does not change these settings. A direct external `/health` response body was not independently read through the connected web fetch, so do not claim that specific HTTP probe succeeded based only on startup logs.
+
+---
+
 ## Verified WhatsApp picker + glyph release — 2026-10-09 00:21 UTC
 
 - **PR #34 merged:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/34. Production `main` release commit `78455dd0fb942bb12e4744e7a45ad9f7a45e1ca2` (`fix(frontend): harden WhatsApp country picker and glyph`).
