@@ -32,7 +32,7 @@ assert.match(html, /placeholder="3XX XXXXXXX"/);
 assert.doesNotMatch(html, /placeholder="\+220/);
 assert.match(html, /function whatsappCountryOptions\(selected="PK"\)/);
 const whatsappOptionsLine = html.slice(html.indexOf("function whatsappCountryOptions"), html.indexOf("function setWhatsAppPicker"));
-assert.ok(whatsappOptionsLine.includes('return WHATSAPP_COUNTRIES.map(c=>`<option value="${c.iso}"${c.iso===selected?" selected":""}>${c.name} (+${c.dial})</option>`).join("");'), "Country options must be emitted as valid HTML with correct selected attributes");
+assert.ok(whatsappOptionsLine.includes('return WHATSAPP_COUNTRIES.map(c=>`<option value="${c.iso}" data-dial="${c.dial}"${c.iso===selected?" selected":""}>${c.name} (+${c.dial})</option>`).join("");'), "Country options must be emitted as valid HTML with correct selected attributes");
 assert.doesNotMatch(whatsappOptionsLine, /selected\?"selected":""\)\+['"]>/, "Country option selected attribute must be emitted as valid HTML");
 assert.match(html, /function countryFlagUrl\(iso\)/);
 assert.match(html, /https:\/\/flagcdn\.com\/w40\/pk\.png/);
