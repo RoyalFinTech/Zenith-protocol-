@@ -17,12 +17,22 @@ assert.match(html, /registrationUsername/);
 assert.match(html, /registrationEmail/);
 assert.match(html, /registrationWhatsapp/);
 assert.match(html, /id="registrationWhatsappCountry"/);
+
+const registrationSelectStart = html.indexOf('<select id="registrationWhatsappCountry"');
+const registrationSelectEnd = html.indexOf('</select>', registrationSelectStart);
+const registrationSelect = registrationSelectStart >= 0 && registrationSelectEnd > registrationSelectStart
+  ? html.slice(registrationSelectStart, registrationSelectEnd)
+  : "";
+const staticCountryOptions = [...registrationSelect.matchAll(/<option value="[A-Z]{2}" data-dial="\d+"(?: selected)?>([^<]+)<\/option>/g)];
+assert.ok(staticCountryOptions.length >= 200, "Registration picker must render a broad country list before runtime initialization");
+assert.match(registrationSelect, /<option value="PK" data-dial="92" selected>Pakistan \(\+92\)<\/option>/);
+assert.match(html, /select\.addEventListener\("change", sync\)/);
 assert.match(html, /Pakistan \(\+92\)/);
 assert.match(html, /placeholder="3XX XXXXXXX"/);
 assert.doesNotMatch(html, /placeholder="\+220/);
 assert.match(html, /function whatsappCountryOptions\(selected="PK"\)/);
 const whatsappOptionsLine = html.slice(html.indexOf("function whatsappCountryOptions"), html.indexOf("function setWhatsAppPicker"));
-assert.ok(whatsappOptionsLine.includes('return WHATSAPP_COUNTRIES.map(c=>`<option value="${c.iso}"${c.iso===selected?" selected":""}>${c.name} (+${c.dial})</option>`).join("");'), "Country options must be emitted as valid HTML with correct selected attributes");
+assert.ok(whatsappOptionsLine.includes('return WHATSAPP_COUNTRIES.map(c=>`<option value="${c.iso}" data-dial="${c.dial}"${c.iso===selected?" selected":""}>${c.name} (+${c.dial})</option>`).join("");'), "Country options must be emitted as valid HTML with correct selected attributes");
 assert.doesNotMatch(whatsappOptionsLine, /selected\?"selected":""\)\+['"]>/, "Country option selected attribute must be emitted as valid HTML");
 assert.match(html, /function countryFlagUrl\(iso\)/);
 assert.match(html, /https:\/\/flagcdn\.com\/w40\/pk\.png/);
@@ -36,7 +46,9 @@ assert.match(html, /WhatsApp number <em class="muted">\(optional\)<\/em>/);
 assert.match(html, /showRegistrationWhatsAppReminder/);
 assert.match(html, /Continue without WhatsApp/);
 assert.match(html, /An unregistered number cannot be used to reset your PIN/);
-assert.match(html, /src="\/whatsapp\.svg"/);
+assert.match(html, /class="whatsapp-glyph"/);
+assert.match(html, /<path fill="currentColor" d="/);
+assert.match(html, /id="whatsappPickerFallback"/);
 assert.match(html, /replace\(\/\[\^a-z0-9_\]\/g,""\)/);
 
 assert.match(html, /\/api\/packages\/catalog/);
