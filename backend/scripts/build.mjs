@@ -47,8 +47,21 @@ const countryCount = countryDataStart >= 0 && countryDataEnd > countryDataStart
   : 0;
 const pickerFunctionIndex = indexHtml.indexOf('function bindWhatsAppPicker(');
 const registrationBindingIndex = indexHtml.indexOf('bindWhatsAppPicker("#registrationWhatsappCountry"');
+
+const registrationSelectStart = indexHtml.indexOf('<select id="registrationWhatsappCountry"');
+const registrationSelectEnd = indexHtml.indexOf('</select>', registrationSelectStart);
+const registrationSelectHtml = registrationSelectStart >= 0 && registrationSelectEnd > registrationSelectStart
+  ? indexHtml.slice(registrationSelectStart, registrationSelectEnd)
+  : '';
+const staticOptionCount = (registrationSelectHtml.match(/<option value="[A-Z]{2}" data-dial="\d+"/g) ?? []).length;
 if (countryCount < 200) {
   throw new Error(`Frontend country picker contract failed: expected at least 200 countries, found ${countryCount}`);
+}
+if (staticOptionCount < 200) {
+  throw new Error(`Frontend country picker contract failed: expected at least 200 static registration options, found ${staticOptionCount}`);
+}
+if (!indexHtml.includes('id="whatsappPickerFallback"') || !indexHtml.includes('class="whatsapp-glyph"') || !indexHtml.includes('<path fill="currentColor" d="')) {
+  throw new Error('Frontend country picker contract failed: resilient inline picker or WhatsApp glyph is missing');
 }
 if (pickerFunctionIndex < 0 || registrationBindingIndex <= pickerFunctionIndex) {
   throw new Error('Frontend country picker contract failed: registration binding must follow picker initialization helpers');
