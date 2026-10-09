@@ -1,3 +1,11 @@
+## Follow-up — optional Profile PIN management — QA/deployment gate — 2026-10-09 11:40 UTC
+
+- **Source branch:** `fix/optional-wallet-auth-dashboard-20261009`.
+- **What changed:** Authenticated `GET /api/me` reports a boolean PIN status; `POST /api/auth/pin/change` provides protected four-digit PIN create/update with confirmation and scrypt hashing. Profile now displays `PIN SET` / `NOT SET`, lets a signed-in member optionally set or replace a PIN, and keeps passkey/biometric enrollment available in Profile.
+- **QA added:** Frontend wiring assertions cover skip/cancel controls, Profile passkey and PIN routes, dashboard handoff and backend token behavior. The production integration suite checks PIN state visibility, authentication guards, malformed PIN rejection and successful update. The Render build guard requires the optional PIN/passkey UI contract.
+- **Status:** Do not consider these follow-up changes deployed until the latest PR CI passes and Render confirms a live deployment with the merged commit SHA. The prior CI run #1007 on commit `0ccdc22f65b7771a710f1db00c007a991572d1f2` does not cover the Profile PIN endpoint/UI changes committed afterward.
+- **Security/data:** Wallet address and server-verified signature remain the primary access proof; PIN/passkey setup is optional. PIN changes require a valid authenticated session. No production financial or member records were changed by this source work. Manual device acceptance remains outstanding.
+
 ## Returning wallet authentication and optional device setup — 2026-10-09 11:30 UTC
 
 - **PR #38:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/38 — fix: make wallet access independent of PIN and passkey setup.
