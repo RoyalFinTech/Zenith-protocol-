@@ -43,7 +43,7 @@ assert.ok((countryBlock.match(/\["[A-Z]{2}"/g) ?? []).length >= 200, "WhatsApp c
 assert.match(html, /function bindWhatsAppPicker\(/);
 assert.match(html, /registrationWhatsappUpdates/);
 assert.match(html, /WhatsApp number <em class="muted">\(optional\)<\/em>/);
-assert.match(html, /showRegistrationWhatsAppReminder/);
+assert.doesNotMatch(html, /showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/);
 assert.match(html, /Continue without WhatsApp/);
 assert.match(html, /An unregistered number cannot be used to reset your PIN/);
 assert.match(html, /class="whatsapp-glyph"/);
