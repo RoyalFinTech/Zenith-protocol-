@@ -1,11 +1,11 @@
-## Follow-up — optional Profile PIN management — PR QA/deployment gate — 2026-10-09 11:40 UTC
+## Optional Profile PIN management — CI green, merged and deployed — 2026-10-09 11:42 UTC
 
-- **Source branch:** `feat/profile-pin-management-20261009`.
-- **What changed:** Authenticated `GET /api/me` returns a boolean PIN status; `POST /api/auth/pin/change` provides protected four-digit PIN create/update with confirmation and the existing scrypt hash function. Profile now shows `PIN SET` / `NOT SET`, lets a signed-in member optionally create or replace the PIN, and provides a persistent entry point for passkey/biometric setup.
-- **Flow contract:** BNB Smart Chain wallet connection and backend-verified signature remain required. After that, the user session and backend profile/dashboard are hydrated; PIN and passkey prompts do not block dashboard access and include skip/cancel controls.
-- **QA additions:** Frontend wiring assertions cover skip/cancel controls and the Profile security actions. Production integration tests check PIN status visibility, authentication guards, invalid PIN rejection and a successful PIN update. The production build guard requires the corresponding PIN/passkey UI.
-- **Deployment status:** This follow-up is not considered deployed until PR CI passes and Render reports a live deployment with the merged commit SHA. Earlier run #1007 on `0ccdc22f65b7771a710f1db00c007a991572d1f2` does not cover the Profile PIN endpoint/UI additions.
-- **Security/data:** PIN changes require an authenticated session; the API returns only the PIN-presence flag, never the hash. No production member/financial rows were changed. Verify real-device wallet reconnect, dashboard profile hydration, PIN skip, passkey cancellation and PIN save before final acceptance.
+- **PR #40:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/40 — merged as `72b2a9c80dfe7f0fae217087715cff9f61dc053b`.
+- **CI:** Run #1032 completed successfully for both frontend and backend jobs: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/37924989003. This includes login-wiring/trust UI checks, frontend build, backend lint/tests/integration and production build-guard coverage.
+- **Live Render deployment:** Royal Workspace service `srv-dajmafdg1s2s73ba8k5g`, deployment `dep-db4d53qvcj2c73d3qlog`, status **live**, merged SHA `72b2a9c80dfe7f0fae217087715cff9f61dc053b`. Render event `deploy_ended` marked it successful at 2026-10-09 11:41:58 UTC. App URL: https://zenith-protocol-qvfe.onrender.com.
+- **Behavior:** Valid wallet connection plus backend-verified signature opens the member dashboard and loads profile/dashboard data without forcing PIN/passkey setup. Profile shows whether a PIN is configured and supports optional four-digit PIN create/update. Passkey/biometric setup remains optional and is available later from Profile; prompts have skip/cancel controls.
+- **Security:** PIN updates require an authenticated session, a four-digit PIN and matching confirmation; the API returns only a boolean PIN-presence value, not the hash. No production financial/member data was modified by this release.
+- **Manual acceptance still required:** Ask the operator to hard-refresh on the actual device, reconnect and sign with the registered wallet, verify the correct account/profile data appears, skip the optional prompt, then open Profile and test PIN create/update. Automated QA and deployment are verified, but this actual user-device flow has not been independently exercised in the user's browser.
 
 ## Returning wallet authentication and optional device setup — merged and deployed 2026-10-09 11:34 UTC
 
