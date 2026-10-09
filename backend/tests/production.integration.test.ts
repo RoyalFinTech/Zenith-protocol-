@@ -466,13 +466,34 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect(invalid.status).toBe(400);
   });
 
-  it('reads and updates the authenticated profile and persisted preferences', async () => {
+  it('reads and updates the authenticated profile, persisted preferences, and optional PIN status', async () => {
     const authorization = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
-    expect((await request('/api/me', { headers: authorization })).status).toBe(200);
+    const profileBefore = await request('/api/me', { headers: authorization });
+    expect(profileBefore.status).toBe(200);
+    expect((await profileBefore.json()).user.has_pin).toBe(false);
     expect((await request('/api/me/profile', { method: 'PATCH', headers: authorization, body: JSON.stringify({ username: 'ci_profile_member', displayName: 'Production Test Member' }) })).status).toBe(200);
     const preferences = await request('/api/me/preferences', { method: 'PATCH', headers: authorization, body: JSON.stringify({ theme: 'light', compactDensity: false, activityNotifications: true, reducedMotion: true }) });
     expect(preferences.status).toBe(200);
     expect((await preferences.json()).preference.theme).toBe('light');
+
+    const unauthenticatedPin = await request('/api/auth/pin/change', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ pin: '4826', confirmation: '4826' })
+    });
+    expect(unauthenticatedPin.status).toBe(401);
+    const malformedPin = await request('/api/auth/pin/change', {
+      method: 'POST', headers: authorization,
+      body: JSON.stringify({ pin: '482', confirmation: '482' })
+    });
+    expect(malformedPin.status).toBe(400);
+    const pinSaved = await request('/api/auth/pin/change', {
+      method: 'POST', headers: authorization,
+      body: JSON.stringify({ pin: '4826', confirmation: '4826' })
+    });
+    expect(pinSaved.status).toBe(200);
+    expect((await pinSaved.json()).updated).toBe(true);
+    const profileAfter = await request('/api/me', { headers: authorization });
+    expect((await profileAfter.json()).user.has_pin).toBe(true);
   });
 
   it('enforces authenticated ownership for wallet, matrix, transactions, and withdrawals', async () => {
