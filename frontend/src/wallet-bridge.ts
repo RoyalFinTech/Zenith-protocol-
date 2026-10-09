@@ -17,6 +17,9 @@ let authInFlightAddress = '';
 let purchaseInFlight = false;
 let syncInFlight: Promise<void> | null = null;
 let authRetryAt = 0;
+// True only after this tab has completed a valid session restore/authentication
+// and dispatched the event that reveals the authenticated dashboard.
+let appHandoffComplete = false;
 
 async function loadPublicConfig() {
   const base = API || window.location.origin;
@@ -143,6 +146,7 @@ function clearLocalSession() {
   lastAddress = '';
   localStorage.removeItem('zenitToken');
   localStorage.removeItem('zenitPinChallenge');
+  appHandoffComplete = false;
 }
 
 async function restoreSession(address: `0x${string}`) {
@@ -169,6 +173,7 @@ async function restoreSession(address: `0x${string}`) {
     await (window as any).zenitLoadBackend?.(authToken);
     // Restoring an existing authenticated session must also reveal the dashboard;
     // do not rely on the original splash-startup event having already run.
+    appHandoffComplete = true;
     window.dispatchEvent(new CustomEvent('zenit:authenticated', { detail: data.user || {} }));
     return true;
   } catch {
@@ -242,6 +247,7 @@ async function authenticate(address: `0x${string}`) {
   // Hydrate the registered member's profile/dashboard first. Only then reveal
   // the app shell and, where applicable, show the optional PIN prompt.
   await (window as any).zenitLoadBackend?.(authToken);
+  appHandoffComplete = true;
   window.dispatchEvent(new CustomEvent('zenit:authenticated', { detail: data.user }));
   if (optionalPinChallenge) {
     window.dispatchEvent(new CustomEvent('zenit:pin-required', {
@@ -301,7 +307,16 @@ async function syncCurrentAccount() {
 
     // Legacy PIN challenges are optional. Never let a stale challenge key stop
     // a returning wallet from authenticating on its next explicit connection.
-    if (readyAccount.address === lastAddress && authToken) return;
+    if (readyAccount.address.toLowerCase() === lastAddress.toLowerCase() && authToken) {
+      // Do not use in-memory address/token equality as proof that this page
+      // has actually completed its dashboard handoff. Recover the profile when
+      // a previous attempt left the UI on the login screen.
+      if (appHandoffComplete) return;
+      if (await restoreSession(readyAccount.address)) {
+        authRetryAt = 0;
+        return;
+      }
+    }
     if (Date.now() < authRetryAt) return;
 
     if (await restoreSession(readyAccount.address)) {
@@ -348,7 +363,7 @@ function setWalletButtonsBusy(busy: boolean) {
       if (!el.dataset.walletLabel) el.dataset.walletLabel = el.textContent || 'Connect wallet';
       el.disabled = true;
       el.setAttribute('aria-busy', 'true');
-      el.textContent = 'OPENING WALLET…';
+      el.textContent = 'CHECKING WALLET…';
     } else {
       el.disabled = false;
       el.removeAttribute('aria-busy');
@@ -357,36 +372,132 @@ function setWalletButtonsBusy(busy: boolean) {
   });
 }
 
-async function openWallet() {
-  if (walletOpenInFlight) return;
+function currentWalletAccount() {
+  return adapter ? getAccount(adapter.wagmiConfig) : null;
+}
+
+async function waitForConnectedAccount(timeoutMs = 1800) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const account = currentWalletAccount();
+    if (account?.isConnected && account.address) return account;
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  const account = currentWalletAccount();
+  return account?.isConnected && account.address ? account : null;
+}
+
+async function completeWalletLogin(timeoutMs = 12000) {
+  authRetryAt = 0;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const account = currentWalletAccount();
+    if (!account?.isConnected || !account.address) return false;
+    if (account.chainId && Number(account.chainId) !== BSC_CHAIN_ID) {
+      (window as any).zenitToast?.(
+        'Switch network',
+        'Your wallet is connected. Switch to BNB Smart Chain, then continue sign-in.',
+        'warning'
+      );
+      return false;
+    }
+
+    await syncCurrentAccount();
+    if (appHandoffComplete) return true;
+
+    // A cancelled signature or backend failure gets a clear retry affordance;
+    // do not reopen the already-connected wallet selector.
+    if (Date.now() < authRetryAt) return false;
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }
+
+  (window as any).zenitToast?.(
+    'Finish wallet sign-in',
+    'Your wallet is connected, but authentication has not completed. Approve the wallet signature request or retry sign-in.',
+    'warning'
+  );
+  return appHandoffComplete;
+}
+
+async function tryExistingWalletLogin(): Promise<'authenticated' | 'connected' | 'disconnected'> {
+  await init();
+  setupWatchers();
+
+  // Providers can restore their session shortly after AppKit initialization.
+  // Give that state time to settle before deciding that the selector is needed.
+  const account = await waitForConnectedAccount(2200);
+  if (!account?.isConnected || !account.address) return 'disconnected';
+
+  if (account.chainId && Number(account.chainId) !== BSC_CHAIN_ID) {
+    (window as any).zenitToast?.(
+      'Switch network',
+      'Your wallet is connected. Switch to BNB Smart Chain before signing in.',
+      'warning'
+    );
+    return 'connected';
+  }
+
+  const authenticated = await completeWalletLogin();
+  return authenticated ? 'authenticated' : 'connected';
+}
+
+async function openWallet(onNeedWalletSelector?: () => void) {
+  if (walletOpenInFlight) return appHandoffComplete;
   walletOpenInFlight = true;
   setWalletButtonsBusy(true);
   try {
     await init();
     setupWatchers();
 
+    // First try the currently connected/reconnecting wallet. Calling AppKit's
+    // modal while already connected can produce an "already connected" view and
+    // leave the member stranded when they cancel it.
+    const existing = await waitForConnectedAccount(1800);
+    if (existing?.isConnected && existing.address) {
+      const authenticated = await completeWalletLogin();
+      if (authenticated) return true;
+
+      // Wallet was detected; never launch a second connect modal here. A future
+      // explicit click retries verification against the same connection.
+      return false;
+    }
+
     if (!appKit) throw new Error('Wallet connection interface is unavailable');
-
-    (window as any).zenitToast?.(
-      'Wallet connection',
-      'Opening the secure wallet selector…',
-      'info'
-    );
-
-    // Use AppKit's standard public connection entry point. This is the
-    // stable path for both desktop injected wallets and mobile WalletConnect.
-    // The optional view argument is intentionally avoided because older
-    // AppKit builds can ignore or mishandle view-specific navigation.
     const kit = appKit as any;
     if (typeof kit.open !== 'function') throw new Error('Wallet connection interface is unavailable');
+
+    onNeedWalletSelector?.();
+    (window as any).zenitToast?.(
+      'Connect your wallet',
+      'Choose your wallet to continue to your existing ZENIT account.',
+      'info'
+    );
     await kit.open();
 
-    for (let attempt = 0; attempt < 24; attempt += 1) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await syncCurrentAccount();
-      const account = adapter ? getAccount(adapter.wagmiConfig) : null;
-      if (account?.isConnected && account.address) break;
+    // Wallet connection is not the same as application authentication. Continue
+    // polling until the backend session/profile has been loaded and the app
+    // has received its authenticated handoff—not merely until an address appears.
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      const account = currentWalletAccount();
+      if (account?.isConnected && account.address) {
+        if (account.chainId && Number(account.chainId) !== BSC_CHAIN_ID) {
+          (window as any).zenitToast?.('Switch network', 'Switch your wallet to BNB Smart Chain, then try again.', 'warning');
+          return false;
+        }
+        const authenticated = await completeWalletLogin(Math.max(1000, deadline - Date.now()));
+        if (authenticated) return true;
+        if (Date.now() < authRetryAt) return false;
+      }
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
+
+    (window as any).zenitToast?.(
+      'Sign-in not completed',
+      'Connect your wallet and approve the signature request to open your dashboard.',
+      'warning'
+    );
+    return false;
   } finally {
     walletOpenInFlight = false;
     setWalletButtonsBusy(false);
@@ -506,6 +617,7 @@ async function buyPackage(packageCode: string, referralCode = '') {
 (window as any).zenitBuyPackage = (packageCode: string, referralCode = '') => buyPackage(packageCode, referralCode);
 
 (window as any).zenitOpenWallet = () => openWallet();
+(window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();
 (window as any).zenitDisconnectWallet = () => disconnect();
 
 (window as any).zenitAuthFetch = (input: string, init: RequestInit = {}) =>
