@@ -48,7 +48,7 @@ assert.match(walletBridge, /let appHandoffComplete = false/);
 assert.match(walletBridge, /async function tryExistingWalletLogin\(\): Promise<'authenticated' \| 'connected' \| 'disconnected'>/);
 assert.match(walletBridge, /let existing = await waitForConnectedAccount\(1800\)/);
 assert.match(walletBridge, /if \(appHandoffComplete\) return true/);
-assert.match(walletBridge, /window\.zenitTryExistingWalletLogin = \(\) => tryExistingWalletLogin\(\)/);
+assert.match(walletBridge, /\(window as any\)\.zenitTryExistingWalletLogin = \(\) => tryExistingWalletLogin\(\)/);
 assert.match(walletBridge, /onNeedWalletSelector\?\.\(\)/);
 assert.match(walletBridge, /function hasAppKitConnection\(\)/);
 assert.match(walletBridge, /let account = await waitForConnectedAccount\(2200\)/);
