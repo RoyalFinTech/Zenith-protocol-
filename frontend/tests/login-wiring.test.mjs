@@ -46,11 +46,14 @@ assert.match(walletBridge, /await kit\.open\(\)/);
 assert.match(walletBridge, /zenit:wallet-ready/);
 assert.match(walletBridge, /let appHandoffComplete = false/);
 assert.match(walletBridge, /async function tryExistingWalletLogin\(\): Promise<'authenticated' \| 'connected' \| 'disconnected'>/);
-assert.match(walletBridge, /const existing = await waitForConnectedAccount\(1800\)/);
+assert.match(walletBridge, /let existing = await waitForConnectedAccount\(1800\)/);
 assert.match(walletBridge, /if \(appHandoffComplete\) return true/);
 assert.match(walletBridge, /window\.zenitTryExistingWalletLogin = \(\) => tryExistingWalletLogin\(\)/);
 assert.match(walletBridge, /onNeedWalletSelector\?\.\(\)/);
-assert.match(walletBridge, /if \(appKitConnectedAddress \|\|\|? false\)/);
+assert.match(walletBridge, /function hasAppKitConnection\(\)/);
+assert.match(walletBridge, /const account = await waitForConnectedAccount\(2200\)/);
+assert.match(walletBridge, /Wallet connection is not the same as application authentication/);
+assert.doesNotMatch(walletBridge, /if \(authToken \|\| lastAddress\) clearLocalSession\(\)/);
 assert.doesNotMatch(walletBridge, /if \(account\?\.isConnected && account\.address\) break;/);
 
 assert.doesNotMatch(html, /params\.delete\("wallet_handoff"\);/);
