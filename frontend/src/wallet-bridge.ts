@@ -616,7 +616,7 @@ async function buyPackage(packageCode: string, referralCode = '') {
 
 (window as any).zenitBuyPackage = (packageCode: string, referralCode = '') => buyPackage(packageCode, referralCode);
 
-(window as any).zenitOpenWallet = () => openWallet();
+(window as any).zenitOpenWallet = (onNeedWalletSelector?: () => void) => openWallet(onNeedWalletSelector);
 (window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();
 (window as any).zenitDisconnectWallet = () => disconnect();
 
