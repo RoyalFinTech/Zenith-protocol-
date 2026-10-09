@@ -1,3 +1,16 @@
+## Current continuation verification — 2026-10-09 00:05 UTC
+
+- Re-resolved GitHub `main` as `6d7ebbe6816d162bf67f05818795121eaf54d580`. GitHub Actions CI run **#970** (run ID `37862430654`) completed successfully at 2026-10-09 00:00:22 UTC for that exact commit; both `backend` and `frontend` jobs succeeded. This is verified CI for the parent commit, not automatically for this later documentation commit.
+- Re-queried Render in **Royal's Workspace** (`tea-dadvf02d0e5s73eha320`). Existing service `Zenith-protocol-` (`srv-dajmafdg1s2s73ba8k5g`) remains on `main`, auto-deploy enabled, URL `https://zenith-protocol-qvfe.onrender.com`.
+- Latest listed deployment remains `dep-db42kho473hc7382h9j0`, status `live`, runtime SHA `924a18099ce402c87ac276362f5140d4626b0a85`, finished `2026-10-08T23:43:50.537827Z`. It is the PR #33 WhatsApp country-picker release; newer main commits are documentation-only.
+- Live Render service settings remain: root directory `backend`; build `npm ci && npm run build`; start `npm start`; health-check path blank. The current repository `render.yaml` also declares `rootDir: backend` and `healthCheckPath: /health`. For permanent root-directory cleanup, reconcile the service settings **and** `render.yaml` together: repository-root service directory with `cd backend && npm ci && npm run build` and `cd backend && npm start`, while setting health check to `/health`. The available Render connector exposes read operations but no service root-directory/health-path update operation; no settings were changed.
+- **Earliest unresolved acceptance gate remains real-browser confirmation** of the country dropdown after hard refresh: full list, Pakistan default/flag, flag + dial-code changes for another country, clear WhatsApp glyph, and registration UI behavior. PR #32/#33 must not be repeated without new browser/served-bundle evidence. Source tests and a live deployment do not substitute for this acceptance.
+- Real-device push delivery, operator-controlled MailerSend WhatsApp sender/templates/token scope, broader mobile/splash/returning-wallet acceptance, and the read-only financial/data-integrity audit remain open.
+- This verification did not mutate application source, Render settings or environment variables, provider credentials, production database rows, wallet/session state, admin provisioning, or financial/membership records. Last-known clean-slate table counts were not re-queried and must not be treated as current. Do read-only counts before any test cleanup.
+- Interactive browser/device acceptance and a live HTTP response-body probe could not be independently performed from this tool surface. Report those gates as pending until evidence is obtained.
+
+---
+
 # 2026-10-08 23:57 UTC — Runtime/deployment reconfirmed for next-chat handoff
 
 - **Repository:** `RoyalFinTech/Zenith-protocol-`, branch `main`. Pre-refresh main tip: `a4db4bf41380667263de1d68ff73fffe46c6bccf`; this documentation update creates later Markdown-only commits. Always resolve current main HEAD at the start of follow-up work.
