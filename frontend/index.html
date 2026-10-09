@@ -1505,7 +1505,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       const dismissOptionalPin=()=>{localStorage.removeItem("zenitPinChallenge");document.getElementById("modalBackdrop")?.classList.remove("open");if(localStorage.getItem("zenitToken"))toast("PIN skipped","Your wallet is verified and your dashboard remains available. You can manage sign-in security from Profile.","info");else toast("Reconnect required","Connect and sign with your wallet to open your dashboard.","warning");};
       document.getElementById("skipOptionalPin")?.addEventListener("click",dismissOptionalPin);
       document.getElementById("closeOptionalPin")?.addEventListener("click",dismissOptionalPin);
-      const submit=async()=>{const pin=(input?.value||"").trim(); if(!/^\\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN.","warning");return;} if(button){button.disabled=true;button.textContent="VERIFYING PIN…";} try{await completePinLogin(detail.challengeId,pin,setup);}catch(error){if(button){button.disabled=false;button.textContent=action;}toast("Login failed",error?.message||String(error),"error");}};
+      const submit=async()=>{const pin=(input?.value||"").trim(); if(!/^\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN.","warning");return;} if(button){button.disabled=true;button.textContent="VERIFYING PIN…";} try{await completePinLogin(detail.challengeId,pin,setup);}catch(error){if(button){button.disabled=false;button.textContent=action;}toast("Login failed",error?.message||String(error),"error");}};
       button?.addEventListener("click",submit); input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});    });
 
     function showRegistration(){
