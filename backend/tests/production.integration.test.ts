@@ -105,6 +105,61 @@ describeProduction('production API against a real PostgreSQL test database', () 
     }
   });
 
+  it('accepts registration when WhatsApp is omitted and saves a one-time wallet handoff', async () => {
+    const suffix = randomUUID().replaceAll('-', '').slice(0, 16);
+    const username = `ci_reg_${suffix}`;
+    const email = `ci-registration-${suffix}@example.test`;
+    let registrationId = '';
+
+    try {
+      const response = await request('/api/auth/register/request', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          email,
+          displayName: `CI Registration ${suffix}`,
+          pin: '4826',
+          whatsappNumber: null,
+          whatsappUpdatesEnabled: false
+        })
+      });
+
+      expect(response.status).toBe(202);
+      const data = await response.json() as { registrationId: string; walletHandoffToken: string; email: string };
+      expect(data.email).toBe(email);
+      expect(data.registrationId).toMatch(/^[0-9a-f-]{36}$/i);
+      expect(data.walletHandoffToken.length).toBeGreaterThan(20);
+      registrationId = data.registrationId;
+
+      const pending = await database.pool.query<{
+        username: string;
+        email: string;
+        whatsapp_number: string | null;
+        whatsapp_updates_enabled: boolean;
+        pin_hash: string | null;
+        wallet_handoff_token_hash: string | null;
+      }>(
+        `select username,email,whatsapp_number,whatsapp_updates_enabled,pin_hash,wallet_handoff_token_hash
+         from pending_registrations where id=$1`,
+        [registrationId]
+      );
+      expect(pending.rows).toHaveLength(1);
+      expect(pending.rows[0]).toMatchObject({
+        username,
+        email,
+        whatsapp_number: null,
+        whatsapp_updates_enabled: false
+      });
+      expect(pending.rows[0]?.pin_hash).toMatch(/^scrypt\$/);
+      expect(pending.rows[0]?.wallet_handoff_token_hash).not.toBe(data.walletHandoffToken);
+    } finally {
+      if (registrationId) {
+        await database.pool.query('delete from pending_registrations where id=$1', [registrationId]);
+      }
+    }
+  });
+
   it('keeps the admin portal separate from member authentication', async () => {
     const denied = await request('/api/admin-portal/overview', { headers: { authorization: `Bearer ${token}` } });
     expect(denied.status).toBe(401);

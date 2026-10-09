@@ -81,7 +81,7 @@ router.post('/register/request', async (req, res, next) => {
        from app_users
        where lower(username)=lower($1)
           or lower(email)=lower($2)
-          or ($3 is not null and whatsapp_number=$3)
+          or ($3::text is not null and whatsapp_number=$3::text)
        limit 1`,
       [username,email,whatsappNumber]
     );
@@ -97,7 +97,7 @@ router.post('/register/request', async (req, res, next) => {
          and expires_at > now()
          and (lower(username)=lower($1)
            or lower(email)=lower($2)
-           or ($3 is not null and whatsapp_number=$3))`,
+           or ($3::text is not null and whatsapp_number=$3::text))`,
       [username,email,whatsappNumber]
     );
 
