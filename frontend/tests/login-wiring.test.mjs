@@ -98,7 +98,7 @@ assert.match(html, /u\.hasPin\?"PIN SET":"NOT SET"/);
 assert.match(html, /backendFetch\("\/api\/auth\/pin\/change"/);
 assert.match(html, /hasPin:me\.user\.has_pin===true/);
 assert.match(html, /OPTIONAL SIGN-IN SECURITY/);
-assert.match(html, /PIN and device passkeys are optional sign-in options/);
+assert.match(html, /PIN and passkeys are optional/);
 assert.match(html, /await window\.zenitLoadBackend\?\.\(data\.token\)/);
 assert.match(walletBridge, /if \(\(data\.pinRequired \|\| data\.pinSetupRequired\) && data\.challengeId && !data\.token\)/);
 assert.doesNotMatch(walletBridge, /if \(localStorage\.getItem\('zenitPinChallenge'\)\) return/);
