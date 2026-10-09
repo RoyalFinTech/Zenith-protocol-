@@ -1,3 +1,12 @@
+## Follow-up — optional Profile PIN management — PR QA/deployment gate — 2026-10-09 11:40 UTC
+
+- **Source branch:** `feat/profile-pin-management-20261009`.
+- **What changed:** Authenticated `GET /api/me` returns a boolean PIN status; `POST /api/auth/pin/change` provides protected four-digit PIN create/update with confirmation and the existing scrypt hash function. Profile now shows `PIN SET` / `NOT SET`, lets a signed-in member optionally create or replace the PIN, and provides a persistent entry point for passkey/biometric setup.
+- **Flow contract:** BNB Smart Chain wallet connection and backend-verified signature remain required. After that, the user session and backend profile/dashboard are hydrated; PIN and passkey prompts do not block dashboard access and include skip/cancel controls.
+- **QA additions:** Frontend wiring assertions cover skip/cancel controls and the Profile security actions. Production integration tests check PIN status visibility, authentication guards, invalid PIN rejection and a successful PIN update. The production build guard requires the corresponding PIN/passkey UI.
+- **Deployment status:** This follow-up is not considered deployed until PR CI passes and Render reports a live deployment with the merged commit SHA. Earlier run #1007 on `0ccdc22f65b7771a710f1db00c007a991572d1f2` does not cover the Profile PIN endpoint/UI additions.
+- **Security/data:** PIN changes require an authenticated session; the API returns only the PIN-presence flag, never the hash. No production member/financial rows were changed. Verify real-device wallet reconnect, dashboard profile hydration, PIN skip, passkey cancellation and PIN save before final acceptance.
+
 ## Returning wallet authentication and optional device setup — merged and deployed 2026-10-09 11:34 UTC
 
 - **PR #38:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/38 — fix: make wallet access independent of PIN and passkey setup.
