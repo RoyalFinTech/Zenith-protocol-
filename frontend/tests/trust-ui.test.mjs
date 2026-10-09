@@ -43,9 +43,8 @@ assert.ok((countryBlock.match(/\["[A-Z]{2}"/g) ?? []).length >= 200, "WhatsApp c
 assert.match(html, /function bindWhatsAppPicker\(/);
 assert.match(html, /registrationWhatsappUpdates/);
 assert.match(html, /WhatsApp number <em class="muted">\(optional\)<\/em>/);
-assert.match(html, /showRegistrationWhatsAppReminder/);
-assert.match(html, /Continue without WhatsApp/);
-assert.match(html, /An unregistered number cannot be used to reset your PIN/);
+assert.doesNotMatch(html, /showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/);
+assert.doesNotMatch(html, /Continue without WhatsApp|An unregistered number cannot be used to reset your PIN/);
 assert.match(html, /class="whatsapp-glyph"/);
 assert.match(html, /<path fill="currentColor" d="/);
 assert.match(html, /id="whatsappPickerFallback"/);
@@ -111,6 +110,10 @@ assert.match(html, /data-action="activity-toggle"/);
 const staticActions = [...html.matchAll(/data-action="([a-z0-9-]+)"/g)].map(match => match[1]);
 const handledActions = new Set([...html.matchAll(/action===["']([a-z0-9-]+)["']/g)].map(match => match[1]));
 for (const action of staticActions) {
+  if (action === "registration-submit") {
+    assert.match(html, /getElementById\("registrationForm"\)\?\.addEventListener\("submit"/);
+    continue;
+  }
   assert.ok(handledActions.has(action), "No click handler branch found for data-action="+action);
 }
 assert.match(html, /data-action="motion-toggle"/);
