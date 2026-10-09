@@ -44,6 +44,14 @@ assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/verify/);
 assert.match(html, /requestAnimationFrame\(\(\)=>backdrop\.classList\.add\(["']open["']\)\)/);
 assert.match(walletBridge, /await kit\.open\(\)/);
 assert.match(walletBridge, /zenit:wallet-ready/);
+assert.match(walletBridge, /let appHandoffComplete = false/);
+assert.match(walletBridge, /async function tryExistingWalletLogin\(\): Promise<'authenticated' \| 'connected' \| 'disconnected'>/);
+assert.match(walletBridge, /const existing = await waitForConnectedAccount\(1800\)/);
+assert.match(walletBridge, /if \(appHandoffComplete\) return true/);
+assert.match(walletBridge, /window\.zenitTryExistingWalletLogin = \(\) => tryExistingWalletLogin\(\)/);
+assert.match(walletBridge, /onNeedWalletSelector\?\.\(\)/);
+assert.match(walletBridge, /if \(appKitConnectedAddress \|\|\|? false\)/);
+assert.doesNotMatch(walletBridge, /if \(account\?\.isConnected && account\.address\) break;/);
 
 assert.doesNotMatch(html, /params\.delete\("wallet_handoff"\);/);
 assert.doesNotMatch(html, /params\.delete\("email_verified"\);/);
@@ -65,6 +73,11 @@ assert.match(html, /if\(typeof openReturning==="function"\)\{openReturning\(\);\
 assert.doesNotMatch(html, /async function openExistingWalletLogin\(\)\{/);
 assert.match(html, /id="connectReturningWallet"/);
 assert.match(html, /id="useBiometricLogin"/);
+assert.match(html, /id="returningLoginStatus"/);
+assert.match(html, /Checking whether your wallet is already connected/);
+assert.match(html, /without reopening the wallet selector/);
+assert.match(html, /void checkExisting\(\)/);
+assert.match(html, /RETRY WALLET SIGN-IN/);
 assert.match(html, /\.onboarding \.onboard-actions \.btn[\s\S]*background:linear-gradient\(180deg,#d0ae5b,#a98538\) !important/);
 assert.match(html, /\.onboarding \.onboard-existing \.btn[\s\S]*background:linear-gradient\(180deg,#d0ae5b,#a98538\) !important/);
 assert.match(html, /navigator\.credentials\.get\(\{[\s\S]*publicKey:\{[\s\S]*challenge:bytes\(opt\.challenge\)[\s\S]*rpId:opt\.rpId[\s\S]*userVerification:"required"[\s\S]*timeout:60000/);
