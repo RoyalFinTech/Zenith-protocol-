@@ -84,6 +84,17 @@ if (missingRegistrationHandoffContract.length > 0) {
 if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(indexHtml)) {
   throw new Error('Frontend registration-to-wallet handoff contract failed: optional WhatsApp reminder must not block submission');
 }
+const optionalAuthContract = [
+  'id="skipOptionalPin"',
+  'id="skipBiometric"',
+  'data-action="enable-biometric"',
+  'window.zenitEnrollBiometric=async',
+  'PIN and device passkeys are optional sign-in options'
+];
+const missingOptionalAuthContract = optionalAuthContract.filter(fragment => !indexHtml.includes(fragment));
+if (missingOptionalAuthContract.length > 0) {
+  throw new Error(`Frontend wallet-auth contract failed: missing ${missingOptionalAuthContract.join(', ')}`);
+}
 const bundledWhatsAppSvg = readFileSync(path.join(frontendDist, 'whatsapp.svg'), 'utf8');
 if (!bundledWhatsAppSvg.includes('<title>WhatsApp</title>') || !bundledWhatsAppSvg.includes('<path fill="#ffffff" d="')) {
   throw new Error('Frontend country picker contract failed: official WhatsApp glyph asset is missing or malformed');
