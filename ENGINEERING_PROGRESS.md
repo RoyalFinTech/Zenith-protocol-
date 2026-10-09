@@ -1,3 +1,14 @@
+## Returning login wallet auto-resume — QA pending, not deployed — 2026-10-09 12:08 UTC
+
+- **Reported failure:** Returning member taps Login after splash; the wallet UI reports an existing connection, but closing that selector leaves the member on the onboarding/login screen.
+- **Root cause found:** `frontend/src/wallet-bridge.ts` called AppKit's `open()` even when the wallet connection was already present, and the connection polling loop stopped at the first connected address instead of requiring successful session restoration/authentication and dashboard handoff. The same-address fast path could also return on address/token equality before this page had finished its app handoff. Transient disconnected provider state could clear the browser's valid server session during initialization.
+- **Route fix:** Wallet login now checks Wagmi/AppKit connection state first; if connected it never opens a duplicate wallet selector. If AppKit has restored the connection before the signing connector is ready, the route waits for connector hydration. For an existing valid session it restores and hydrates the registered profile; otherwise it verifies the wallet signature. The wait ends only when `appHandoffComplete` is true, not merely when an address appears.
+- **Login UX:** The returning-member dialog immediately checks whether a wallet is already connected. It continues directly on an existing connection, updates the action to retry wallet sign-in if needed, and opens the wallet selector only when no connection was found. The view explains that a signature may be requested and that PIN/passkey are optional.
+- **Session safety:** Cold/reconnecting provider states no longer clear the app session by themselves. Explicit Disconnect still clears local session state and performs best-effort logout.
+- **QA added:** `frontend/tests/login-wiring.test.mjs` asserts the auto-resume route, connected-provider wait, dashboard completion gate, UI status and absence of the old premature break. `backend/scripts/build.mjs` enforces both the compiled frontend login UI contract and wallet-bridge source contract.
+- **Release status:** This change is on `fix/returning-login-auto-resume-20261009`; CI and deployment have not yet been verified for this fix. Do not mark live until PR checks pass and Render confirms the merged SHA. Manual browser acceptance must still exercise the operator's actual wallet.
+- **Data safety:** No production member, ledger, financial, package-settlement, matrix, withdrawal or admin records are intentionally changed by this frontend authentication fix.
+
 ## Optional Profile PIN management — CI green, merged and deployed — 2026-10-09 11:42 UTC
 
 - **PR #40:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/40 — merged as `72b2a9c80dfe7f0fae217087715cff9f61dc053b`.
