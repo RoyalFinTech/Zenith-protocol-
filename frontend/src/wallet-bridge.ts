@@ -75,7 +75,9 @@ async function init() {
 
       if (!state?.isConnected || !address) {
         appKitConnectedAddress = '';
-        if (authToken || lastAddress) clearLocalSession();
+        // A provider may briefly publish a disconnected state while restoring
+        // its session on reload/mobile return. Keep the server-authenticated
+        // session; the explicit Disconnect action performs local logout.
         (window as any).zenitSetWallet?.(false, '', 'Not connected');
         return;
       }
@@ -275,7 +277,8 @@ async function syncCurrentAccount() {
     const account = getAccount(adapter!.wagmiConfig);
 
     if (!account.isConnected || !account.address) {
-      if (authToken || lastAddress) clearLocalSession();
+      // Wallet connectivity can settle after auth session restoration. A missing
+      // provider account does not invalidate the backend session by itself.
       (window as any).zenitSetWallet?.(false, 'Not connected');
       return;
     }
