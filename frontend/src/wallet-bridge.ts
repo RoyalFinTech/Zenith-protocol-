@@ -142,6 +142,7 @@ function clearLocalSession() {
   authToken = '';
   lastAddress = '';
   localStorage.removeItem('zenitToken');
+  localStorage.removeItem('zenitPinChallenge');
 }
 
 async function restoreSession(address: `0x${string}`) {
@@ -166,6 +167,9 @@ async function restoreSession(address: `0x${string}`) {
     lastAddress = address;
     (window as any).zenitSetWallet?.(true, address);
     await (window as any).zenitLoadBackend?.(authToken);
+    // Restoring an existing authenticated session must also reveal the dashboard;
+    // do not rely on the original splash-startup event having already run.
+    window.dispatchEvent(new CustomEvent('zenit:authenticated', { detail: data.user || {} }));
     return true;
   } catch {
     return false;
@@ -196,7 +200,9 @@ async function authenticate(address: `0x${string}`) {
     body: JSON.stringify({ address, nonce, signature, walletHandoffToken: walletHandoffToken || undefined })
   });
   const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string; pinRequired?: boolean; pinSetupRequired?: boolean; challengeId?: string };
-  if ((data.pinRequired || data.pinSetupRequired) && data.challengeId) {
+  // Older API versions returned only a PIN challenge. Keep that compatibility
+  // path, but never block a valid session token on an optional PIN prompt.
+  if ((data.pinRequired || data.pinSetupRequired) && data.challengeId && !data.token) {
     localStorage.setItem('zenitPinChallenge', data.challengeId);
     window.dispatchEvent(new CustomEvent('zenit:pin-required', { detail: { challengeId: data.challengeId, address, setup: !!data.pinSetupRequired } }));
     return;
@@ -226,8 +232,22 @@ async function authenticate(address: `0x${string}`) {
 
   lastAddress = address;
   (window as any).zenitSetWallet?.(true, address);
-  window.dispatchEvent(new CustomEvent('zenit:authenticated', { detail: data.user }));
+  const optionalPinChallenge = Boolean(data.challengeId && (data.pinRequired || data.pinSetupRequired));
+  if (optionalPinChallenge) {
+    localStorage.setItem('zenitPinChallenge', data.challengeId!);
+  } else {
+    // A cancelled challenge from an older build must never strand this wallet.
+    localStorage.removeItem('zenitPinChallenge');
+  }
+  // Hydrate the registered member's profile/dashboard first. Only then reveal
+  // the app shell and, where applicable, show the optional PIN prompt.
   await (window as any).zenitLoadBackend?.(authToken);
+  window.dispatchEvent(new CustomEvent('zenit:authenticated', { detail: data.user }));
+  if (optionalPinChallenge) {
+    window.dispatchEvent(new CustomEvent('zenit:pin-required', {
+      detail: { challengeId: data.challengeId, address, setup: !!data.pinSetupRequired }
+    }));
+  }
 }
 
 async function syncCurrentAccount() {
@@ -279,7 +299,8 @@ async function syncCurrentAccount() {
 
     (window as any).zenitSetWallet?.(true, readyAccount.address);
 
-    if (localStorage.getItem('zenitPinChallenge')) return;
+    // Legacy PIN challenges are optional. Never let a stale challenge key stop
+    // a returning wallet from authenticating on its next explicit connection.
     if (readyAccount.address === lastAddress && authToken) return;
     if (Date.now() < authRetryAt) return;
 
