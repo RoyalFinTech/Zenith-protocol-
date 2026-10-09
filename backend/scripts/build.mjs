@@ -69,6 +69,21 @@ if (pickerFunctionIndex < 0 || registrationBindingIndex <= pickerFunctionIndex) 
 if (!indexHtml.includes('function countryFlagUrl(iso)') || !indexHtml.includes('https://flagcdn.com/w40/pk.png')) {
   throw new Error('Frontend country picker contract failed: image-based country flag rendering is missing');
 }
+
+const registrationHandoffContract = [
+  '<form id="registrationForm" novalidate>',
+  '<button type="submit" class="btn primary registration-submit" id="registrationSubmit" data-action="registration-submit">',
+  'getElementById("registrationForm")?.addEventListener("submit",event=>{',
+  '<button type="button" class="btn primary registration-submit" data-action="registration-wallet">',
+  'const openWallet=window.zenitOpenWallet;if(typeof openWallet!=="function")'
+];
+const missingRegistrationHandoffContract = registrationHandoffContract.filter(fragment => !indexHtml.includes(fragment));
+if (missingRegistrationHandoffContract.length > 0) {
+  throw new Error(`Frontend registration-to-wallet handoff contract failed: missing ${missingRegistrationHandoffContract.join(', ')}`);
+}
+if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(indexHtml)) {
+  throw new Error('Frontend registration-to-wallet handoff contract failed: optional WhatsApp reminder must not block submission');
+}
 const bundledWhatsAppSvg = readFileSync(path.join(frontendDist, 'whatsapp.svg'), 'utf8');
 if (!bundledWhatsAppSvg.includes('<title>WhatsApp</title>') || !bundledWhatsAppSvg.includes('<path fill="#ffffff" d="')) {
   throw new Error('Frontend country picker contract failed: official WhatsApp glyph asset is missing or malformed');
