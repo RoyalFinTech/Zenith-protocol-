@@ -51,7 +51,7 @@ assert.match(walletBridge, /if \(appHandoffComplete\) return true/);
 assert.match(walletBridge, /window\.zenitTryExistingWalletLogin = \(\) => tryExistingWalletLogin\(\)/);
 assert.match(walletBridge, /onNeedWalletSelector\?\.\(\)/);
 assert.match(walletBridge, /function hasAppKitConnection\(\)/);
-assert.match(walletBridge, /const account = await waitForConnectedAccount\(2200\)/);
+assert.match(walletBridge, /let account = await waitForConnectedAccount\(2200\)/);
 assert.match(walletBridge, /Wallet connection is not the same as application authentication/);
 assert.doesNotMatch(walletBridge, /if \(authToken \|\| lastAddress\) clearLocalSession\(\)/);
 assert.doesNotMatch(walletBridge, /if \(account\?\.isConnected && account\.address\) break;/);
