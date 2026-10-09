@@ -119,7 +119,7 @@ const optionalAuthContract = [
   'id="profilePinConfirm"',
   '/api/auth/pin/change',
   'window.zenitEnrollBiometric=async',
-  'PIN and device passkeys are optional sign-in options'
+  'PIN and passkeys are optional'
 ];
 const missingOptionalAuthContract = optionalAuthContract.filter(fragment => !indexHtml.includes(fragment));
 if (missingOptionalAuthContract.length > 0) {
