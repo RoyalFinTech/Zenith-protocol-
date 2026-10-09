@@ -70,7 +70,22 @@ assert.match(html, /\.onboarding \.onboard-existing \.btn[\s\S]*background:linea
 assert.match(html, /navigator\.credentials\.get\(\{[\s\S]*publicKey:\{[\s\S]*challenge:bytes\(opt\.challenge\)[\s\S]*rpId:opt\.rpId[\s\S]*userVerification:"required"[\s\S]*timeout:60000/);
 assert.match(html, /Phone biometric verified\. Opening your dashboard/);
 assert.match(html, /window\.startApp=startApp/);
-console.log('✓ returning-member gateway is centralized and biometric/wallet choices are wired');
+assert.match(html, /id="skipOptionalPin"/);
+assert.match(html, /SKIP FOR NOW · OPEN DASHBOARD/);
+assert.match(html, /id="skipBiometric"/);
+assert.match(html, /closeBiometricPrompt/);
+assert.match(html, /data-action="enable-biometric"/);
+assert.match(html, /window\.zenitEnrollBiometric=async/);
+assert.match(html, /OPTIONAL SIGN-IN SECURITY/);
+assert.match(html, /PIN and device passkeys are optional sign-in options/);
+assert.match(html, /await window\.zenitLoadBackend\?\.\(data\.token\)/);
+assert.match(walletBridge, /if \(\(data\.pinRequired \|\| data\.pinSetupRequired\) && data\.challengeId && !data\.token\)/);
+assert.doesNotMatch(walletBridge, /if \(localStorage\.getItem\('zenitPinChallenge'\)\) return/);
+assert.match(walletBridge, /window\.dispatchEvent\(new CustomEvent\('zenit:authenticated', \{ detail: data\.user \|\| \{\} \}\)\)/);
+const authSource = readFileSync(resolve(process.cwd(), '../backend/src/routes/auth.ts'), 'utf8');
+assert.match(authSource, /let pinChallengeId: string \| undefined;/);
+assert.match(authSource, /\.\.\.\(pinChallengeId \? \{ pinRequired:!!user\.pin_hash, pinSetupRequired:!user\.pin_hash, challengeId:pinChallengeId \} : \{\}\)/);
+console.log('✓ optional PIN/passkey controls and wallet-to-dashboard contract are wired');
 
 assert.match(html, /data-action="test-push"/);
 assert.match(html, /backendFetch\(['"]\/api\/me\/push\/test['"]/);
