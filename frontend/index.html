@@ -1480,7 +1480,7 @@ function renderWallet() { return pageHead("Wallet","Wallet","Your wallet command
     document.addEventListener("click",e=>{const item=e.target.closest("[data-notification-id]");if(!item)return;const id=item.dataset.notificationId,token=localStorage.getItem("zenitToken");if(!token)return;backendFetch('/api/me/notifications/'+encodeURIComponent(id)+'/read',{method:'PATCH',headers:{Authorization:`Bearer ${token}`}}).then(()=>loadNotifications(token));}); $("#modalBackdrop").addEventListener("click",e=>{if(e.target.id==="modalBackdrop")closeModal();});
 
     async function consumeNotificationLink(token){const id=new URLSearchParams(location.search).get("notification");if(!id||!token)return;try{await backendFetch("/api/me/notifications/"+encodeURIComponent(id)+"/read",{method:"PATCH",headers:{Authorization:`Bearer ${token}`}});await loadNotifications(token);}catch(_){}history.replaceState({},document.title,location.pathname+location.hash);}
-window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("zenitRegistrationVerified","1"); startApp(); const token=localStorage.getItem("zenitToken"); if(token){await loadPushState(token,{sync:true});await consumeNotificationLink(token);} });
+window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("zenitRegistrationVerified","1"); startApp(); if($("#connectReturningWallet"))$("#modalBackdrop")?.classList.remove("open"); const token=localStorage.getItem("zenitToken"); if(token){await loadPushState(token,{sync:true});await consumeNotificationLink(token);} });
     async function completePinLogin(challengeId,pin,setup=false){
       const endpoint=setup?"/api/auth/pin/setup":"/api/auth/pin/verify";
       const response=await fetch(`${backendBase()}${endpoint}`,{method:"POST",headers:{"content-type":"application/json","accept":"application/json"},body:JSON.stringify({challengeId,pin})});
@@ -1776,12 +1776,61 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
   }
   function openReturningLogin(){
     const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
-    modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER</div><h2 id="modalTitle">Welcome back to ZENIT</h2><p>Connect your wallet to open your dashboard. PIN and device passkeys are optional sign-in options.</p></div><button class="icon-btn" type="button" id="closeReturningLogin" aria-label="Close">×</button></div><div class="modal-body"><div class="biometric-actions"><button class="biometric-btn" type="button" id="useBiometricLogin">USE PHONE BIOMETRICS</button></div><div class="login-divider">OR CONNECT WITH YOUR WALLET</div><button class="btn primary" type="button" id="connectReturningWallet" style="width:100%;min-height:44px">CONNECT WALLET →</button><p style="margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.6">Your wallet signature opens your account. You can skip PIN/passkey setup and manage sign-in options later from Profile.</p><button class="btn ghost" type="button" id="forgotPinAccess" style="width:100%;margin-top:10px">FORGOT PIN / ACCESS HELP</button></div>';
+    modal.innerHTML='<div class="modal-head"><div><div class="eyebrow">RETURNING MEMBER · SECURE SIGN-IN</div><h2 id="modalTitle">Welcome back to ZENIT</h2><p id="returningLoginStatus">Checking whether your wallet is already connected…</p></div><button class="icon-btn" type="button" id="closeReturningLogin" aria-label="Close">×</button></div><div class="modal-body"><div class="card pad" style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;background:var(--surface-2,#171a1c)"><span class="wallet-symbol" aria-hidden="true">◈</span><div><strong style="font-size:12px">Continue with your wallet</strong><p style="margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.6">ZENIT checks for an existing connection first. If your wallet is connected, it will continue sign-in without reopening the wallet selector. A signature may be requested to verify ownership.</p></div></div><button class="btn primary" type="button" id="connectReturningWallet" style="width:100%;min-height:46px">CHECKING WALLET…</button><div class="login-divider">OR USE A SAVED PASSKEY</div><div class="biometric-actions"><button class="biometric-btn" type="button" id="useBiometricLogin">USE PHONE BIOMETRICS / PASSKEY</button></div><p style="margin:12px 0 0;color:var(--muted);font-size:10px;line-height:1.6">PIN and passkeys are optional. If setup is skipped, you can still use your connected wallet and manage sign-in options later from Profile.</p><button class="btn ghost" type="button" id="forgotPinAccess" style="width:100%;margin-top:10px">FORGOT PIN / ACCESS HELP</button></div>';
     backdrop.classList.remove("open");requestAnimationFrame(()=>backdrop.classList.add("open"));
+    const button=$("#connectReturningWallet"),status=$("#returningLoginStatus");
+    let probeInFlight=false;
+    const setState=(state)=>{
+      if(!button||!status)return;
+      button.disabled=false;button.removeAttribute("aria-busy");
+      if(state==="authenticated"){backdrop.classList.remove("open");return;}
+      if(state==="connected"){
+        button.textContent="RETRY WALLET SIGN-IN →";
+        status.textContent="Wallet detected. Your dashboard will open after the ownership check completes. If the wallet signature was cancelled, press retry.";
+      }else{
+        button.textContent="CONNECT WALLET →";
+        status.textContent="No active wallet connection found. Connect your registered wallet to continue.";
+      }
+    };
+    const checkExisting=async()=>{
+      if(probeInFlight)return;probeInFlight=true;
+      if(button){button.disabled=true;button.setAttribute("aria-busy","true");button.textContent="CHECKING WALLET…";}
+      if(status)status.textContent="Checking this device for an existing wallet session…";
+      try{
+        const probe=window.zenitTryExistingWalletLogin;
+        if(typeof probe!=="function"){setState("disconnected");return;}
+        const result=await probe();
+        setState(result==="authenticated"?"authenticated":result==="connected"?"connected":"disconnected");
+      }catch(error){
+        setState(appState.wallet.connected?"connected":"disconnected");
+        toast("Wallet check incomplete",error?.message||"Use the wallet button to try again.","info");
+      }finally{probeInFlight=false;}
+    };
     $("#closeReturningLogin")?.addEventListener("click",()=>backdrop.classList.remove("open"));
-    $("#connectReturningWallet")?.addEventListener("click",async()=>{localStorage.setItem("zenitAuthMode","existing");backdrop.classList.remove("open");try{await window.zenitOpenWallet?.();}catch(e){toast("Wallet unavailable",e?.message||String(e),"error");}});
+    button?.addEventListener("click",async()=>{
+      if(probeInFlight)return;
+      const walletLogin=window.zenitOpenWallet;
+      if(typeof walletLogin!=="function"){toast("Wallet login is loading","Wait a moment and try again.","warning");return;}
+      if(button){button.disabled=true;button.setAttribute("aria-busy","true");button.textContent="CONTINUING…";}
+      if(status)status.textContent="Verifying your connected wallet and loading your member dashboard…";
+      try{
+        // The bridge closes this login modal only when it actually needs to
+        // open the wallet selector. An existing connection stays on this route.
+        await walletLogin(()=>backdrop.classList.remove("open"));
+        if(!$("#appShell")?.classList.contains("hidden")){backdrop.classList.remove("open");return;}
+        setState(appState.wallet.connected?"connected":"disconnected");
+      }catch(error){
+        setState(appState.wallet.connected?"connected":"disconnected");
+        toast("Wallet login failed",error?.message||String(error),"error");
+      }finally{
+        if(button&&backdrop.classList.contains("open")){button.disabled=false;button.removeAttribute("aria-busy");}
+      }
+    });
     $("#useBiometricLogin")?.addEventListener("click",()=>biometricLogin());
     $("#forgotPinAccess")?.addEventListener("click",()=>openPinRecoveryModal());
+    // A returning member should not have to click Connect again if the provider
+    // is already restored. The bridge also requests a signature when needed.
+    void checkExisting();
   }
   async function biometricLogin(){
     if(!window.PublicKeyCredential||!navigator.credentials){toast("Phone biometrics unavailable","This browser cannot call the phone authenticator here. Use wallet + PIN instead.","warning");return;}
