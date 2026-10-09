@@ -1,3 +1,13 @@
+## Returning wallet authentication and optional device setup — 2026-10-09 11:30 UTC
+
+- **PR #38:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/38 — fix: make wallet access independent of PIN and passkey setup.
+- **Build/QA:** CI run #1007 passed frontend and backend jobs on head 0ccdc22f65b7771a710f1db00c007a991572d1f2: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/37923682887. The production frontend build guard now validates optional PIN/passkey skip UI and the Profile enrollment route.
+- **Source files changed:** backend/src/routes/auth.ts issues a session after a valid returning-wallet signature and carries the PIN challenge as optional metadata; frontend/src/wallet-bridge.ts waits for account data hydration and routes authenticated users to the app shell, while removing stale PIN challenge blockers; frontend/index.html adds explicit PIN/passkey skip/cancel controls and a Profile passkey enrollment action; frontend/tests/login-wiring.test.mjs and backend/scripts/build.mjs enforce the new behavior.
+- **Auth contract:** The user still must connect the wallet on BNB Smart Chain and sign the backend challenge. After that, the registered user's backend identity/dashboard is loaded and displayed without PIN/passkey setup being a mandatory gate. Existing PIN submit remains available; users can skip it and can enroll a device passkey/biometric later from Profile. PIN/passkey setup is not mocked.
+- **Deployment status at documentation time:** PR #38 is open, so these changes are **not yet claimed live on Render**. The live service remains the previously deployed runtime until the PR is merged and Render reports a successful deployment with the merge commit SHA. Royal Workspace remains the target.
+- **Manual acceptance still required:** Use the existing registered wallet in a real browser/device; test successful signature → correct Profile/Dashboard data; skip/close PIN and passkey dialogs; disconnect and reconnect; and use Profile to enroll or cancel device passkey setup. CI cannot fully simulate the operating-system passkey sheet or real wallet-provider mobile handoff.
+- **Production-data safety:** No account, credential, transaction, package, ledger, earnings, or withdrawal records were intentionally changed for this QA. Keep tests isolated to CI/test databases.
+
 ## Create Account → Connect Wallet handoff — fixed, CI-green, and deployed — 2026-10-09 10:52 UTC
 
 - **User report:** The registration “Create Account” button appeared unresponsive and did not reliably advance to the Connect Wallet step/dashboard onboarding.
