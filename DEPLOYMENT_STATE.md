@@ -1,12 +1,12 @@
-## Returning login — auto-resume existing wallet — release gate — 2026-10-09 12:08 UTC
+## Returning login — auto-resume existing wallet — CI green and deployed — 2026-10-09 12:13 UTC
 
-- **Source branch:** `fix/returning-login-auto-resume-20261009`.
-- **Reported issue:** Login showed a wallet that was already connected; cancelling that second selector left the member on the login page.
-- **Changes:** `frontend/src/wallet-bridge.ts` checks the current wallet before opening the AppKit selector, tolerates AppKit/Wagmi reconnect timing differences, and waits for an authenticated dashboard handoff rather than stopping on an address. It restores the session/profile when the stored session remains valid, otherwise it requires the backend's wallet-signature challenge. Provider cold-start/disconnected state no longer automatically deletes the app's server session. Explicit Disconnect still logs out.
-- **UI:** The returning-member dialog checks for an already-connected wallet on open, continues automatically when authentication succeeds, uses retry wording if the provider or signature is not ready, and opens the wallet selector only for a missing connection. Saved passkey remains an optional alternative.
-- **Regression guards:** Frontend tests cover the auto-resume and dashboard-completion conditions; production build guard validates both the returning-login UI and source wallet-resume contract.
-- **Release status:** QA is pending. This work is not considered deployed until CI passes, changes merge to `main`, and Render reports the merged SHA live. Confirm at [Render service](https://dashboard.render.com/web/srv-dajmafdg1s2s73ba8k5g); live app is https://zenith-protocol-qvfe.onrender.com.
-- **Security/data:** Wallet signature verification remains required where no valid session can be restored; PIN/passkey are optional. No production financial or member records were changed. Real-device wallet acceptance remains required after deployment.
+- **PR #41:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/41 — merged as `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc`.
+- **CI:** Run #1055 passed frontend and backend jobs: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/37928249965. Checks include frontend build, login/trust regression coverage, backend lint/unit/integration tests and production build guards.
+- **Live Render deployment:** Royal Workspace service `srv-dajmafdg1s2s73ba8k5g`, deployment `dep-db4djq740ujc73ed2hq0`, status **live**, commit `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc`. Render recorded `deploy_ended` success at 2026-10-09 12:13:10 UTC. App URL: https://zenith-protocol-qvfe.onrender.com.
+- **Returning login behavior:** Login first checks whether AppKit/Wagmi already has a wallet connection. If connected, it restores a valid session or asks for the backend-verified wallet signature without reopening the connect selector. It waits for dashboard hydration and the authenticated handoff, not just an address; if the connector is still initializing it waits/retries. The selector only opens when there is no connected wallet.
+- **UX/security:** The redesigned login dialog gives clear checking/progress/retry status, offers saved passkey as an alternative, and keeps PIN/passkey setup optional. A cancelled signature returns a retry affordance instead of relaunching the same already-connected selector. Explicit Disconnect still clears the session; a temporary provider reconnect state no longer erases it.
+- **Remaining acceptance:** Automated QA and Render deployment are confirmed, but actual device/browser acceptance with the user's registered wallet remains outstanding. Verify return from splash/login, dashboard/profile data, cancel/retry, and passkey skip on the operator's device.
+- **Data safety:** No production financial/member records were changed by this release.
 
 ## Optional Profile PIN management — CI green, merged and deployed — 2026-10-09 11:42 UTC
 
