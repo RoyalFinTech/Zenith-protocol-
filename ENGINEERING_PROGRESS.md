@@ -1,3 +1,13 @@
+## Optional Profile PIN management — PR QA gate — 2026-10-09 11:40 UTC
+
+- **Follow-up requested:** Returning members should reach the dashboard after a valid wallet signature. PIN/passkey setup stays optional; members can decide later whether to use device biometrics or an additional four-digit PIN.
+- **Backend profile status:** `backend/src/routes/me.ts` now includes a boolean `user.has_pin` in authenticated `GET /api/me`; it never returns the stored PIN hash.
+- **PIN management endpoint:** `backend/src/routes/auth.ts` exposes authenticated `POST /api/auth/pin/change`. It requires a valid session, a four-digit PIN and matching confirmation; it uses the existing scrypt-based hash helper and resets PIN lockout counters after a successful update. It does not modify wallet ownership, package settlement, ledgers, earnings or withdrawals.
+- **Profile UI:** `frontend/index.html` now displays `PIN SET` / `NOT SET`, offers optional create/update fields, and keeps passkey/biometric enrollment available from Profile. PIN/passkey prompts can be skipped or cancelled while the dashboard remains behind them. The wallet-authenticated member profile and dashboard data are loaded before the authenticated event opens the app shell.
+- **Regression coverage:** `frontend/tests/login-wiring.test.mjs` checks skip/cancel controls, Profile PIN/passkey controls and the wallet-to-dashboard handoff. `backend/tests/production.integration.test.ts` covers authenticated PIN updates, unauthenticated rejection, invalid PIN rejection and returned `has_pin` status. `backend/scripts/build.mjs` guards the optional security UI contract at production build time.
+- **Status gate:** Run CI for the current PR and verify the Render deployment's live SHA after merge. The earlier CI run #1007 predates the Profile PIN management additions and is not proof that these latest changes passed. Do not claim these additions are deployed until Render confirms the merged commit.
+- **Data safety:** No production member, financial, package settlement, matrix placement, withdrawal or admin records were changed by this source work. Manual browser/device acceptance remains required for wallet reconnect, skip actions, dashboard data hydration and PIN create/update.
+
 ## Returning-wallet → dashboard; optional PIN/passkey setup — QA green and deployed — 2026-10-09 11:34 UTC
 
 - **User-reported behavior:** After registration, signing in with a returning wallet could leave the app on the Connect Wallet screen because backend wallet verification returned a PIN challenge but no session token. Closing the biometric/passkey prompt also lacked a prominent skip action.

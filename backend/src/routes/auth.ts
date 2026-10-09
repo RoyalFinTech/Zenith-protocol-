@@ -271,6 +271,21 @@ router.post('/pin/setup', async (req,res,next)=>{
   }catch(e){await client.query('rollback').catch(()=>{});next(e);}
   finally{client.release();}
 });
+router.post('/pin/change', requireAuth, async (req,res,next)=>{
+  try{
+    const pin=String(req.body?.pin??'');
+    const confirmation=String(req.body?.confirmation??'');
+    if(!PIN_PATTERN.test(pin)) throw new HttpError(400,'Choose a 4-digit PIN');
+    if(pin!==confirmation) throw new HttpError(400,'PIN entries do not match');
+    const updated=(await query(
+      `update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2 returning id`,
+      [await hashPin(pin),req.auth!.userId]
+    )).rows[0];
+    if(!updated) throw new HttpError(404,'User not found');
+    res.json({updated:true});
+  }catch(e){next(e);}
+});
+
 router.post('/pin/reset/request', async (req,res,next)=>{
   try{
     let whatsappNumber: string;
