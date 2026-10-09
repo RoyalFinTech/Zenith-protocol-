@@ -88,6 +88,9 @@ const optionalAuthContract = [
   'id="skipOptionalPin"',
   'id="skipBiometric"',
   'data-action="enable-biometric"',
+  'data-action="profile-pin-save"',
+  'id="profilePinConfirm"',
+  '/api/auth/pin/change',
   'window.zenitEnrollBiometric=async',
   'PIN and device passkeys are optional sign-in options'
 ];
