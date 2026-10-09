@@ -13,7 +13,7 @@ router.use(requireAuth);
 
 router.get('/', async (req,res,next)=>{
   try {
-    const user = (await query(`select id,wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,role,referral_code,avatar_url,created_at from app_users where id=$1`, [req.auth!.userId])).rows[0];
+    const user = (await query(`select id,wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,role,referral_code,avatar_url,created_at,(pin_hash is not null) as has_pin from app_users where id=$1`, [req.auth!.userId])).rows[0];
     if (!user) throw new HttpError(404,'User not found');
     const preference = (await query(`select theme,compact_density,activity_notifications,reduced_motion from user_preferences where user_id=$1`, [req.auth!.userId])).rows[0];
     res.json({ user, preference });
