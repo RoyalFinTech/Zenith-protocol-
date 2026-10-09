@@ -49,7 +49,7 @@ const missingWalletResumeContract = connectedWalletResumeContract.filter(fragmen
 if (missingWalletResumeContract.length > 0) {
   throw new Error(`Connected-wallet login contract failed: missing ${missingWalletResumeContract.join(', ')}`);
 }
-if (/if \\(account\\?\\.isConnected && account\\.address\\) break;/.test(walletBridgeSource)) {
+if (/if \(account\?\.isConnected && account\.address\) break;/.test(walletBridgeSource)) {
   throw new Error('Connected-wallet login contract failed: wallet connection must not short-circuit authentication/dashboard handoff');
 }
 const returningLoginUiContract = [
