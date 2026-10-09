@@ -35,6 +35,33 @@ if (!existsSync(builtIndex)) {
 // artifact is served. The root "YOU" is outside the numbered matrix nodes:
 // positions 1-2 are level 1, 3-6 level 2, 7-14 level 3, etc.
 const indexHtml = readFileSync(builtIndex, 'utf8');
+const walletBridgeSource = readFileSync(path.join(frontendDir, 'src', 'wallet-bridge.ts'), 'utf8');
+
+const connectedWalletResumeContract = [
+  'let appHandoffComplete = false;',
+  'function hasAppKitConnection()',
+  'async function tryExistingWalletLogin()',
+  'let existing = await waitForConnectedAccount(1800);',
+  'if (appHandoffComplete) return true;',
+  '(window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();'
+];
+const missingWalletResumeContract = connectedWalletResumeContract.filter(fragment => !walletBridgeSource.includes(fragment));
+if (missingWalletResumeContract.length > 0) {
+  throw new Error(`Connected-wallet login contract failed: missing ${missingWalletResumeContract.join(', ')}`);
+}
+if (/if \(account\?\.isConnected && account\.address\) break;/.test(walletBridgeSource)) {
+  throw new Error('Connected-wallet login contract failed: wallet connection must not short-circuit authentication/dashboard handoff');
+}
+const returningLoginUiContract = [
+  'id="returningLoginStatus"',
+  'Checking whether your wallet is already connected',
+  'without reopening the wallet selector',
+  'RETRY WALLET SIGN-IN'
+];
+const missingReturningLoginUi = returningLoginUiContract.filter(fragment => !indexHtml.includes(fragment));
+if (missingReturningLoginUi.length > 0) {
+  throw new Error(`Returning-login UI contract failed: missing ${missingReturningLoginUi.join(', ')}`);
+}
 
 // The Render service's rootDir is backend, but this build intentionally bundles the
 // sibling frontend directory. Guard that the registration WhatsApp country picker
@@ -92,7 +119,7 @@ const optionalAuthContract = [
   'id="profilePinConfirm"',
   '/api/auth/pin/change',
   'window.zenitEnrollBiometric=async',
-  'PIN and device passkeys are optional sign-in options'
+  'PIN and passkeys are optional'
 ];
 const missingOptionalAuthContract = optionalAuthContract.filter(fragment => !indexHtml.includes(fragment));
 if (missingOptionalAuthContract.length > 0) {

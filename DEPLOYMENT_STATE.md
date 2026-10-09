@@ -1,3 +1,13 @@
+## Returning login — auto-resume existing wallet — release gate — 2026-10-09 12:08 UTC
+
+- **Source branch:** `fix/returning-login-auto-resume-20261009`.
+- **Reported issue:** Login showed a wallet that was already connected; cancelling that second selector left the member on the login page.
+- **Changes:** `frontend/src/wallet-bridge.ts` checks the current wallet before opening the AppKit selector, tolerates AppKit/Wagmi reconnect timing differences, and waits for an authenticated dashboard handoff rather than stopping on an address. It restores the session/profile when the stored session remains valid, otherwise it requires the backend's wallet-signature challenge. Provider cold-start/disconnected state no longer automatically deletes the app's server session. Explicit Disconnect still logs out.
+- **UI:** The returning-member dialog checks for an already-connected wallet on open, continues automatically when authentication succeeds, uses retry wording if the provider or signature is not ready, and opens the wallet selector only for a missing connection. Saved passkey remains an optional alternative.
+- **Regression guards:** Frontend tests cover the auto-resume and dashboard-completion conditions; production build guard validates both the returning-login UI and source wallet-resume contract.
+- **Release status:** QA is pending. This work is not considered deployed until CI passes, changes merge to `main`, and Render reports the merged SHA live. Confirm at [Render service](https://dashboard.render.com/web/srv-dajmafdg1s2s73ba8k5g); live app is https://zenith-protocol-qvfe.onrender.com.
+- **Security/data:** Wallet signature verification remains required where no valid session can be restored; PIN/passkey are optional. No production financial or member records were changed. Real-device wallet acceptance remains required after deployment.
+
 ## Optional Profile PIN management — CI green, merged and deployed — 2026-10-09 11:42 UTC
 
 - **PR #40:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/40 — merged as `72b2a9c80dfe7f0fae217087715cff9f61dc053b`.
