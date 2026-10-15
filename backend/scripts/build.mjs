@@ -49,6 +49,28 @@ const missingWalletResumeContract = connectedWalletResumeContract.filter(fragmen
 if (missingWalletResumeContract.length > 0) {
   throw new Error(`Connected-wallet login contract failed: missing ${missingWalletResumeContract.join(', ')}`);
 }
+
+const authSource = readFileSync(path.join(backendDir, 'src', 'routes', 'auth.ts'), 'utf8');
+const requiredPinAuthContract = [
+  "router.post('/pin/verify'",
+  'Existing members must prove wallet ownership and then verify their required',
+  'pinRequired: !!user.pin_hash',
+  'pinSetupRequired: !user.pin_hash',
+  'insert into pin_challenges(id,user_id,wallet_address)',
+  'A PIN is already set. Verify your current PIN instead.'
+];
+const missingRequiredPinAuth = requiredPinAuthContract.filter(fragment => !authSource.includes(fragment));
+if (missingRequiredPinAuth.length > 0) {
+  throw new Error(`Required PIN authentication contract failed: missing ${missingRequiredPinAuth.join(', ')}`);
+}
+const returningAuthStart = authSource.indexOf('if (!registration) {', authSource.indexOf('Existing members must prove wallet ownership'));
+const returningAuthEnd = authSource.indexOf('const sessionId = uuid();', returningAuthStart);
+const returningAuthBlock = returningAuthStart >= 0 && returningAuthEnd > returningAuthStart
+  ? authSource.slice(returningAuthStart, returningAuthEnd)
+  : '';
+if (!returningAuthBlock || returningAuthBlock.includes('insert into user_sessions') || !returningAuthBlock.includes('return res.json({')) {
+  throw new Error('Required PIN authentication contract failed: returning members must receive a PIN challenge before a session is issued');
+}
 if (/if \(account\?\.isConnected && account\.address\) break;/.test(walletBridgeSource)) {
   throw new Error('Connected-wallet login contract failed: wallet connection must not short-circuit authentication/dashboard handoff');
 }
@@ -112,14 +134,16 @@ if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(in
   throw new Error('Frontend registration-to-wallet handoff contract failed: optional WhatsApp reminder must not block submission');
 }
 const optionalAuthContract = [
-  'id="skipOptionalPin"',
+  'id="loginPinSubmit"',
+  'id="recoverPinAccess"',
   'id="skipBiometric"',
   'data-action="enable-biometric"',
   'data-action="profile-pin-save"',
   'id="profilePinConfirm"',
   '/api/auth/pin/change',
   'window.zenitEnrollBiometric=async',
-  'PIN and passkeys are optional'
+  'PIN verification is required for returning-member sign-in',
+  'Phone biometrics and passkeys are optional'
 ];
 const missingOptionalAuthContract = optionalAuthContract.filter(fragment => !indexHtml.includes(fragment));
 if (missingOptionalAuthContract.length > 0) {

@@ -745,3 +745,17 @@ The original package lifecycle/admin implementation was already merged into main
 - Backend uniqueness validation remains authoritative; the UI now submits valid registration data directly and surfaces the backend response.
 - Create Account remains explicitly type=button and delegated through the main action handler.
 - No production data rows were changed.
+
+
+## Returning-member PIN gate and onboarding recovery — 2026-10-15
+
+Work in progress on branch `fix/returning-pin-login-branded-ui-20261015`. This is **not yet merged or deployed**.
+
+- Returning-member wallet verification now creates a short-lived PIN challenge and returns `pinRequired` / `pinSetupRequired` without issuing a session token. A session is issued only after `/api/auth/pin/verify` succeeds, or after `/api/auth/pin/setup` establishes the required PIN for a legacy account that has none. New registration still uses the PIN entered in its registration flow.
+- Returning PIN UI is branded, removes the “skip PIN and open dashboard” path, includes a masked 4-digit input, explicit verification/setup action, recovery action, and clear copy that phone biometrics/passkeys are optional.
+- Successful PIN verification now loads the backend profile and explicitly calls `startApp()` before dispatching the authenticated event, so the expected destination is the dashboard.
+- Startup handoff is idempotent and checks whether the splash already finished; this is intended to recover when the splash-ready event fires before the core listener attaches, avoiding a blank screen.
+- Onboarding hero source changed from the previous woman image to a digital-asset/crypto visual URL; the top badge now uses the repository's official `/zenit-logo.png` asset instead of the star glyph. This source change has not yet been visually verified in a live browser and the hero image is externally hosted, not a committed generated image asset.
+- Success/warning/error notices now use a branded ZENIT logo, status icon, accessible live-region semantics, and responsive dark/gold styling.
+- Regression tests and the backend build contract were updated to enforce the PIN gate and startup recovery. CI and deployment are pending; do not claim these changes are live until CI passes, PR is merged, and Render reports the new deploy live.
+- No production database records, wallets, balances, purchases, ledger rows, administrator accounts, or Render settings were changed for this work.
