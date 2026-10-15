@@ -118,6 +118,7 @@ const authSource = readFileSync(resolve(process.cwd(), '../backend/src/routes/au
 assert.match(authSource, /Existing members must prove wallet ownership and then verify their required/);
 assert.match(authSource, /return res\.json\(\{\s*pinRequired: !!user\.pin_hash,\s*pinSetupRequired: !user\.pin_hash,\s*challengeId: pinChallengeId/);
 assert.match(authSource, /router\.post\('\/pin\/verify'/);
+assert.match(authSource, /A PIN is already set\\. Verify your current PIN instead\\./);
 console.log('✓ optional PIN/passkey controls and wallet-to-dashboard contract are wired');
 
 assert.match(html, /data-action="test-push"/);
