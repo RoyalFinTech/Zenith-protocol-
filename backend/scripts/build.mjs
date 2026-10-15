@@ -56,7 +56,8 @@ const requiredPinAuthContract = [
   'Existing members must prove wallet ownership and then verify their required',
   'pinRequired: !!user.pin_hash',
   'pinSetupRequired: !user.pin_hash',
-  'insert into pin_challenges(id,user_id,wallet_address)'
+  'insert into pin_challenges(id,user_id,wallet_address)',
+  'A PIN is already set. Verify your current PIN instead.'
 ];
 const missingRequiredPinAuth = requiredPinAuthContract.filter(fragment => !authSource.includes(fragment));
 if (missingRequiredPinAuth.length > 0) {
