@@ -117,7 +117,6 @@ assert.match(walletBridge, /window\.dispatchEvent\(new CustomEvent\('zenit:authe
 const authSource = readFileSync(resolve(process.cwd(), '../backend/src/routes/auth.ts'), 'utf8');
 assert.match(authSource, /Existing members must prove wallet ownership and then verify their required/);
 assert.match(authSource, /return res\.json\(\{\s*pinRequired: !!user\.pin_hash,\s*pinSetupRequired: !user\.pin_hash,\s*challengeId: pinChallengeId/);
-assert.match(authSource, /Existing members must prove wallet ownership and then verify their required/);
 assert.match(authSource, /router\.post\('\/pin\/verify'/);
 console.log('✓ optional PIN/passkey controls and wallet-to-dashboard contract are wired');
 
