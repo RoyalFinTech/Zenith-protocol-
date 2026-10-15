@@ -77,7 +77,9 @@ assert.doesNotMatch(html, /const amount=prompt\("Withdrawal amount in USDT"\)/);
 assert.doesNotMatch(html, /const address=prompt\("Destination BNB Smart Chain address"\)/);
 
 assert.match(html, /action==="package-preview"/);
-assert.match(html, /images\.unsplash\.com\/photo-1762341121210-6bd877d766b0/);
+assert.match(html, /images\.unsplash\.com\/photo-1639762681485-074b7f938ba0/);
+assert.doesNotMatch(html, /images\.unsplash\.com\/photo-1762341121210-6bd877d766b0/);
+assert.match(html, /zenit-logo\.png\?zenit-official-20260928/);
 assert.match(html, /images\.unsplash\.com\/photo-1494790108377-be9c29b29330/);
 assert.match(html, /images\.unsplash\.com\/photo-1551288049-bebda4e38f71/);
 assert.match(html, /images\.unsplash\.com\/photo-1556761175-b413da4baf72/);
