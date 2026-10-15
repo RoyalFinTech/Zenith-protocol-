@@ -86,8 +86,18 @@ assert.match(html, /\.onboarding \.onboard-existing \.btn[\s\S]*background:linea
 assert.match(html, /navigator\.credentials\.get\(\{[\s\S]*publicKey:\{[\s\S]*challenge:bytes\(opt\.challenge\)[\s\S]*rpId:opt\.rpId[\s\S]*userVerification:"required"[\s\S]*timeout:60000/);
 assert.match(html, /Phone biometric verified\. Opening your dashboard/);
 assert.match(html, /window\.startApp=startApp/);
-assert.match(html, /id="skipOptionalPin"/);
-assert.match(html, /SKIP FOR NOW · OPEN DASHBOARD/);
+assert.match(html, /id="loginPinSubmit"/);
+assert.match(html, /VERIFY PIN &amp; OPEN DASHBOARD|VERIFY PIN & OPEN DASHBOARD/);
+assert.match(html, /id="recoverPinAccess"/);
+assert.match(html, /Wallet connected · PIN required/);
+assert.doesNotMatch(html, /id="skipOptionalPin"/);
+assert.doesNotMatch(html, /SKIP FOR NOW · OPEN DASHBOARD/);
+assert.match(html, /if\(typeof window\.startApp==="function"\)window\.startApp\(\)/);
+assert.match(html, /window\.__zenitSplashFinished=true/);
+assert.match(html, /window\.__zenitSplashFinished===true/);
+assert.match(html, /zenit-logo\.png\?zenit-official-20260928/);
+assert.match(html, /Modern digital asset and cryptocurrency workspace/);
+assert.doesNotMatch(html, /Professional woman working at a modern office desk/);
 assert.match(html, /id="skipBiometric"/);
 assert.match(html, /closeBiometricPrompt/);
 assert.match(html, /data-action="enable-biometric"/);
@@ -105,7 +115,9 @@ assert.doesNotMatch(walletBridge, /if \(localStorage\.getItem\('zenitPinChalleng
 assert.match(walletBridge, /window\.dispatchEvent\(new CustomEvent\('zenit:authenticated', \{ detail: data\.user \|\| \{\} \}\)\)/);
 const authSource = readFileSync(resolve(process.cwd(), '../backend/src/routes/auth.ts'), 'utf8');
 assert.match(authSource, /let pinChallengeId: string \| undefined;/);
-assert.match(authSource, /\.\.\.\(pinChallengeId \? \{ pinRequired:!!user\.pin_hash, pinSetupRequired:!user\.pin_hash, challengeId:pinChallengeId \} : \{\}\)/);
+assert.match(authSource, /return res\.json\(\{\s*pinRequired: !!user\.pin_hash,\s*pinSetupRequired: !user\.pin_hash,\s*challengeId: pinChallengeId/);
+assert.match(authSource, /Existing members must prove wallet ownership and then verify their required/);
+assert.match(authSource, /router\.post\('\/pin\/verify'/);
 console.log('✓ optional PIN/passkey controls and wallet-to-dashboard contract are wired');
 
 assert.match(html, /data-action="test-push"/);
