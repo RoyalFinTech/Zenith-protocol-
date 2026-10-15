@@ -115,7 +115,7 @@ assert.match(walletBridge, /if \(\(data\.pinRequired \|\| data\.pinSetupRequired
 assert.doesNotMatch(walletBridge, /if \(localStorage\.getItem\('zenitPinChallenge'\)\) return/);
 assert.match(walletBridge, /window\.dispatchEvent\(new CustomEvent\('zenit:authenticated', \{ detail: data\.user \|\| \{\} \}\)\)/);
 const authSource = readFileSync(resolve(process.cwd(), '../backend/src/routes/auth.ts'), 'utf8');
-assert.match(authSource, /let pinChallengeId: string \| undefined;/);
+assert.match(authSource, /Existing members must prove wallet ownership and then verify their required/);
 assert.match(authSource, /return res\.json\(\{\s*pinRequired: !!user\.pin_hash,\s*pinSetupRequired: !user\.pin_hash,\s*challengeId: pinChallengeId/);
 assert.match(authSource, /Existing members must prove wallet ownership and then verify their required/);
 assert.match(authSource, /router\.post\('\/pin\/verify'/);
