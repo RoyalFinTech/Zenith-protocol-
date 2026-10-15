@@ -62,8 +62,13 @@ const missingRequiredPinAuth = requiredPinAuthContract.filter(fragment => !authS
 if (missingRequiredPinAuth.length > 0) {
   throw new Error(`Required PIN authentication contract failed: missing ${missingRequiredPinAuth.join(', ')}`);
 }
-if (/if\s*\(!registration\)\s*\{[\s\S]{0,1200}?insert into user_sessions/.test(authSource)) {
-  throw new Error('Required PIN authentication contract failed: returning members must not receive a session before PIN verification');
+const returningAuthStart = authSource.indexOf('if (!registration) {', authSource.indexOf('Existing members must prove wallet ownership'));
+const returningAuthEnd = authSource.indexOf('const sessionId = uuid();', returningAuthStart);
+const returningAuthBlock = returningAuthStart >= 0 && returningAuthEnd > returningAuthStart
+  ? authSource.slice(returningAuthStart, returningAuthEnd)
+  : '';
+if (!returningAuthBlock || returningAuthBlock.includes('insert into user_sessions') || !returningAuthBlock.includes('return res.json({')) {
+  throw new Error('Required PIN authentication contract failed: returning members must receive a PIN challenge before a session is issued');
 }
 if (/if \(account\?\.isConnected && account\.address\) break;/.test(walletBridgeSource)) {
   throw new Error('Connected-wallet login contract failed: wallet connection must not short-circuit authentication/dashboard handoff');
