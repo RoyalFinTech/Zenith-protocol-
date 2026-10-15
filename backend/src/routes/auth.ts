@@ -250,12 +250,13 @@ router.post('/pin/setup', async (req,res,next)=>{
     const challengeId=String(req.body?.challengeId??''); const pin=String(req.body?.pin??'');
     if(!/^[0-9a-fA-F-]{36}$/.test(challengeId)||!PIN_PATTERN.test(pin)) throw new HttpError(400,'Enter a 4-digit PIN');
     await client.query('begin');
-    const row=(await client.query<{id:string;user_id:string;wallet_address:string;expires_at:Date}>(
-      `select id,user_id,wallet_address,expires_at from pin_challenges where id=$1 and used_at is null for update`,
+    const row=(await client.query<{id:string;user_id:string;wallet_address:string;expires_at:Date;pin_hash:string|null}>(
+      `select c.id,c.user_id,c.wallet_address,c.expires_at,u.pin_hash from pin_challenges c join app_users u on u.id=c.user_id where c.id=$1 and c.used_at is null for update of c,u`,
       [challengeId]
     )).rows[0];
     if(!row) throw new HttpError(400,'PIN setup challenge is invalid or already used');
     if(new Date(row.expires_at).getTime()<Date.now()) throw new HttpError(400,'PIN setup challenge expired; reconnect your wallet');
+    if(row.pin_hash) throw new HttpError(409,'A PIN is already set. Verify your current PIN instead.');
     const pinHash=await hashPin(pin);
     await client.query(
       `update app_users set pin_hash=$1,pin_failed_attempts=0,pin_locked_until=null,updated_at=now() where id=$2`,
