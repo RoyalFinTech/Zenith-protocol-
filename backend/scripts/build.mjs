@@ -49,6 +49,22 @@ const missingWalletResumeContract = connectedWalletResumeContract.filter(fragmen
 if (missingWalletResumeContract.length > 0) {
   throw new Error(`Connected-wallet login contract failed: missing ${missingWalletResumeContract.join(', ')}`);
 }
+
+const authSource = readFileSync(path.join(backendDir, 'src', 'routes', 'auth.ts'), 'utf8');
+const requiredPinAuthContract = [
+  "router.post('/pin/verify'",
+  'Existing members must prove wallet ownership and then verify their required',
+  'pinRequired: !!user.pin_hash',
+  'pinSetupRequired: !user.pin_hash',
+  'insert into pin_challenges(id,user_id,wallet_address)'
+];
+const missingRequiredPinAuth = requiredPinAuthContract.filter(fragment => !authSource.includes(fragment));
+if (missingRequiredPinAuth.length > 0) {
+  throw new Error(`Required PIN authentication contract failed: missing ${missingRequiredPinAuth.join(', ')}`);
+}
+if (/if\s*\(!registration\)\s*\{[\s\S]{0,1200}?insert into user_sessions/.test(authSource)) {
+  throw new Error('Required PIN authentication contract failed: returning members must not receive a session before PIN verification');
+}
 if (/if \(account\?\.isConnected && account\.address\) break;/.test(walletBridgeSource)) {
   throw new Error('Connected-wallet login contract failed: wallet connection must not short-circuit authentication/dashboard handoff');
 }
@@ -112,7 +128,8 @@ if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(in
   throw new Error('Frontend registration-to-wallet handoff contract failed: optional WhatsApp reminder must not block submission');
 }
 const optionalAuthContract = [
-  'id="skipOptionalPin"',
+  'id="loginPinSubmit"',
+  'id="recoverPinAccess"',
   'id="skipBiometric"',
   'data-action="enable-biometric"',
   'data-action="profile-pin-save"',
