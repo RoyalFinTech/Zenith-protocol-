@@ -153,7 +153,7 @@
     .onboard-human-scene img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; display:block; transform:none; filter:saturate(.86) contrast(1.06); }
     .onboard-human-scrim { position:absolute; inset:0; background:radial-gradient(circle at 50% 48%,rgba(240,207,114,.08),transparent 26%),linear-gradient(180deg,rgba(4,6,8,.03),rgba(4,6,8,.18) 62%,rgba(4,6,8,.58) 100%); pointer-events:none; }
     .onboard-brand-badge { position:absolute; left:20px; top:20px; display:flex; align-items:center; gap:10px; padding:10px 13px; border:1px solid rgba(240,207,114,.28); border-radius:13px; background:rgba(8,10,12,.72); backdrop-filter:blur(12px); box-shadow:0 12px 28px rgba(0,0,0,.25); }
-    .badge-mark { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:linear-gradient(145deg,#f0cf72,#8b6a29); color:#15120a; font-weight:950; }
+    .badge-mark { display:grid; place-items:center; flex:0 0 30px; width:30px; height:30px; overflow:hidden; border:1px solid rgba(240,207,114,.38); border-radius:9px; background:linear-gradient(145deg,#f0cf72,#8b6a29); } .badge-mark img { display:block; width:100%; height:100%; object-fit:contain; padding:3px; }
     .onboard-brand-badge strong { display:block; font-size:10px; letter-spacing:.14em; }
     .onboard-brand-badge small { display:block; margin-top:3px; color:#b8bdc5; font-size:7px; letter-spacing:.08em; }
     .onboard-value-badge { position:absolute; left:20px; bottom:22px; max-width:280px; display:flex; gap:10px; padding:12px 14px; border:1px solid rgba(255,255,255,.12); border-radius:13px; background:rgba(8,10,12,.76); backdrop-filter:blur(14px); }
@@ -528,7 +528,7 @@
 
     /* Modal / toast */
     .modal-backdrop { position: fixed; z-index: 110; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(3,4,5,.74); backdrop-filter: blur(8px); opacity: 0; visibility: hidden; transition: .2s ease; } .modal-backdrop.open { opacity: 1; visibility: visible; } .modal { width: min(100%, 520px); max-height: min(760px,90vh); overflow: auto; border: 1px solid #3b4148; border-radius: 15px; background: #171a1e; box-shadow: 0 35px 100px rgba(0,0,0,.5); transform: translateY(12px) scale(.98); transition: .25s ease; } .modal-backdrop.open .modal { transform: none; } .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 20px; border-bottom: 1px solid var(--line); } .modal-head h2 { margin: 0; font-size: 16px; } .modal-head p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; } .modal-body { padding: 20px; } .wallet-options { display: grid; gap: 9px; } .wallet-option { display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); text-align: left; } .wallet-option:hover { border-color: #806a36; } .wallet-symbol { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--gold-dim); color: var(--gold-bright); font-weight: 800; } .wallet-option strong { display: block; font-size: 12px; } .wallet-option small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; } .modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 15px 20px; border-top: 1px solid var(--line); }
-    .toast-stack { position: fixed; z-index: 120; right: 20px; bottom: 20px; display: grid; gap: 9px; width: min(360px,calc(100vw - 40px)); } .toast { display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 10px; background: #1b1e22; box-shadow: var(--shadow); animation: toast-in .25s ease both; } .toast strong { display: block; font-size: 11px; } .toast span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; } .toast.success { border-color: rgba(97,214,163,.28); } .toast.warning { border-color: rgba(233,173,97,.3); } .toast.error { border-color: rgba(237,123,128,.3); } .toast-icon { color: var(--green); font-size: 15px; } .toast.warning .toast-icon { color: var(--amber); } .toast.error .toast-icon { color: var(--red); } @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .toast-stack { position: fixed; z-index: 120; right: 20px; bottom: 20px; display: grid; gap: 9px; width: min(360px,calc(100vw - 40px)); } .toast { position:relative; display:flex; align-items:flex-start; gap:10px; width:min(420px,calc(100vw - 28px)); padding:14px 15px; overflow:hidden; border:1px solid var(--line); border-radius:15px; background:linear-gradient(145deg,rgba(16,31,49,.98),rgba(8,15,26,.98)); box-shadow:0 18px 48px rgba(0,0,0,.38); backdrop-filter:blur(18px); animation:toast-in .25s ease both; } .toast:before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--gold); } .toast.success { border-color:rgba(97,214,163,.42); } .toast.success:before { background:var(--green); } .toast.warning { border-color:rgba(233,173,97,.42); } .toast.warning:before { background:var(--amber); } .toast.error { border-color:rgba(237,123,128,.46); } .toast.error:before { background:var(--red); } .toast-brand { display:grid; place-items:center; flex:0 0 30px; width:30px; height:30px; border:1px solid rgba(240,207,114,.32); border-radius:9px; background:rgba(240,207,114,.08); } .toast-brand img { width:23px; height:23px; object-fit:contain; } .toast-icon { display:grid; place-items:center; width:20px; height:20px; margin-top:1px; border:1px solid currentColor; border-radius:50%; color:var(--gold-bright); font-size:12px; font-weight:900; } .toast.success .toast-icon { color:var(--green); } .toast.warning .toast-icon { color:var(--amber); } .toast.error .toast-icon { color:var(--red); } .toast strong { display:block; color:var(--text); font-size:12px; font-weight:800; letter-spacing:.01em; } .toast span { display:block; margin-top:4px; color:var(--muted); font-size:11px; line-height:1.5; } @keyframes toast-in { from { opacity:0; transform:translateY(8px) scale(.99); } to { opacity:1; transform:none; } }
     .placement-pop { animation: node-pop .55s ease both; } @keyframes node-pop { 0% { opacity: 0; filter: drop-shadow(0 0 2px rgba(240,207,114,.2)); } 65% { filter: drop-shadow(0 0 14px rgba(240,207,114,.85)); } 100% { opacity: 1; filter: drop-shadow(0 0 5px rgba(240,207,114,.35)); } }
 
     @media (max-width: 1180px) {
@@ -890,6 +890,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       function finish(){
         if(ready)return;
         ready=true;
+        window.__zenitSplashFinished=true;
         document.getElementById("splash")?.classList.add("done");
         const hasSession=Boolean(localStorage.getItem("zenitToken"));
         if(!hasSession) document.getElementById("onboarding")?.classList.remove("hidden-screen");
@@ -919,9 +920,9 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
   <section class="onboarding hidden-screen" id="onboarding" aria-label="Zenit Protocol introduction">
     <div class="onboard-art">
       <div class="onboard-human-scene">
-        <img id="onboardHeroImage" src="https://images.unsplash.com/photo-1762341121210-6bd877d766b0?auto=format&fit=crop&fm=jpg&q=82&w=1200" alt="Professional woman working at a modern office desk">
+        <img id="onboardHeroImage" src="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&fm=jpg&q=85&w=1600" alt="Modern digital asset and cryptocurrency workspace">
         <div class="onboard-human-scrim"></div>
-        <div class="onboard-brand-badge"><span class="badge-mark" aria-hidden="true">✦</span><div><strong>ZENIT PROTOCOL</strong><small>MEMBER NETWORK EXPERIENCE</small></div></div>
+        <div class="onboard-brand-badge"><span class="badge-mark"><img src="/zenit-logo.png?zenit-official-20260928" alt="ZENIT Protocol logo"></span><div><strong>ZENIT PROTOCOL</strong><small>MEMBER NETWORK EXPERIENCE</small></div></div>
         <div class="onboard-value-badge"><span>01</span><div><strong id="onboardValueTitle">YOUR JOURNEY</strong><small id="onboardValueText">A human-first financial workspace.</small></div></div>
         <div class="onboard-flow-card">
           <div class="flow-card-head"><span>NETWORK FLOW</span><span class="pill gold">STRUCTURE</span></div>
@@ -1200,7 +1201,7 @@ async function loadBackendState(token){
       const nodes = getMatrix(programKey), counts = nodes.reduce((a,n)=>(a[n.status]=(a[n.status]||0)+1,a),{}), program=appState.programs[programKey];
       return { total:nodes.length, occupied:nodes.length-(counts.AVAILABLE||0), available:counts.AVAILABLE||0, active:counts.ACTIVE||0, pending:counts.PENDING||0, completed:counts.COMPLETED||0, level:nodes.find(n=>n.status==="AVAILABLE")?.level || program.levels, progress:Math.round((nodes.length-(counts.AVAILABLE||0))/nodes.length*100) };
     }
-    function toast(title, message, type="info") { const el=document.createElement("div"); el.className=`toast ${type}`; el.innerHTML=`<div class="toast-icon">${type==="success"?"✓":type==="warning"?"!":type==="error"?"×":"i"}</div><div><strong>${esc(title)}</strong><span>${esc(message)}</span></div>`; $("#toastStack").append(el); setTimeout(()=>el.remove(),4300); }
+    function toast(title, message, type="info") { const el=document.createElement("div"); el.className=`toast ${["success","warning","error"].includes(type)?type:"info"}`; el.setAttribute("role",type==="error"||type==="warning"?"alert":"status"); el.setAttribute("aria-live",type==="error"||type==="warning"?"assertive":"polite"); el.innerHTML=`<div class="toast-brand"><img src="/zenit-logo.png?zenit-official-20260928" alt=""></div><div class="toast-icon" aria-hidden="true">${type==="success"?"✓":type==="warning"?"!":type==="error"?"×":"i"}</div><div class="toast-copy"><strong>${esc(title)}</strong><span>${esc(message)}</span></div>`; $("#toastStack")?.append(el); setTimeout(()=>el.remove(),5200); }
     function statusPill(status) { const cls={ACTIVE:"green",COMPLETED:"green",PENDING:"gold",AVAILABLE:"blue",Completed:"green",Failed:"red",Frontend:"blue"}[status]||"blue"; return `<span class="pill ${cls}"><i class="status-dot"></i>${esc(status)}</span>`; }
     function pageHead(kicker,title,desc,actions="") { return `<div class="page-head"><div><div class="eyebrow">${kicker}</div><h1>${title}</h1><p>${desc}</p></div><div class="page-actions">${actions}</div></div>`; }
     function activityMarkup(items=appState.activity.slice(0,4)) { if(!appState.preferences.activityNotifications) return `<div class="muted" style="padding:16px;font-size:10px;line-height:1.5">In-app activity updates are hidden by your preference. Turn on the activity feed in Profile to show them here.</div>`; return `<div class="activity-list">${items.map(a=>`<div class="activity-row"><div class="activity-icon">${a.icon}</div><div class="activity-content"><strong>${esc(a.title)}</strong><p>${esc(a.desc)}</p><time>${esc(a.time)} · ${esc(a.status)}</time></div></div>`).join("")}</div>`; }
@@ -1493,20 +1494,24 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       window.zenitSetWallet?.(true,data.user?.walletAddress||"");
       await window.zenitLoadBackend?.(data.token);
       document.getElementById("modalBackdrop")?.classList.remove("open");
+      if(typeof window.startApp==="function")window.startApp();
       window.dispatchEvent(new CustomEvent("zenit:authenticated",{detail:data.user}));
+      toast("Secure sign-in complete","Your PIN was verified. Welcome to your ZENIT dashboard.","success");
     }
     window.addEventListener("zenit:pin-required",e=>{
       const detail=e.detail||{};
       if(!detail.challengeId)return;
       localStorage.setItem("zenitPinChallenge",detail.challengeId);
-      const setup=!!detail.setup; const title=setup?"Create your security PIN":"Welcome back"; const description=setup?"Create a 4-digit PIN only if you want an additional sign-in option. Your wallet is verified and your dashboard is available.":"Your wallet is verified. Enter your 4-digit PIN for an extra check, or skip and continue to your dashboard."; const action=setup?"SAVE PIN (OPTIONAL) →":"VERIFY PIN (OPTIONAL) →";
-      openModal(`<div class="modal-head"><div><div class="eyebrow">${setup?"OPTIONAL PIN SETUP":"OPTIONAL PIN CHECK"}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div><button class="icon-btn" type="button" id="closeOptionalPin" aria-label="Close">×</button></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="${setup?"new-password":"current-password"}" maxlength="4" placeholder="••••" data-autofocus></div><div class="modal-foot" style="padding:18px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" id="skipOptionalPin">SKIP FOR NOW · OPEN DASHBOARD</button><button class="btn primary" type="button" id="loginPinSubmit">${action}</button></div></div>`);
+      const setup=!!detail.setup;
+      const title=setup?"Set your required PIN":"Welcome back";
+      const description=setup?"This account has no PIN yet. Create a 4-digit PIN to finish securing your account and open your dashboard.":"Your wallet is verified. Enter your 4-digit PIN to securely open your existing account.";
+      const action=setup?"SAVE PIN & OPEN DASHBOARD →":"VERIFY PIN & OPEN DASHBOARD →";
+      openModal(`<div class="modal-head"><div><div class="eyebrow">ZENIT SECURE SIGN-IN · ${setup?"PIN SETUP":"PIN VERIFICATION"}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div></div><div class="modal-body"><div class="card pad" style="display:flex;gap:12px;align-items:center;margin-bottom:16px;background:linear-gradient(145deg,rgba(240,207,114,.09),rgba(8,15,26,.4));border-color:rgba(240,207,114,.24)"><span class="badge-mark"><img src="/zenit-logo.png?zenit-official-20260928" alt="ZENIT logo"></span><div><strong style="font-size:12px">Wallet connected · PIN required</strong><p style="margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.6">Biometrics are optional. Your wallet and PIN are used to sign in to this existing account.</p></div></div><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" type="password" inputmode="numeric" autocomplete="${setup?"new-password":"current-password"}" maxlength="4" pattern="[0-9]{4}" placeholder="••••" aria-describedby="loginPinHelp" data-autofocus><small id="loginPinHelp" class="muted">Your PIN is verified securely by ZENIT. Five failed attempts temporarily lock PIN sign-in.</small></div><div class="modal-foot" style="padding:18px 0 0;display:grid;gap:10px"><button class="btn primary" type="button" id="loginPinSubmit" style="width:100%;min-height:48px">${action}</button><button class="btn ghost" type="button" id="recoverPinAccess" style="width:100%">FORGOT PIN? ACCOUNT RECOVERY</button><p class="muted" style="font-size:10px;line-height:1.5;margin:0">Passkeys and phone biometrics can be enabled later from your account. They are not required for this login.</p></div></div>`);
       const input=document.getElementById("loginPin"); const button=document.getElementById("loginPinSubmit");
-      const dismissOptionalPin=()=>{localStorage.removeItem("zenitPinChallenge");document.getElementById("modalBackdrop")?.classList.remove("open");if(localStorage.getItem("zenitToken"))toast("PIN skipped","Your wallet is verified and your dashboard remains available. You can manage sign-in security from Profile.","info");else toast("Reconnect required","Connect and sign with your wallet to open your dashboard.","warning");};
-      document.getElementById("skipOptionalPin")?.addEventListener("click",dismissOptionalPin);
-      document.getElementById("closeOptionalPin")?.addEventListener("click",dismissOptionalPin);
-      const submit=async()=>{const pin=(input?.value||"").trim(); if(!/^\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN.","warning");return;} if(button){button.disabled=true;button.textContent="VERIFYING PIN…";} try{await completePinLogin(detail.challengeId,pin,setup);}catch(error){if(button){button.disabled=false;button.textContent=action;}toast("Login failed",error?.message||String(error),"error");}};
-      button?.addEventListener("click",submit); input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});    });
+      document.getElementById("recoverPinAccess")?.addEventListener("click",()=>{document.getElementById("modalBackdrop")?.classList.remove("open");openPinRecoveryModal();});
+      const submit=async()=>{const pin=(input?.value||"").trim();if(!/^\d{4}$/.test(pin)){toast("Enter your PIN","Enter the 4-digit PIN for your existing account.","warning");input?.focus();return;}if(button){button.disabled=true;button.setAttribute("aria-busy","true");button.textContent=setup?"SAVING PIN…":"VERIFYING PIN…";}try{await completePinLogin(detail.challengeId,pin,setup);}catch(error){if(button){button.disabled=false;button.removeAttribute("aria-busy");button.textContent=action;}toast("PIN sign-in failed",error?.message||String(error),"error");}};
+      button?.addEventListener("click",submit);input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});
+    });
 
     function showRegistration(){
       $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.remove("hidden-screen");$("#appShell").classList.add("hidden");
@@ -1656,9 +1661,13 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       setTimeout(()=>$("#registrationUsername")?.focus(),80);
     }
     function startApp(){ $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render(); } window.startApp=startApp;
-    // The standalone splash bootstrap above owns startup timing.
-    // This core script only handles deep-link routing after the splash is ready.
-    window.addEventListener("zenit:splash-ready", async () => {
+    // Startup recovery is idempotent: if the splash event fired before this
+    // listener was installed, inspect the splash state and run the same handoff.
+    let startupHandoffStarted=false;
+    async function handleSplashReady(){
+      if(startupHandoffStarted)return;
+      startupHandoffStarted=true;
+      const onboarding=document.getElementById("onboarding");
       const token=localStorage.getItem("zenitToken");
       if(token){
         try{
@@ -1674,9 +1683,14 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
         localStorage.removeItem("zenitRegistrationVerified");
         localStorage.removeItem("zenitAuthMode");
       }
-      document.getElementById("onboarding")?.classList.remove("hidden-screen");
-
-    }, { once: true });
+      document.getElementById("splash")?.classList.add("done");
+      document.getElementById("appShell")?.classList.add("hidden");
+      onboarding?.classList.remove("hidden-screen");
+    }
+    window.addEventListener("zenit:splash-ready",()=>{void handleSplashReady();},{once:true});
+    if(window.__zenitSplashFinished===true||document.getElementById("splash")?.classList.contains("done")){
+      queueMicrotask(()=>{void handleSplashReady();});
+    }
   </script>
 <script id="zenitRegistrationQaController">
 (() => {
