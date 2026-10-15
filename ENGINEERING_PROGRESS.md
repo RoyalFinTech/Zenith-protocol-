@@ -1160,3 +1160,17 @@ An older migration named `20260917195000_configure_2x6_ten_usdt_economics.sql` c
 - Create Account now performs local format validation and submits directly to `/api/auth/register/request`. Availability checks remain advisory for user feedback and no longer make the primary action appear dead when that background request is delayed or unavailable.
 - The registration action remains delegated through the document click handler and the button is explicitly `type="button"`.
 - This is a source-only reliability correction; no member, financial, ledger, withdrawal, or admin records were changed.
+
+
+## Returning-member PIN gate and onboarding recovery — 2026-10-15
+
+Work in progress on branch `fix/returning-pin-login-branded-ui-20261015`. This is **not yet merged or deployed**.
+
+- Returning-member wallet verification now creates a short-lived PIN challenge and returns `pinRequired` / `pinSetupRequired` without issuing a session token. A session is issued only after `/api/auth/pin/verify` succeeds, or after `/api/auth/pin/setup` establishes the required PIN for a legacy account that has none. New registration still uses the PIN entered in its registration flow.
+- Returning PIN UI is branded, removes the “skip PIN and open dashboard” path, includes a masked 4-digit input, explicit verification/setup action, recovery action, and clear copy that phone biometrics/passkeys are optional.
+- Successful PIN verification now loads the backend profile and explicitly calls `startApp()` before dispatching the authenticated event, so the expected destination is the dashboard.
+- Startup handoff is idempotent and checks whether the splash already finished; this is intended to recover when the splash-ready event fires before the core listener attaches, avoiding a blank screen.
+- Onboarding hero source changed from the previous woman image to a digital-asset/crypto visual URL; the top badge now uses the repository's official `/zenit-logo.png` asset instead of the star glyph. This source change has not yet been visually verified in a live browser and the hero image is externally hosted, not a committed generated image asset.
+- Success/warning/error notices now use a branded ZENIT logo, status icon, accessible live-region semantics, and responsive dark/gold styling.
+- Regression tests and the backend build contract were updated to enforce the PIN gate and startup recovery. CI and deployment are pending; do not claim these changes are live until CI passes, PR is merged, and Render reports the new deploy live.
+- No production database records, wallets, balances, purchases, ledger rows, administrator accounts, or Render settings were changed for this work.
