@@ -167,8 +167,11 @@ router.post('/verify', async (req, res, next) => {
       `, [handoffHash])).rows[0];
       if (!registration) throw new HttpError(400, 'Registration handoff is invalid or expired');
     }
+    if (!user && !registration) {
+      throw new HttpError(404, 'No ZENIT account is linked to this wallet. Register or use the account-recovery route.');
+    }
     if (!user) {
-      const username = registration?.username ?? `zenit_${address.slice(2,10).toLowerCase()}`;
+      const username = registration!.username;
       const email = registration?.email ?? null;
       const displayName = registration?.display_name ?? `Member ${address.slice(0,6)}…${address.slice(-4)}`;
       user = (await client.query<{ id:string; role:string; username:string; email:string|null; display_name:string; pin_hash:string|null }>(`insert into app_users (wallet_address,username,email,display_name,whatsapp_number,whatsapp_updates_enabled,pin_hash,role,referral_code) values ($1,$2,$3,$4,$5,$6,$7,'Member',$8) returning id,role,username,email,display_name,pin_hash`, [address,username,email,displayName,registration?.whatsapp_number ?? null,registration?.whatsapp_updates_enabled ?? false,registration?.pin_hash ?? null,randomReferralCode()])).rows[0]!;
@@ -184,24 +187,36 @@ router.post('/verify', async (req, res, next) => {
     if (registration) {
       await client.query(`update pending_registrations set consumed_at=now(),updated_at=now() where id=$1`, [registration.id]);
     }
-    // Wallet signature is the primary authentication proof. PIN remains an optional
-    // additional check/setup prompt; it must not prevent a verified wallet from
-    // receiving a session or reaching its dashboard.
-    let pinChallengeId: string | undefined;
+    // Returning members must complete PIN verification before any application session exists.
+    // A connected wallet and a valid signature identify the account; they do not bypass the PIN gate.
     if (!registration) {
-      pinChallengeId = uuid();
-      await client.query(`insert into pin_challenges(id,user_id,wallet_address) values($1,$2,$3)`, [pinChallengeId,user.id,address]);
+      const challengeId = uuid();
+      await client.query(
+        `insert into pin_challenges(id,user_id,wallet_address) values($1,$2,$3)`,
+        [challengeId, user.id, address]
+      );
+      await client.query(`update auth_nonces set used_at=now() where id=$1`, [record.id]);
+      await client.query('commit');
+      res.json({
+        pinRequired: !!user.pin_hash,
+        pinSetupRequired: !user.pin_hash,
+        challengeId,
+        user: { id:user.id, role:user.role, username:user.username, email:user.email, displayName:user.display_name, walletAddress:address }
+      });
+      return;
     }
+
+    // New registrations supplied a PIN during registration. Only that completed
+    // registration handoff may receive its initial session without a second PIN challenge.
     const sessionId = uuid();
     await client.query(`update auth_nonces set used_at=now() where id=$1`, [record.id]);
     await client.query(`insert into user_sessions (id,user_id,wallet_address,expires_at,ip_address,user_agent) values ($1,$2,$3,now()+make_interval(mins => $4),$5,$6)`, [sessionId,user.id,address,env.sessionTtlMinutes,req.ip,req.get('user-agent') ?? null]);
     await client.query('commit');
-    if (registration) void sendWelcomeEmail({to: registration.email, username: registration.username, appOrigin: env.appOrigin}).catch(error => console.error('ZENIT welcome email failed', error));
+    void sendWelcomeEmail({to: registration.email, username: registration.username, appOrigin: env.appOrigin}).catch(error => console.error('ZENIT welcome email failed', error));
     const token = await issueSession({userId:user.id,walletAddress:address,role:user.role,sessionId});
     res.json({
       token,
-      user: { id:user.id, role:user.role, username:(user as any).username||'', email:(user as any).email||null, displayName:(user as any).display_name||'', walletAddress:address },
-      ...(pinChallengeId ? { pinRequired:!!user.pin_hash, pinSetupRequired:!user.pin_hash, challengeId:pinChallengeId } : {})
+      user: { id:user.id, role:user.role, username:user.username, email:user.email, displayName:user.display_name, walletAddress:address }
     });
   } catch (e) { await client.query('rollback').catch(()=>{}); next(e); } finally { client.release(); }
 });
