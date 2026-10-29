@@ -1,3 +1,16 @@
+## Returning-member PIN gate and splash readiness — implementation in review — 2026-10-29
+
+- **Branch:** `fix/required-pin-returning-login-oct-2026`. This is a focused security/authentication correction; it has not been merged or deployed.
+- **Confirmed source mismatch:** the current `main` implementation treated returning-member PIN verification as optional, returned a backend session token immediately after wallet signature verification, and exposed a “skip PIN” path. This contradicted the operator's stated policy that wallet + PIN are required and passkeys/biometrics are optional.
+- **Changes on this branch:** returning wallet verification now issues a one-time PIN/setup challenge without issuing an application session token; session creation occurs after `/api/auth/pin/verify` or `/api/auth/pin/setup`. Unknown wallets without a valid registration handoff are routed to registration/recovery instead of silently creating a member. The frontend no longer offers a PIN skip/close route, and the generic modal close handler cannot dismiss the required PIN challenge.
+- **Startup race correction:** splash completion persists `window.__zenitSplashReady`; the main handler checks that state after attaching its event listener and guards against duplicate execution. This handles both event/listener orderings rather than relying on timing.
+- **Retry-loop correction:** the wallet bridge pauses automatic signature retries while a PIN challenge is pending and marks the app handoff complete only when the authenticated event follows successful PIN/session restoration.
+- **Regression guards updated:** frontend login-wiring tests and `backend/scripts/build.mjs` now require the PIN-gate contract and reject a skippable PIN UI. These are source changes only until CI is run.
+- **Not yet verified:** frontend/backend test runs, TypeScript build, backend integration tests, PR CI, Render deployment, production smoke checks, and real-device wallet/PIN login. Do not merge or deploy until automated checks pass and the diff is reviewed.
+- **Still outstanding:** onboarding hero still references the woman-focused remote image; hero badge still needs the real logo; responsive onboarding artwork, shared branded status cards, Render health-check drift, push delivery, and financial-data integrity audit remain pending. No production database rows, accounts, sessions, wallet bindings, financial records, or Render settings were changed by this branch.
+
+---
+
 ## Returning login wallet auto-resume — CI green, merged and deployed — 2026-10-09 12:13 UTC
 
 - **PR #41:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/41 — merged as `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc`.
