@@ -190,6 +190,7 @@ router.post('/verify', async (req, res, next) => {
     // Returning members must complete PIN verification before any application session exists.
     // A connected wallet and a valid signature identify the account; they do not bypass the PIN gate.
     if (!registration) {
+      await client.query('update pin_challenges set used_at=now() where user_id=$1 and used_at is null',[user.id]);
       const challengeId = uuid();
       await client.query(
         `insert into pin_challenges(id,user_id,wallet_address) values($1,$2,$3)`,
@@ -201,7 +202,6 @@ router.post('/verify', async (req, res, next) => {
         pinRequired: !!user.pin_hash,
         pinSetupRequired: !user.pin_hash,
         challengeId,
-        user: { id:user.id, role:user.role, username:user.username, email:user.email, displayName:user.display_name, walletAddress:address }
       });
       return;
     }
