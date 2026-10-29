@@ -92,6 +92,8 @@ assert.doesNotMatch(html, /id="skipOptionalPin"/);
 assert.match(html, /REQUIRED PIN VERIFICATION/);
 assert.match(html, /PIN is required for returning-member login/);
 assert.match(html, /Your dashboard stays locked until the backend verifies your PIN/);
+assert.match(html, /id="restartPinLogin"/);
+assert.match(walletBridge, /zenitResetPinChallenge = \(\) =>/);
 assert.match(html, /id="skipBiometric"/);
 assert.match(html, /closeBiometricPrompt/);
 assert.match(html, /data-action="enable-biometric"/);
