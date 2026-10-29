@@ -1,3 +1,19 @@
+## Returning-member PIN gate and splash readiness — implementation in review — 2026-10-29
+
+- **Review vehicle:** PR #43 — https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 (open, ready for review). CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin-provision guard, bundle syntax, migrations, unit tests and integration tests. The earlier run #1129 had failed only because the trust-UI test still expected the old Unsplash hero URLs; those assertions now check the local SVG and official logo. A follow-up assertion-only commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is queued for another CI run; do not treat it as green until that run completes.
+
+- **Branch:** `fix/required-pin-returning-login-oct-2026`. This is a focused security/authentication correction; it has not been merged or deployed.
+- **Confirmed source mismatch:** the current `main` implementation treated returning-member PIN verification as optional, returned a backend session token immediately after wallet signature verification, and exposed a “skip PIN” path. This contradicted the operator's stated policy that wallet + PIN are required and passkeys/biometrics are optional.
+- **Changes on this branch:** returning wallet verification now issues a one-time PIN/setup challenge without issuing an application session token; session creation occurs after `/api/auth/pin/verify` or `/api/auth/pin/setup`. Unknown wallets without a valid registration handoff are routed to registration/recovery instead of silently creating a member. The frontend no longer offers a PIN skip/close route, and the generic modal close handler cannot dismiss the required PIN challenge.
+- **Startup race correction:** splash completion persists `window.__zenitSplashReady`; the main handler checks that state after attaching its event listener and guards against duplicate execution. This handles both event/listener orderings rather than relying on timing.
+- **Retry-loop correction:** the wallet bridge pauses automatic signature retries while a PIN challenge is pending and marks the app handoff complete only when the authenticated event follows successful PIN/session restoration.
+- **Regression guards updated:** frontend login-wiring/trust-UI tests and `backend/scripts/build.mjs` now require the PIN-gate contract, reject a skippable PIN UI, and enforce the local hero/logo assets. The first CI run passed login-wiring and all backend gates but exposed the stale trust-UI image assertions; the assertions were updated and rerun #1136 is pending.
+- **Not yet verified:** final CI after the trust-UI assertion fix, Render deployment, production smoke checks, and real-device wallet/PIN login. Do not merge or deploy until the rerun passes and the diff is reviewed.
+- **Onboarding asset change:** the woman-focused remote hero references have been replaced on this branch by `frontend/public/zenit-financial-workspace.svg`, an original local vector scene with trading monitors, market charts, laptop and stablecoin cues. The decorative star badge now uses the existing `/zenit-logo.png` asset. Build/test guards reject the old woman-focused references. This is a custom vector illustration, not a photograph; visual/mobile acceptance has not yet been run.
+- **Still outstanding:** full responsive onboarding acceptance, shared branded status cards, Render health-check drift, real-phone push delivery, and financial-data integrity audit remain pending. No production database rows, accounts, sessions, wallet bindings, financial records, or Render settings were changed by this branch.
+
+---
+
 ## Returning login wallet auto-resume — CI green, merged and deployed — 2026-10-09 12:13 UTC
 
 - **PR #41:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/41 — merged as `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc`.

@@ -37,6 +37,17 @@ if (!existsSync(builtIndex)) {
 const indexHtml = readFileSync(builtIndex, 'utf8');
 const walletBridgeSource = readFileSync(path.join(frontendDir, 'src', 'wallet-bridge.ts'), 'utf8');
 
+const financialHeroPath = path.join(frontendDir, 'public', 'zenit-financial-workspace.svg');
+if (!existsSync(financialHeroPath)) {
+  throw new Error('Onboarding artwork contract failed: local financial workspace asset is missing');
+}
+if (!indexHtml.includes('/zenit-financial-workspace.svg') || /Professional woman|photo-1494790108377-be9c29b29330|photo-1762341121210/.test(indexHtml)) {
+  throw new Error('Onboarding artwork contract failed: local finance hero must replace the woman-focused external image');
+}
+if (!indexHtml.includes('<span class="badge-mark" aria-hidden="true"><img src="/zenit-logo.png')) {
+  throw new Error('Onboarding artwork contract failed: real ZENIT logo must replace the decorative star badge');
+}
+
 const connectedWalletResumeContract = [
   'let appHandoffComplete = false;',
   'function hasAppKitConnection()',
@@ -112,16 +123,20 @@ if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(in
   throw new Error('Frontend registration-to-wallet handoff contract failed: optional WhatsApp reminder must not block submission');
 }
 const optionalAuthContract = [
-  'id="skipOptionalPin"',
+  'id="loginPinSubmit"',
+  'id="restartPinLogin"',
   'id="skipBiometric"',
   'data-action="enable-biometric"',
   'data-action="profile-pin-save"',
   'id="profilePinConfirm"',
   '/api/auth/pin/change',
   'window.zenitEnrollBiometric=async',
-  'PIN and passkeys are optional'
+  'PIN is required for returning-member login'
 ];
 const missingOptionalAuthContract = optionalAuthContract.filter(fragment => !indexHtml.includes(fragment));
+if (indexHtml.includes('id="skipOptionalPin"') || indexHtml.includes('SKIP FOR NOW · OPEN DASHBOARD')) {
+  throw new Error('Frontend wallet-auth contract failed: returning-member PIN verification must not be skippable');
+}
 if (missingOptionalAuthContract.length > 0) {
   throw new Error(`Frontend wallet-auth contract failed: missing ${missingOptionalAuthContract.join(', ')}`);
 }

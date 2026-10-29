@@ -1,3 +1,18 @@
+## Returning-member PIN gate / splash readiness branch — NOT DEPLOYED — 2026-10-29
+
+- **PR / CI checkpoint (2026-10-29):** PR #43 https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 is open and ready for review. CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin guard, build syntax, migrations, unit tests and integration tests. The prior trust-UI failure was due to stale image URL expectations, now corrected. A small follow-up assertion commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is awaiting its own CI run. No merge/deploy is authorized until that run passes.
+
+- Branch under review: `fix/required-pin-returning-login-oct-2026`.
+- The branch changes the backend so a returning wallet signature produces a PIN challenge but **no session token**; PIN verification/setup must complete before an application session is issued. An unknown wallet without a valid registration handoff no longer auto-creates an account.
+- The frontend PIN gate is mandatory, optional biometric/passkey setup remains optional, and splash readiness is persisted to avoid a one-shot event race. Wallet bridge pauses repeated signing while PIN entry is pending.
+- The first CI run was partial: frontend build and login-wiring passed; trust-UI failed on stale hero URL assertions; backend lint, guards, migrations, unit tests and integration tests passed. Updated trust-UI assertions are under rerun #1136. Changes remain **not merged and not deployed**; production remains on the historical `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc` deployment until independently confirmed otherwise.
+- Current Render service configuration is still `rootDir=backend`, build `npm ci && npm run build`, start `npm start`, health-check path blank; repository `render.yaml` specifies `/health`. No Render settings were changed.
+- Production database, existing account, wallet/session rows, financial records, admin state, and provider secrets were not intentionally changed. The Supabase table-list request failed with a database-access error, so no fresh production row counts are claimed.
+- The branch also replaces the remote woman-focused onboarding imagery with a local original SVG financial workspace illustration and swaps the star badge for the repository's existing logo asset. This has not been visually accepted on real devices; shared branded status UI remains unimplemented.
+- Remaining pre-merge gates: inspect branch diff, run frontend login/trust tests, TypeScript and backend tests/lint, production build guard, CI; run the new backend auth integration coverage; then verify Render deployment SHA, health endpoint and browser/device login after merge.
+
+---
+
 ## Returning login — auto-resume existing wallet — CI green and deployed — 2026-10-09 12:13 UTC
 
 - **PR #41:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/41 — merged as `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc`.

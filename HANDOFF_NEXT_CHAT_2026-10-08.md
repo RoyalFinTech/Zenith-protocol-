@@ -1,3 +1,17 @@
+## 2026-10-29 continuation update — required PIN security gate under review
+
+The changes are tracked in PR #43: https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 (open, ready for review). CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin guard, build syntax, migrations, unit and integration tests. The earlier trust-UI failure was caused by stale expectations for the replaced remote hero image URLs; those assertions now verify the local finance SVG and official logo. A small follow-up assertion commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is awaiting its own CI run; do not merge until it passes.
+
+The current continuation branch is `fix/required-pin-returning-login-oct-2026`. Read this update before relying on older historical sections: older entries intentionally document the previous behavior where PIN/passkey setup was optional. The operator's current policy supersedes that old UX: wallet connection + PIN are required for returning-member login; passkeys/biometrics remain optional.
+
+The branch changes `backend/src/routes/auth.ts`, `frontend/index.html`, `frontend/src/wallet-bridge.ts`, `frontend/tests/login-wiring.test.mjs`, and `backend/scripts/build.mjs`. Returning-member wallet signature now creates a PIN/setup challenge without issuing a session token; the backend issues the application session only after successful PIN verification/setup. Unknown wallets without a valid registration handoff should be routed to registration/recovery rather than silently inserted. Splash readiness now persists a state flag and uses an idempotent handler to avoid a missed one-shot event. The wallet bridge pauses repeated wallet-signature attempts while PIN is pending.
+
+**Current status:** source edits are on the feature branch only. CI run #1129 passed frontend build/login-wiring and backend gates, including integration tests, but trust-UI failed on stale image URL assertions; those tests were updated and rerun #1136 is pending. No merge or deployment has occurred. The current live Render deployment remains the previously recorded October 9 checkpoint until verified otherwise. Do not claim the account/dashboard journey is fixed without passing CI and testing with the operator's actual registered wallet on a real device.
+
+**Still required:** verify all new assertions and backend behavior, run CI, visually validate the new local financial-workspace SVG and real repository logo on mobile/desktop, complete responsive QA, implement shared branded success/error status cards, correct Render health-check drift through a supported route, complete real-phone push acceptance, and run read-only financial/membership integrity checks. Never reset the production account or change financial records for testing.
+
+---
+
 # ZENIT Protocol — Engineering Handover for Next Chat
 
 ## Registration failure incident — fixed and deployed — 2026-10-09 00:48 UTC

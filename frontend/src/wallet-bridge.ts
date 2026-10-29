@@ -21,6 +21,7 @@ let authRetryAt = 0;
 // True only after this tab has completed a valid session restore/authentication
 // and dispatched the event that reveals the authenticated dashboard.
 let appHandoffComplete = false;
+let pinChallengePending = false;
 
 async function loadPublicConfig() {
   const base = API || window.location.origin;
@@ -156,7 +157,19 @@ function clearLocalSession() {
   localStorage.removeItem('zenitToken');
   localStorage.removeItem('zenitPinChallenge');
   appHandoffComplete = false;
+  pinChallengePending = false;
 }
+
+window.addEventListener('zenit:authenticated', (event: Event) => {
+  const token = localStorage.getItem('zenitToken');
+  if (!token) return;
+  authToken = token;
+  const detail = (event as CustomEvent<{walletAddress?: string}>).detail;
+  const address = detail?.walletAddress || currentWalletAccount()?.address;
+  if (address) lastAddress = address as `0x${string}`;
+  pinChallengePending = false;
+  appHandoffComplete = true;
+});
 
 async function restoreSession(address: `0x${string}`) {
   if (!authToken) return false;
@@ -214,9 +227,10 @@ async function authenticate(address: `0x${string}`) {
     body: JSON.stringify({ address, nonce, signature, walletHandoffToken: walletHandoffToken || undefined })
   });
   const data = await verifyR.json().catch(() => ({})) as { token?: string; user?: unknown; error?: string; pinRequired?: boolean; pinSetupRequired?: boolean; challengeId?: string };
-  // Older API versions returned only a PIN challenge. Keep that compatibility
-  // path, but never block a valid session token on an optional PIN prompt.
+  // Returning members receive a PIN challenge without an application token.
+  // Do not retry wallet signing in a loop while the required PIN screen is open.
   if ((data.pinRequired || data.pinSetupRequired) && data.challengeId && !data.token) {
+    pinChallengePending = true;
     localStorage.setItem('zenitPinChallenge', data.challengeId);
     window.dispatchEvent(new CustomEvent('zenit:pin-required', { detail: { challengeId: data.challengeId, address, setup: !!data.pinSetupRequired } }));
     return;
@@ -315,7 +329,9 @@ async function syncCurrentAccount() {
 
     (window as any).zenitSetWallet?.(true, readyAccount.address);
 
-    // Legacy PIN challenges are optional. Never let a stale challenge key stop
+    if (pinChallengePending) return;
+
+    // A stale challenge key is not itself proof of authentication; a new explicit login can replace it.
     // a returning wallet from authenticating on its next explicit connection.
     if (readyAccount.address.toLowerCase() === lastAddress.toLowerCase() && authToken) {
       // Do not use in-memory address/token equality as proof that this page
@@ -418,6 +434,7 @@ async function completeWalletLogin(timeoutMs = 12000) {
 
     await syncCurrentAccount();
     if (appHandoffComplete) return true;
+    if (pinChallengePending) return false;
 
     // A cancelled signature or backend failure gets a clear retry affordance;
     // do not reopen the already-connected wallet selector.
@@ -657,6 +674,7 @@ async function buyPackage(packageCode: string, referralCode = '') {
 
 (window as any).zenitOpenWallet = (onNeedWalletSelector?: () => void) => openWallet(onNeedWalletSelector);
 (window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();
+(window as any).zenitResetPinChallenge = () => { pinChallengePending = false; authRetryAt = 0; localStorage.removeItem('zenitPinChallenge'); };
 (window as any).zenitDisconnectWallet = () => disconnect();
 
 (window as any).zenitAuthFetch = (input: string, init: RequestInit = {}) =>

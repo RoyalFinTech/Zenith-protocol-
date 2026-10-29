@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 
 const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
 const whatsappSvg = readFileSync(resolve(process.cwd(), 'public/whatsapp.svg'), 'utf8');
+const financialHeroSvg = readFileSync(resolve(process.cwd(), 'public/zenit-financial-workspace.svg'), 'utf8');
+assert.match(financialHeroSvg, /<title id="title">ZENIT financial trading workspace<\/title>/);
+assert.match(financialHeroSvg, /USDT/);
 assert.match(whatsappSvg, /<path fill="#ffffff" d="/);
 assert.match(whatsappSvg, /<title>WhatsApp<\/title>/);
 
@@ -77,11 +80,11 @@ assert.doesNotMatch(html, /const amount=prompt\("Withdrawal amount in USDT"\)/);
 assert.doesNotMatch(html, /const address=prompt\("Destination BNB Smart Chain address"\)/);
 
 assert.match(html, /action==="package-preview"/);
-assert.match(html, /images\.unsplash\.com\/photo-1762341121210-6bd877d766b0/);
-assert.match(html, /images\.unsplash\.com\/photo-1494790108377-be9c29b29330/);
-assert.match(html, /images\.unsplash\.com\/photo-1551288049-bebda4e38f71/);
-assert.match(html, /images\.unsplash\.com\/photo-1556761175-b413da4baf72/);
-assert.match(html, /images\.unsplash\.com\/photo-1556761175-4b46a572b786/);
+assert.match(html, /src="\/zenit-financial-workspace\.svg"/);
+assert.match(html, /badge-mark[^>]*><img src="\/zenit-logo\.png/);
+assert.match(html, /id="restartPinLogin"/);
+assert.match(html, /PIN is required for returning-member login/);
+assert.doesNotMatch(html, /Professional woman|photo-1494790108377-be9c29b29330|photo-1762341121210|photo-1551288049-bebda4e38f71|photo-1556761175-b413da4baf72|photo-1556761175-4b46a572b786/);
 assert.ok(html.includes('const hasSession=Boolean(localStorage.getItem("zenitToken"))'));
 assert.ok(html.includes('fetch(`${backendBase()}/api/me`'));
 assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
