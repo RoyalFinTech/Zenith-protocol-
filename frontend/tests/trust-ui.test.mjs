@@ -82,6 +82,8 @@ assert.doesNotMatch(html, /const address=prompt\("Destination BNB Smart Chain ad
 assert.match(html, /action==="package-preview"/);
 assert.match(html, /src="\/zenit-financial-workspace\.svg"/);
 assert.match(html, /badge-mark[^>]*><img src="\/zenit-logo\.png/);
+assert.match(html, /id="restartPinLogin"/);
+assert.match(html, /PIN is required for returning-member login/);
 assert.doesNotMatch(html, /Professional woman|photo-1494790108377-be9c29b29330|photo-1762341121210|photo-1551288049-bebda4e38f71|photo-1556761175-b413da4baf72|photo-1556761175-4b46a572b786/);
 assert.ok(html.includes('const hasSession=Boolean(localStorage.getItem("zenitToken"))'));
 assert.ok(html.includes('fetch(`${backendBase()}/api/me`'));
