@@ -2,11 +2,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Server } from 'node:http';
 import { issueSession } from '../src/services/jwt.js';
 import { adminLogin, hashAdminPassword } from '../src/services/admin-auth.js';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
+import { privateKeyToAccount } from 'viem/accounts';
 
 const integrationEnvironmentReady = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET);
 const describeProduction = integrationEnvironmentReady ? describe : describe.skip;
-const testAddress = '0x0000000000000000000000000000000000000001';
+const testPrivateKey = `0x${'1'.repeat(64)}` as `0x${string}`;
+const testWallet = privateKeyToAccount(testPrivateKey);
+const testAddress = testWallet.address;
 
 describeProduction('production API against a real PostgreSQL test database', () => {
   let server: Server;
@@ -59,6 +62,23 @@ describeProduction('production API against a real PostgreSQL test database', () 
 
   async function request(path: string, init: RequestInit = {}) {
     return fetch(`${baseUrl}${path}`, init);
+  }
+
+  async function signedWalletVerification(address: `0x${string}`, privateKey: `0x${string}`) {
+    const account = privateKeyToAccount(privateKey);
+    const nonceResponse = await request('/api/auth/nonce', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ address })
+    });
+    expect(nonceResponse.status).toBe(200);
+    const nonceData = await nonceResponse.json() as { nonce: string; message: string };
+    const signature = await account.signMessage({ message: nonceData.message });
+    return request('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ address, nonce: nonceData.nonce, signature })
+    });
   }
 
   it('does not seed a default administrator account', async () => {
@@ -157,6 +177,44 @@ describeProduction('production API against a real PostgreSQL test database', () 
       if (registrationId) {
         await database.pool.query('delete from pending_registrations where id=$1', [registrationId]);
       }
+    }
+  });
+
+  it('requires a PIN challenge before issuing a returning member session', async () => {
+    const salt = randomBytes(16).toString('hex');
+    const pinHash = `scrypt${salt}${scryptSync('4826', salt, 64).toString('hex')}`;
+    await database.pool.query('update app_users set pin_hash=$1 where id=$2', [pinHash, userId]);
+    const before = await database.pool.query<{count:number}>('select count(*)::int as count from user_sessions where user_id=$1', [userId]);
+    try {
+      const response = await signedWalletVerification(testAddress as `0x${string}`, testPrivateKey);
+      expect(response.status).toBe(200);
+      const data = await response.json() as { token?: string; pinRequired?: boolean; pinSetupRequired?: boolean; challengeId?: string };
+      expect(data.token).toBeUndefined();
+      expect(data.pinRequired).toBe(true);
+      expect(data.pinSetupRequired).toBe(false);
+      expect(data.challengeId).toMatch(/^[0-9a-f-]{36}$/i);
+      const after = await database.pool.query<{count:number}>('select count(*)::int as count from user_sessions where user_id=$1', [userId]);
+      expect(after.rows[0]?.count).toBe(before.rows[0]?.count);
+      const challenge = await database.pool.query('select id from pin_challenges where id=$1 and user_id=$2 and used_at is null', [data.challengeId, userId]);
+      expect(challenge.rows).toHaveLength(1);
+    } finally {
+      await database.pool.query('update app_users set pin_hash=null where id=$1', [userId]);
+      await database.pool.query('delete from pin_challenges where user_id=$1', [userId]);
+      await database.pool.query('delete from auth_nonces where address=$1', [testAddress]);
+    }
+  });
+
+  it('does not silently create an account for an unknown wallet without a registration handoff', async () => {
+    const unknownPrivateKey = `0x${'2'.repeat(64)}` as `0x${string}`;
+    const unknownWallet = privateKeyToAccount(unknownPrivateKey);
+    try {
+      const response = await signedWalletVerification(unknownWallet.address, unknownPrivateKey);
+      expect(response.status).toBe(404);
+      expect((await response.json() as {error:string}).error).toMatch(/No ZENIT account is linked to this wallet/);
+      const rows = await database.pool.query('select id from app_users where lower(wallet_address)=lower($1)', [unknownWallet.address]);
+      expect(rows.rows).toHaveLength(0);
+    } finally {
+      await database.pool.query('delete from auth_nonces where address=$1', [unknownWallet.address]);
     }
   });
 
