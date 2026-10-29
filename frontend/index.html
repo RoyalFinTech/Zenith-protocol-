@@ -1506,7 +1506,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
         ?"Create a 4-digit PIN to finish securing your existing account. Your dashboard stays locked until PIN setup succeeds."
         :"Enter your 4-digit PIN to finish signing in. Your dashboard stays locked until the backend verifies your PIN.";
       const action=setup?"CREATE PIN & CONTINUE →":"VERIFY PIN & CONTINUE →";
-      openModal('<div class="modal-head"><div><div class="eyebrow">'+(setup?"REQUIRED PIN SETUP":"REQUIRED PIN VERIFICATION")+'</div><h2 id="modalTitle">'+title+'</h2><p id="pinLoginDescription">'+description+'</p></div></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="'+(setup?"new-password":"current-password")+'" maxlength="4" pattern="[0-9]{4}" placeholder="••••" aria-describedby="pinLoginDescription" data-autofocus required></div><div class="modal-foot" style="padding:18px 0 0"><button class="btn primary" type="button" id="loginPinSubmit">'+action+'</button></div><p class="muted" style="font-size:11px;margin-top:12px">PIN is required for returning-member login. Passkeys and biometrics remain optional and can be configured later in Profile.</p></div>');
+      openModal('<div class="modal-head"><div><div class="eyebrow">'+(setup?"REQUIRED PIN SETUP":"REQUIRED PIN VERIFICATION")+'</div><h2 id="modalTitle">'+title+'</h2><p id="pinLoginDescription">'+description+'</p></div></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="'+(setup?"new-password":"current-password")+'" maxlength="4" pattern="[0-9]{4}" placeholder="••••" aria-describedby="pinLoginDescription" data-autofocus required></div><div class="modal-foot" style="padding:18px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" id="loginPinSubmit">'+action+'</button><button class="btn" type="button" id="restartPinLogin">RESTART WALLET SIGN-IN</button></div><p class="muted" style="font-size:11px;margin-top:12px">PIN is required for returning-member login. Passkeys and biometrics remain optional and can be configured later in Profile.</p></div>');
       const input=document.getElementById("loginPin"); const button=document.getElementById("loginPinSubmit");
       const submit=async()=>{
         const pin=(input?.value||"").trim();
@@ -1517,6 +1517,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       };
       button?.addEventListener("click",submit);
       input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});
+      document.getElementById("restartPinLogin")?.addEventListener("click",async()=>{localStorage.removeItem("zenitPinChallenge");window.zenitResetPinChallenge?.();document.getElementById("modalBackdrop")?.classList.remove("open");await window.zenitTryExistingWalletLogin?.();});
       setTimeout(()=>input?.focus(),30);
     });
 
