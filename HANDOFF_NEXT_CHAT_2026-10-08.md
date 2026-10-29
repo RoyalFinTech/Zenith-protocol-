@@ -1,6 +1,6 @@
 ## 2026-10-29 continuation update — required PIN security gate under review
 
-The changes are tracked in PR #43: https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 (open, ready for review). CI run #1129 passed frontend build/login-wiring and backend lint, admin guard, build syntax, migrations, unit and integration tests; frontend trust-UI failed because it still expected the old remote hero image URLs. The assertions have been updated to check the local finance SVG and official logo. Follow-up CI run #1136 is pending; do not merge until it passes.
+The changes are tracked in PR #43: https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 (open, ready for review). CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin guard, build syntax, migrations, unit and integration tests. The earlier trust-UI failure was caused by stale expectations for the replaced remote hero image URLs; those assertions now verify the local finance SVG and official logo. A small follow-up assertion commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is awaiting its own CI run; do not merge until it passes.
 
 The current continuation branch is `fix/required-pin-returning-login-oct-2026`. Read this update before relying on older historical sections: older entries intentionally document the previous behavior where PIN/passkey setup was optional. The operator's current policy supersedes that old UX: wallet connection + PIN are required for returning-member login; passkeys/biometrics remain optional.
 
