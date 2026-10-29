@@ -9,7 +9,8 @@
 - **Retry-loop correction:** the wallet bridge pauses automatic signature retries while a PIN challenge is pending and marks the app handoff complete only when the authenticated event follows successful PIN/session restoration.
 - **Regression guards updated:** frontend login-wiring tests and `backend/scripts/build.mjs` now require the PIN-gate contract and reject a skippable PIN UI. These are source changes only until CI is run.
 - **Not yet verified:** frontend/backend test runs, TypeScript build, backend integration tests, PR CI, Render deployment, production smoke checks, and real-device wallet/PIN login. Do not merge or deploy until automated checks pass and the diff is reviewed.
-- **Still outstanding:** onboarding hero still references the woman-focused remote image; hero badge still needs the real logo; responsive onboarding artwork, shared branded status cards, Render health-check drift, push delivery, and financial-data integrity audit remain pending. No production database rows, accounts, sessions, wallet bindings, financial records, or Render settings were changed by this branch.
+- **Onboarding asset change:** the woman-focused remote hero references have been replaced on this branch by `frontend/public/zenit-financial-workspace.svg`, an original local vector scene with trading monitors, market charts, laptop and stablecoin cues. The decorative star badge now uses the existing `/zenit-logo.png` asset. Build/test guards reject the old woman-focused references. This is a custom vector illustration, not a photograph; visual/mobile acceptance has not yet been run.
+- **Still outstanding:** full responsive onboarding acceptance, shared branded status cards, Render health-check drift, real-phone push delivery, and financial-data integrity audit remain pending. No production database rows, accounts, sessions, wallet bindings, financial records, or Render settings were changed by this branch.
 
 ---
 
