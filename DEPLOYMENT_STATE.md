@@ -1,6 +1,6 @@
 ## Returning-member PIN gate / splash readiness branch — NOT DEPLOYED — 2026-10-29
 
-- **PR / CI checkpoint (2026-10-29):** PR #43 https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 is open and ready for review. CI run #1129 passed frontend build/login-wiring and all backend gates, including integration tests; `test:trust-ui` failed on stale assertions that expected the replaced Unsplash image URLs. The test now expects the local SVG and logo; follow-up run #1136 is pending. No merge/deploy is authorized until the rerun passes.
+- **PR / CI checkpoint (2026-10-29):** PR #43 https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 is open and ready for review. CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin guard, build syntax, migrations, unit tests and integration tests. The prior trust-UI failure was due to stale image URL expectations, now corrected. A small follow-up assertion commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is awaiting its own CI run. No merge/deploy is authorized until that run passes.
 
 - Branch under review: `fix/required-pin-returning-login-oct-2026`.
 - The branch changes the backend so a returning wallet signature produces a PIN challenge but **no session token**; PIN verification/setup must complete before an application session is issued. An unknown wallet without a valid registration handoff no longer auto-creates an account.
