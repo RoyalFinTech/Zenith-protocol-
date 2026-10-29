@@ -1510,7 +1510,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       const input=document.getElementById("loginPin"); const button=document.getElementById("loginPinSubmit");
       const submit=async()=>{
         const pin=(input?.value||"").trim();
-        if(!/^\\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN to continue.","warning");input?.focus();return;}
+        if(!/^\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN to continue.","warning");input?.focus();return;}
         if(button){button.disabled=true;button.textContent="VERIFYING PIN…";}
         try{await completePinLogin(detail.challengeId,pin,setup);}
         catch(error){if(button){button.disabled=false;button.textContent=action;}toast("PIN login failed",error?.message||String(error),"error");input?.focus();}
