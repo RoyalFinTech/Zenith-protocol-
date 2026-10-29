@@ -113,6 +113,7 @@ if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(in
 }
 const optionalAuthContract = [
   'id="loginPinSubmit"',
+  'id="restartPinLogin"',
   'id="skipBiometric"',
   'data-action="enable-biometric"',
   'data-action="profile-pin-save"',
