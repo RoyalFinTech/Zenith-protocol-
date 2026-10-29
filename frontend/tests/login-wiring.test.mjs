@@ -120,7 +120,7 @@ assert.match(authSource, /insert into pin_challenges\(id,user_id,wallet_address\
 assert.match(authSource, /PIN verification before any application session exists/);
 assert.match(authSource, /const challengeId = uuid/);
 assert.doesNotMatch(authSource, /PIN remains an optional additional check/);
-console.log('✓ optional PIN/passkey controls and wallet-to-dashboard contract are wired');
+console.log('✓ required PIN and optional passkey controls are wired');
 
 assert.match(html, /data-action="test-push"/);
 assert.match(html, /backendFetch\(['"]\/api\/me\/push\/test['"]/);
