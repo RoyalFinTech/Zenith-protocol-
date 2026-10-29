@@ -1,15 +1,15 @@
-## Returning-member PIN gate / splash readiness branch — NOT DEPLOYED — 2026-10-29
+## Required PIN authentication and splash repair — LIVE — 2026-10-29
 
-- **PR / CI checkpoint (2026-10-29):** PR #43 https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 is open and ready for review. CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin guard, build syntax, migrations, unit tests and integration tests. The prior trust-UI failure was due to stale image URL expectations, now corrected. A small follow-up assertion commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is awaiting its own CI run. No merge/deploy is authorized until that run passes.
+- **PR:** #43 merged: https://github.com/RoyalFinTech/Zenith-protocol-/pull/43.
+- **Production commit:** `d290b18be0523b48056184e764bc66a1f2367bcb`.
+- **Render deployment:** `dep-dbhrkj7avr4c73and4vg` — `live`. Build succeeded at 21:28:57 UTC; service reported live at 21:29:49 UTC. Runtime log: `Zenit API listening on 0.0.0.0:10000`.
+- **CI run #1143:** success. Frontend build, login wiring, trust UI, backend lint, admin-provision guard, bundle syntax, migrations, unit tests, and integration tests passed on the source/test checkpoint. No database migration was added by this auth change.
+- **Production verification limitation:** the available web-fetch tool could not retrieve the public homepage or `/health`, so no independent HTTP status/body smoke check is claimed. Real-device wallet/PIN/dashboard acceptance is still required.
+- **Current service configuration:** service `srv-dajmafdg1s2s73ba8k5g`, workspace `tea-dadvf02d0e5s73eha320`, branch `main`, root `backend`, build `npm ci && npm run build`, start `npm start`, health-check path blank. Repository `render.yaml` specifies `/health`; the available Render connector can inspect but not update this setting. Correct it through the authorized dashboard/operator path only, without changing unrelated settings.
+- **Dependency warning:** Render build reported 9 vulnerabilities (3 moderate, 3 high, 3 critical). No automatic force-upgrade was applied.
+- **Data safety:** no production account/wallet/session/financial/ledger/membership/admin records were intentionally changed; no Supabase counts are asserted because the read-only table-list request failed.
+- **Next gates:** real-device acceptance, direct HTTP smoke check, health-path correction, responsive visual QA, branded status-card improvements, push delivery to a real phone, and financial/membership integrity audit.
 
-- Branch under review: `fix/required-pin-returning-login-oct-2026`.
-- The branch changes the backend so a returning wallet signature produces a PIN challenge but **no session token**; PIN verification/setup must complete before an application session is issued. An unknown wallet without a valid registration handoff no longer auto-creates an account.
-- The frontend PIN gate is mandatory, optional biometric/passkey setup remains optional, and splash readiness is persisted to avoid a one-shot event race. Wallet bridge pauses repeated signing while PIN entry is pending.
-- The first CI run was partial: frontend build and login-wiring passed; trust-UI failed on stale hero URL assertions; backend lint, guards, migrations, unit tests and integration tests passed. Updated trust-UI assertions are under rerun #1136. Changes remain **not merged and not deployed**; production remains on the historical `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc` deployment until independently confirmed otherwise.
-- Current Render service configuration is still `rootDir=backend`, build `npm ci && npm run build`, start `npm start`, health-check path blank; repository `render.yaml` specifies `/health`. No Render settings were changed.
-- Production database, existing account, wallet/session rows, financial records, admin state, and provider secrets were not intentionally changed. The Supabase table-list request failed with a database-access error, so no fresh production row counts are claimed.
-- The branch also replaces the remote woman-focused onboarding imagery with a local original SVG financial workspace illustration and swaps the star badge for the repository's existing logo asset. This has not been visually accepted on real devices; shared branded status UI remains unimplemented.
-- Remaining pre-merge gates: inspect branch diff, run frontend login/trust tests, TypeScript and backend tests/lint, production build guard, CI; run the new backend auth integration coverage; then verify Render deployment SHA, health endpoint and browser/device login after merge.
 
 ---
 
