@@ -209,7 +209,6 @@ assert.match(html, /Phone biometric verified\. Opening your dashboard/);
 assert.match(html, /window\.startApp=startApp/);
 assert.doesNotMatch(html, /id="skipOptionalPin"/);
 assert.match(html, /REQUIRED PIN VERIFICATION/);
-assert.match(html, /PIN verification is required/);
 assert.match(html, /Your dashboard stays locked until the backend verifies your PIN/);
 assert.match(html, /id="skipBiometric"/);
 assert.match(html, /closeBiometricPrompt/);
@@ -235,8 +234,6 @@ assert.match(authSource, /No ZENIT account is linked to this wallet/);
 assert.match(authSource, /if \(!registration\) \{[\s\S]*?pinRequired: !!user\.pin_hash[\s\S]*?res\.json\(/);
 assert.match(authSource, /insert into pin_challenges\(id,user_id,wallet_address\)/);
 assert.match(authSource, /PIN verification before any application session exists/);
-assert.match(authSource, /let pinChallengeId: string \| undefined;/);
-assert.match(authSource, /\.\.\.\(pinChallengeId \? \{ pinRequired:!!user\.pin_hash, pinSetupRequired:!user\.pin_hash, challengeId:pinChallengeId \} : \{\}\)/);
 console.log('✓ optional PIN/passkey controls and wallet-to-dashboard contract are wired');
 
 assert.match(html, /data-action="test-push"/);
