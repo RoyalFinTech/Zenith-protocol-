@@ -6,7 +6,7 @@
 - Automated checks have **not yet been run** against this branch. No PR CI result is available yet. The changes are **not merged and not deployed**; current production remains the historical `a4cf6e71a8f5d8c5f79e6757b904083972da5fdc` deployment until a new Render deployment is independently confirmed.
 - Current Render service configuration is still `rootDir=backend`, build `npm ci && npm run build`, start `npm start`, health-check path blank; repository `render.yaml` specifies `/health`. No Render settings were changed.
 - Production database, existing account, wallet/session rows, financial records, admin state, and provider secrets were not intentionally changed. The Supabase table-list request failed with a database-access error, so no fresh production row counts are claimed.
-- Remaining pre-merge gates: inspect branch diff, run frontend login/trust tests, TypeScript and backend tests/lint, production build guard, CI; add/verify backend auth regression coverage; then verify Render deployment SHA, health endpoint and browser/device login after merge. Hero artwork/logo and branded status UI remain unimplemented.
+- Remaining pre-merge gates: inspect branch diff, run frontend login/trust tests, TypeScript and backend tests/lint, production build guard, CI; run newly added backend auth integration coverage; then verify Render deployment SHA, health endpoint and browser/device login after merge. Hero artwork/logo and branded status UI remain unimplemented.
 
 ---
 
