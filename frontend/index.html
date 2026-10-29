@@ -890,6 +890,7 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
       function finish(){
         if(ready)return;
         ready=true;
+        window.__zenitSplashReady=true;
         document.getElementById("splash")?.classList.add("done");
         const hasSession=Boolean(localStorage.getItem("zenitToken"));
         if(!hasSession) document.getElementById("onboarding")?.classList.remove("hidden-screen");
@@ -1417,7 +1418,7 @@ function renderWallet() { return pageHead("Wallet","Wallet","Your wallet command
     window.zenitRender=render;
     function navigate(page){appState.currentPage=page; $("#sidebar").classList.remove("open"); $("#notificationMenu").classList.add("hidden"); render(); window.scrollTo({top:0,behavior:"smooth"});}
     function openModal(content){$("#modal").innerHTML=content;$("#modalBackdrop").classList.add("open");setTimeout(()=>$(".modal [data-autofocus]")?.focus(),30);}
-    function closeModal(){$("#modalBackdrop").classList.remove("open");}
+    function closeModal(){if(localStorage.getItem("zenitPinChallenge"))return;$("#modalBackdrop").classList.remove("open");}
     function purchaseModal(programKey = appState.selectedProgram) {
       if(!appState.wallet.connected){toast("Connect wallet","Connect and authenticate your BNB Smart Chain wallet before purchasing.","warning");window.zenitOpenWallet?.().catch(()=>{});return;}
       const selected=programKey==="2x6"?"2x6":"2x4", incoming=appState.pendingReferral||"";
@@ -1499,14 +1500,25 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       const detail=e.detail||{};
       if(!detail.challengeId)return;
       localStorage.setItem("zenitPinChallenge",detail.challengeId);
-      const setup=!!detail.setup; const title=setup?"Create your security PIN":"Welcome back"; const description=setup?"Create a 4-digit PIN only if you want an additional sign-in option. Your wallet is verified and your dashboard is available.":"Your wallet is verified. Enter your 4-digit PIN for an extra check, or skip and continue to your dashboard."; const action=setup?"SAVE PIN (OPTIONAL) →":"VERIFY PIN (OPTIONAL) →";
-      openModal(`<div class="modal-head"><div><div class="eyebrow">${setup?"OPTIONAL PIN SETUP":"OPTIONAL PIN CHECK"}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div><button class="icon-btn" type="button" id="closeOptionalPin" aria-label="Close">×</button></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="${setup?"new-password":"current-password"}" maxlength="4" placeholder="••••" data-autofocus></div><div class="modal-foot" style="padding:18px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" id="skipOptionalPin">SKIP FOR NOW · OPEN DASHBOARD</button><button class="btn primary" type="button" id="loginPinSubmit">${action}</button></div></div>`);
+      const setup=!!detail.setup;
+      const title=setup?"Set up your required security PIN":"Welcome back";
+      const description=setup
+        ?"Create a 4-digit PIN to finish securing your existing account. Your dashboard stays locked until PIN setup succeeds."
+        :"Enter your 4-digit PIN to finish signing in. Your dashboard stays locked until the backend verifies your PIN.";
+      const action=setup?"CREATE PIN & CONTINUE →":"VERIFY PIN & CONTINUE →";
+      openModal('<div class="modal-head"><div><div class="eyebrow">'+(setup?"REQUIRED PIN SETUP":"REQUIRED PIN VERIFICATION")+'</div><h2 id="modalTitle">'+title+'</h2><p id="pinLoginDescription">'+description+'</p></div></div><div class="modal-body"><div class="form-field"><label for="loginPin">4-digit security PIN</label><input class="field mono" id="loginPin" inputmode="numeric" autocomplete="'+(setup?"new-password":"current-password")+'" maxlength="4" pattern="[0-9]{4}" placeholder="••••" aria-describedby="pinLoginDescription" data-autofocus required></div><div class="modal-foot" style="padding:18px 0 0"><button class="btn primary" type="button" id="loginPinSubmit">'+action+'</button></div><p class="muted" style="font-size:11px;margin-top:12px">PIN verification is required. Passkeys and biometrics remain optional and can be configured later in Profile.</p></div>');
       const input=document.getElementById("loginPin"); const button=document.getElementById("loginPinSubmit");
-      const dismissOptionalPin=()=>{localStorage.removeItem("zenitPinChallenge");document.getElementById("modalBackdrop")?.classList.remove("open");if(localStorage.getItem("zenitToken"))toast("PIN skipped","Your wallet is verified and your dashboard remains available. You can manage sign-in security from Profile.","info");else toast("Reconnect required","Connect and sign with your wallet to open your dashboard.","warning");};
-      document.getElementById("skipOptionalPin")?.addEventListener("click",dismissOptionalPin);
-      document.getElementById("closeOptionalPin")?.addEventListener("click",dismissOptionalPin);
-      const submit=async()=>{const pin=(input?.value||"").trim(); if(!/^\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN.","warning");return;} if(button){button.disabled=true;button.textContent="VERIFYING PIN…";} try{await completePinLogin(detail.challengeId,pin,setup);}catch(error){if(button){button.disabled=false;button.textContent=action;}toast("Login failed",error?.message||String(error),"error");}};
-      button?.addEventListener("click",submit); input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});    });
+      const submit=async()=>{
+        const pin=(input?.value||"").trim();
+        if(!/^\\d{4}$/.test(pin)){toast("PIN required","Enter your 4-digit security PIN to continue.","warning");input?.focus();return;}
+        if(button){button.disabled=true;button.textContent="VERIFYING PIN…";}
+        try{await completePinLogin(detail.challengeId,pin,setup);}
+        catch(error){if(button){button.disabled=false;button.textContent=action;}toast("PIN login failed",error?.message||String(error),"error");input?.focus();}
+      };
+      button?.addEventListener("click",submit);
+      input?.addEventListener("keydown",ev=>{if(ev.key==="Enter")submit();});
+      setTimeout(()=>input?.focus(),30);
+    });
 
     function showRegistration(){
       $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.remove("hidden-screen");$("#appShell").classList.add("hidden");
@@ -1658,7 +1670,9 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     function startApp(){ $("#splash").classList.add("done");$("#onboarding").classList.add("hidden-screen");$("#registrationScreen").classList.add("hidden-screen");$("#appShell").classList.remove("hidden");render(); } window.startApp=startApp;
     // The standalone splash bootstrap above owns startup timing.
     // This core script only handles deep-link routing after the splash is ready.
-    window.addEventListener("zenit:splash-ready", async () => {
+    async function handleSplashReady(){
+      if(window.__zenitSplashHandled)return;
+      window.__zenitSplashHandled=true;
       const token=localStorage.getItem("zenitToken");
       if(token){
         try{
@@ -1676,7 +1690,9 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       }
       document.getElementById("onboarding")?.classList.remove("hidden-screen");
 
-    }, { once: true });
+    }
+    window.addEventListener("zenit:splash-ready", handleSplashReady, { once: true });
+    if(window.__zenitSplashReady) void handleSplashReady();
   </script>
 <script id="zenitRegistrationQaController">
 (() => {
