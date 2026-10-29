@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+<title id="title">ZENIT financial trading workspace</title>
+<desc id="desc">A premium dark financial workspace with a laptop, multi-monitor market charts, candlesticks, and subtle stablecoin imagery. No people are shown.</desc>
+<defs>
+  <linearGradient id="room" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset=".48" stop-color="#14263b"/><stop offset="1" stop-color="#05090f"/></linearGradient>
+  <linearGradient id="window" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#173450"/><stop offset=".55" stop-color="#091522"/><stop offset="1" stop-color="#20394d"/></linearGradient>
+  <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#596b7c"/><stop offset=".25" stop-color="#1b2b3a"/><stop offset="1" stop-color="#070c12"/></linearGradient>
+  <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#263748"/><stop offset=".2" stop-color="#111c29"/><stop offset="1" stop-color="#05080d"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0ad"/><stop offset=".45" stop-color="#d8b45b"/><stop offset="1" stop-color="#806026"/></linearGradient>
+  <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0c1e2e"/><stop offset="1" stop-color="#06101b"/></linearGradient>
+  <radialGradient id="glow"><stop stop-color="#b68d37" stop-opacity=".24"/><stop offset="1" stop-color="#b68d37" stop-opacity="0"/></radialGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="22"/></filter>
+  <pattern id="grid" width="58" height="46" patternUnits="userSpaceOnUse"><path d="M58 0H0V46" fill="none" stroke="#7395b2" stroke-opacity=".14" stroke-width="1"/></pattern>
+  <pattern id="keys" width="20" height="13" patternUnits="userSpaceOnUse"><rect x="2" y="2" width="15" height="8" rx="2" fill="#7b8a97" fill-opacity=".35"/></pattern>
+</defs>
+<rect width="1600" height="1000" fill="url(#room)"/>
+<ellipse cx="890" cy="360" rx="650" ry="440" fill="url(#glow)"/>
+<!-- panoramic office window and skyline -->
+<path d="M65 65H1535V565H65Z" fill="#040a11" stroke="#394a5b" stroke-width="10"/>
+<rect x="82" y="82" width="1436" height="466" fill="url(#window)"/>
+<path d="M82 465L235 335 328 398 450 275 540 350 675 220 777 323 885 264 1005 366 1110 289 1230 375 1360 260 1518 345V548H82Z" fill="#0b1826" opacity=".9"/>
+<path d="M82 495L210 420 322 454 440 390 545 441 662 365 775 423 890 380 1010 442 1128 392 1240 444 1368 365 1518 425V548H82Z" fill="#102234"/>
+<g fill="#d8b45b" opacity=".45">
+<rect x="158" y="385" width="7" height="27"/><rect x="181" y="377" width="6" height="39"/><rect x="259" y="417" width="7" height="25"/><rect x="349" y="385" width="6" height="34"/><rect x="472" y="368" width="6" height="44"/><rect x="600" y="397" width="6" height="29"/><rect x="716" y="330" width="7" height="43"/><rect x="829" y="390" width="6" height="32"/><rect x="952" y="402" width="6" height="30"/><rect x="1088" y="367" width="6" height="44"/><rect x="1190" y="407" width="6" height="28"/><rect x="1302" y="360" width="7" height="42"/><rect x="1441" y="389" width="6" height="34"/>
+</g>
+<path d="M560 82V548M1040 82V548M82 318H1518" stroke="#4d6173" stroke-width="7" opacity=".7"/>
+<!-- left market monitor -->
+<g transform="translate(125 140)">
+ <rect width="560" height="315" rx="18" fill="#02070c" stroke="#5a6a78" stroke-width="8"/>
+ <rect x="18" y="18" width="524" height="279" rx="7" fill="url(#screen)"/>
+ <rect x="18" y="18" width="524" height="279" fill="url(#grid)"/>
+ <text x="42" y="52" fill="#f0d27b" font-size="17" font-family="Arial,sans-serif" letter-spacing="3">MARKET OVERVIEW</text>
+ <text x="42" y="83" fill="#d8e5f0" font-size="27" font-family="Arial,sans-serif">USDT / BNB</text>
+ <text x="242" y="83" fill="#45d69a" font-size="21" font-family="Arial,sans-serif">+4.82%</text>
+ <g stroke-width="3" stroke-linecap="round">
+  <path d="M43 235L82 220 111 228 144 180 177 196 209 159 240 177 274 139 309 151 343 116 374 133 407 98 441 118 475 83 513 94" fill="none" stroke="#5dd8ac"/>
+  <path d="M43 235L82 220 111 228 144 180 177 196 209 159 240 177 274 139 309 151 343 116 374 133 407 98 441 118 475 83 513 94V273H43Z" fill="#31bf91" fill-opacity=".09" stroke="none"/>
+ </g>
+ <g fill="#9ab0c2" font-size="11" font-family="Arial,sans-serif" opacity=".75"><text x="43" y="276">08:00</text><text x="166" y="276">10:00</text><text x="288" y="276">12:00</text><text x="408" y="276">14:00</text><text x="488" y="276">16:00</text></g>
+ <path d="M280 315V366H245L220 390H340L315 366H280" fill="url(#metal)" stroke="#4b5d6c" stroke-width="5"/>
+</g>
+<!-- right monitor with candlesticks -->
+<g transform="translate(780 128)">
+ <rect width="650" height="355" rx="18" fill="#02070c" stroke="#647382" stroke-width="8"/>
+ <rect x="18" y="18" width="614" height="319" rx="7" fill="url(#screen)"/>
+ <rect x="18" y="18" width="614" height="319" fill="url(#grid)"/>
+ <text x="44" y="51" fill="#f0d27b" font-size="16" font-family="Arial,sans-serif" letter-spacing="3">DIGITAL ASSET ANALYTICS</text>
+ <text x="44" y="83" fill="#d8e5f0" font-size="20" font-family="Arial,sans-serif">PRICE ACTION · 24H</text>
+ <g stroke-width="3">
+  <path d="M75 118V181M110 138V211M145 121V188M180 155V230M215 132V202M250 104V175M285 124V192M320 90V157M355 111V182M390 80V144M425 105V175M460 76V138M495 92V158M530 61V125M565 82V151M600 57V119" stroke="#47d5a0"/>
+  <g fill="#47d5a0"><rect x="65" y="140" width="20" height="25" rx="2"/><rect x="135" y="141" width="20" height="26" rx="2"/><rect x="205" y="150" width="20" height="32" rx="2"/><rect x="275" y="140" width="20" height="31" rx="2"/><rect x="345" y="119" width="20" height="30" rx="2"/><rect x="415" y="115" width="20" height="28" rx="2"/><rect x="485" y="101" width="20" height="29" rx="2"/><rect x="555" y="80" width="20" height="29" rx="2"/></g>
+  <g stroke="#ef7f86"><path d="M92 166V231M162 181V244M232 148V215M302 150V214M372 132V198M442 124V184M512 113V178M582 96V163"/></g>
+  <g fill="#ef7f86"><rect x="82" y="180" width="20" height="24" rx="2"/><rect x="152" y="198" width="20" height="23" rx="2"/><rect x="222" y="170" width="20" height="25" rx="2"/><rect x="292" y="174" width="20" height="25" rx="2"/><rect x="362" y="153" width="20" height="24" rx="2"/><rect x="432" y="145" width="20" height="21" rx="2"/><rect x="502" y="136" width="20" height="21" rx="2"/><rect x="572" y="119" width="20" height="23" rx="2"/></g>
+ </g>
+ <path d="M325 355V390H295L275 411H375L355 390H325" fill="url(#metal)" stroke="#4b5d6c" stroke-width="5"/>
+</g>
+<!-- desk silhouette -->
+<ellipse cx="830" cy="802" rx="700" ry="90" fill="#000" opacity=".65" filter="url(#shadow)"/>
+<path d="M0 650Q390 610 810 654T1600 645V1000H0Z" fill="url(#desk)"/>
+<path d="M0 652Q400 611 810 655T1600 646" fill="none" stroke="#9a7b3b" stroke-opacity=".55" stroke-width="4"/>
+<path d="M110 687Q500 660 810 688T1490 680" fill="none" stroke="#5d7384" stroke-opacity=".28" stroke-width="3"/>
+<!-- laptop -->
+<g transform="translate(455 520)">
+ <path d="M70 0H595Q610 0 610 16V213H55V16Q55 0 70 0Z" fill="#03080e" stroke="#657584" stroke-width="7"/>
+ <rect x="74" y="19" width="517" height="174" rx="5" fill="url(#screen)"/>
+ <rect x="74" y="19" width="517" height="174" fill="url(#grid)"/>
+ <text x="98" y="48" fill="#f0d27b" font-size="14" font-family="Arial,sans-serif" letter-spacing="2">ZENIT · PORTFOLIO</text>
+ <text x="98" y="82" fill="#d8e5f0" font-size="22" font-family="Arial,sans-serif">Account overview</text>
+ <rect x="98" y="101" width="210" height="65" rx="8" fill="#10273a" stroke="#2e5268"/>
+ <text x="114" y="124" fill="#9bb3c6" font-size="11" font-family="Arial,sans-serif">DIGITAL ASSET VALUE</text>
+ <text x="114" y="151" fill="#f0d27b" font-size="22" font-family="Arial,sans-serif">USDT</text>
+ <rect x="326" y="101" width="244" height="65" rx="8" fill="#0d2a29" stroke="#245b4c"/>
+ <text x="342" y="124" fill="#91bfb0" font-size="11" font-family="Arial,sans-serif">NETWORK ACTIVITY</text>
+ <path d="M344 151L372 141 394 149 416 130 440 136 464 119 490 128 517 110 553 117" fill="none" stroke="#50d5a0" stroke-width="3" stroke-linecap="round"/>
+ <path d="M0 213H665L610 256H55Z" fill="url(#metal)" stroke="#71818e" stroke-width="5"/>
+ <path d="M56 226H610L575 247H92Z" fill="url(#keys)" opacity=".9"/>
+ <rect x="307" y="226" width="64" height="15" rx="5" fill="#9ba7b2" fill-opacity=".25"/>
+</g>
+<!-- stablecoin medallions -->
+<g transform="translate(130 730)">
+ <ellipse cx="85" cy="110" rx="85" ry="20" fill="#000" opacity=".5"/>
+ <circle cx="82" cy="75" r="66" fill="#05110f" stroke="url(#gold)" stroke-width="7"/>
+ <circle cx="82" cy="75" r="52" fill="#0e493c" stroke="#4bd1a0" stroke-opacity=".8" stroke-width="3"/>
+ <path d="M51 42H113V56H90V66H109V80H90V108H73V80H54V66H73V56H51Z" fill="#d5f5e7"/>
+ <path d="M33 20L131 130" stroke="#fff" stroke-opacity=".07" stroke-width="12"/>
+</g>
+<g transform="translate(1335 715)">
+ <ellipse cx="75" cy="115" rx="77" ry="18" fill="#000" opacity=".5"/>
+ <circle cx="75" cy="75" r="64" fill="#071421" stroke="url(#gold)" stroke-width="7"/>
+ <circle cx="75" cy="75" r="50" fill="#152c43" stroke="#6b8fb3" stroke-width="3"/>
+ <path d="M49 42H101V54H83V65H99V78H83V107H67V78H51V65H67V54H49Z" fill="#e5d4a2"/>
+</g>
+<!-- keyboard and mouse -->
+<g transform="translate(1030 800)">
+ <path d="M0 0H260L235 92H25Z" fill="#070d14" stroke="#5a6b7a" stroke-width="5"/>
+ <path d="M17 13H242L224 76H34Z" fill="url(#keys)"/>
+ <path d="M312 15C348 15 369 41 367 76L359 119Q353 139 330 139Q307 139 301 119L293 76C291 41 304 15 312 15Z" fill="url(#metal)" stroke="#6b7d8a" stroke-width="4"/>
+ <path d="M330 24V60" stroke="#e3c56c" stroke-width="3" stroke-linecap="round"/>
+</g>
+<!-- small accent lights -->
+<g fill="#f0cf72" opacity=".8"><circle cx="96" cy="592" r="4"/><circle cx="1510" cy="595" r="4"/><circle cx="727" cy="590" r="3"/><circle cx="901" cy="590" r="3"/></g>
+<rect x="0" y="0" width="1600" height="1000" fill="none" stroke="#b28c3e" stroke-opacity=".24" stroke-width="2"/>
+</svg>
