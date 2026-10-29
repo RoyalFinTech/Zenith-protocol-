@@ -1,5 +1,7 @@
 ## Returning-member PIN gate and splash readiness — implementation in review — 2026-10-29
 
+- **Review vehicle:** Draft PR #43 — https://github.com/RoyalFinTech/Zenith-protocol-/pull/43. Current head observed: `a5324de3495be9b4da351c493b09e0397e274bd5`. GitHub combined status returned no status entries and the commit workflow-run lookup returned no runs; treat CI as **not run / not reported**, not as passing.
+
 - **Branch:** `fix/required-pin-returning-login-oct-2026`. This is a focused security/authentication correction; it has not been merged or deployed.
 - **Confirmed source mismatch:** the current `main` implementation treated returning-member PIN verification as optional, returned a backend session token immediately after wallet signature verification, and exposed a “skip PIN” path. This contradicted the operator's stated policy that wallet + PIN are required and passkeys/biometrics are optional.
 - **Changes on this branch:** returning wallet verification now issues a one-time PIN/setup challenge without issuing an application session token; session creation occurs after `/api/auth/pin/verify` or `/api/auth/pin/setup`. Unknown wallets without a valid registration handoff are routed to registration/recovery instead of silently creating a member. The frontend no longer offers a PIN skip/close route, and the generic modal close handler cannot dismiss the required PIN challenge.
