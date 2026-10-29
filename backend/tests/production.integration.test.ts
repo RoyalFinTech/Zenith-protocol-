@@ -182,7 +182,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
 
   it('requires a PIN challenge before issuing a returning member session', async () => {
     const salt = randomBytes(16).toString('hex');
-    const pinHash = `scrypt${salt}${scryptSync('4826', salt, 64).toString('hex')}`;
+    const pinHash = `scrypt$${salt}$${scryptSync('4826', salt, 64).toString('hex')}`;
     await database.pool.query('update app_users set pin_hash=$1 where id=$2', [pinHash, userId]);
     const before = await database.pool.query<{count:number}>('select count(*)::int as count from user_sessions where user_id=$1', [userId]);
     try {
