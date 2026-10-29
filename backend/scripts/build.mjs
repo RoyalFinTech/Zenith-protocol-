@@ -112,16 +112,19 @@ if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(in
   throw new Error('Frontend registration-to-wallet handoff contract failed: optional WhatsApp reminder must not block submission');
 }
 const optionalAuthContract = [
-  'id="skipOptionalPin"',
+  'id="loginPinSubmit"',
   'id="skipBiometric"',
   'data-action="enable-biometric"',
   'data-action="profile-pin-save"',
   'id="profilePinConfirm"',
   '/api/auth/pin/change',
   'window.zenitEnrollBiometric=async',
-  'PIN and passkeys are optional'
+  'PIN is required for returning-member login'
 ];
 const missingOptionalAuthContract = optionalAuthContract.filter(fragment => !indexHtml.includes(fragment));
+if (indexHtml.includes('id="skipOptionalPin"') || indexHtml.includes('SKIP FOR NOW · OPEN DASHBOARD')) {
+  throw new Error('Frontend wallet-auth contract failed: returning-member PIN verification must not be skippable');
+}
 if (missingOptionalAuthContract.length > 0) {
   throw new Error(`Frontend wallet-auth contract failed: missing ${missingOptionalAuthContract.join(', ')}`);
 }
