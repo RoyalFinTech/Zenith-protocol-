@@ -674,6 +674,7 @@ async function buyPackage(packageCode: string, referralCode = '') {
 
 (window as any).zenitOpenWallet = (onNeedWalletSelector?: () => void) => openWallet(onNeedWalletSelector);
 (window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();
+(window as any).zenitResetPinChallenge = () => { pinChallengePending = false; authRetryAt = 0; localStorage.removeItem('zenitPinChallenge'); };
 (window as any).zenitDisconnectWallet = () => disconnect();
 
 (window as any).zenitAuthFetch = (input: string, init: RequestInit = {}) =>
