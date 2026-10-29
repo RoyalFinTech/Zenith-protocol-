@@ -197,6 +197,19 @@ describeProduction('production API against a real PostgreSQL test database', () 
       expect(after.rows[0]?.count).toBe(before.rows[0]?.count);
       const challenge = await database.pool.query('select id from pin_challenges where id=$1 and user_id=$2 and used_at is null', [data.challengeId, userId]);
       expect(challenge.rows).toHaveLength(1);
+      const verified = await request('/api/auth/pin/verify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ challengeId: data.challengeId, pin: '4826' })
+      });
+      expect(verified.status).toBe(200);
+      const verifiedData = await verified.json() as { token: string; user: { walletAddress: string } };
+      expect(verifiedData.token).toBeTruthy();
+      expect(verifiedData.user.walletAddress.toLowerCase()).toBe(testAddress.toLowerCase());
+      const dashboard = await request('/api/me', { headers: { authorization: `Bearer ${verifiedData.token}` } });
+      expect(dashboard.status).toBe(200);
+      const afterPin = await database.pool.query<{count:number}>('select count(*)::int as count from user_sessions where user_id=$1', [userId]);
+      expect(afterPin.rows[0]?.count).toBe((before.rows[0]?.count ?? 0) + 1);
     } finally {
       await database.pool.query('update app_users set pin_hash=null where id=$1', [userId]);
       await database.pool.query('delete from pin_challenges where user_id=$1', [userId]);
