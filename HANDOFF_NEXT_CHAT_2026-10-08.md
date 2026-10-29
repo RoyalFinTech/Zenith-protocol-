@@ -1,3 +1,15 @@
+## 2026-10-29 continuation update — required PIN security gate under review
+
+The current continuation branch is `fix/required-pin-returning-login-oct-2026`. Read this update before relying on older historical sections: older entries intentionally document the previous behavior where PIN/passkey setup was optional. The operator's current policy supersedes that old UX: wallet connection + PIN are required for returning-member login; passkeys/biometrics remain optional.
+
+The branch changes `backend/src/routes/auth.ts`, `frontend/index.html`, `frontend/src/wallet-bridge.ts`, `frontend/tests/login-wiring.test.mjs`, and `backend/scripts/build.mjs`. Returning-member wallet signature now creates a PIN/setup challenge without issuing a session token; the backend issues the application session only after successful PIN verification/setup. Unknown wallets without a valid registration handoff should be routed to registration/recovery rather than silently inserted. Splash readiness now persists a state flag and uses an idempotent handler to avoid a missed one-shot event. The wallet bridge pauses repeated wallet-signature attempts while PIN is pending.
+
+**Current status:** source edits committed to the feature branch only. Automated test runs and PR CI have not yet been observed; no merge or deployment has occurred. The current live Render deployment remains the previously recorded October 9 checkpoint until verified otherwise. Do not claim the account/dashboard journey is fixed without passing CI and testing with the operator's actual registered wallet on a real device.
+
+**Still required:** verify all new assertions and backend behavior, run CI, then implement the requested local financial-workspace hero image and replace the star badge with the real repository logo, responsive mobile/desktop QA, shared branded success/error status cards, correct Render health-check drift through a supported route, real-phone push acceptance, and read-only financial/membership integrity checks. Never reset the production account or change financial records for testing.
+
+---
+
 # ZENIT Protocol — Engineering Handover for Next Chat
 
 ## Registration failure incident — fixed and deployed — 2026-10-09 00:48 UTC
