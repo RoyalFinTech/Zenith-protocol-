@@ -8,7 +8,7 @@ The branch changes `backend/src/routes/auth.ts`, `frontend/index.html`, `fronten
 
 **Current status:** source edits committed to the feature branch only. Automated test runs and PR CI have not yet been observed; no merge or deployment has occurred. The current live Render deployment remains the previously recorded October 9 checkpoint until verified otherwise. Do not claim the account/dashboard journey is fixed without passing CI and testing with the operator's actual registered wallet on a real device.
 
-**Still required:** verify all new assertions and backend behavior, run CI, then implement the requested local financial-workspace hero image and replace the star badge with the real repository logo, responsive mobile/desktop QA, shared branded success/error status cards, correct Render health-check drift through a supported route, real-phone push acceptance, and read-only financial/membership integrity checks. Never reset the production account or change financial records for testing.
+**Still required:** verify all new assertions and backend behavior, run CI, visually validate the new local financial-workspace SVG and real repository logo on mobile/desktop, complete responsive QA, implement shared branded success/error status cards, correct Render health-check drift through a supported route, complete real-phone push acceptance, and run read-only financial/membership integrity checks. Never reset the production account or change financial records for testing.
 
 ---
 
