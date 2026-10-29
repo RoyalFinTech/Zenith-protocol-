@@ -37,6 +37,17 @@ if (!existsSync(builtIndex)) {
 const indexHtml = readFileSync(builtIndex, 'utf8');
 const walletBridgeSource = readFileSync(path.join(frontendDir, 'src', 'wallet-bridge.ts'), 'utf8');
 
+const financialHeroPath = path.join(frontendDir, 'public', 'zenit-financial-workspace.svg');
+if (!existsSync(financialHeroPath)) {
+  throw new Error('Onboarding artwork contract failed: local financial workspace asset is missing');
+}
+if (!indexHtml.includes('/zenit-financial-workspace.svg') || /Professional woman|photo-1494790108377-be9c29b29330|photo-1762341121210/.test(indexHtml)) {
+  throw new Error('Onboarding artwork contract failed: local finance hero must replace the woman-focused external image');
+}
+if (!indexHtml.includes('<span class="badge-mark" aria-hidden="true"><img src="/zenit-logo.png')) {
+  throw new Error('Onboarding artwork contract failed: real ZENIT logo must replace the decorative star badge');
+}
+
 const connectedWalletResumeContract = [
   'let appHandoffComplete = false;',
   'function hasAppKitConnection()',
