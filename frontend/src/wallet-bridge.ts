@@ -171,7 +171,7 @@ window.addEventListener('zenit:authenticated', (event: Event) => {
   appHandoffComplete = true;
 });
 
-async function restoreSession(address: `0x${string}`)
+async function restoreSession(address: `0x${string}`) {
   if (!authToken) return false;
 
   const base = API || window.location.origin;
