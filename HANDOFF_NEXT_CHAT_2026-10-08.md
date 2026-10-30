@@ -1,3 +1,17 @@
+## 2026-10-30 continuation — PIN setup hardening PR #46 and remaining acceptance gates
+
+- PR #46: https://github.com/RoyalFinTech/Zenith-protocol-/pull/46. Branch `fix/pin-setup-bypass-guard-2026-10-30`, based on current `main`. CI #1167 and #1168 passed; latest #1168 is green. Draft/open, mergeable, not merged/deployed.
+- Security review found `/api/auth/pin/setup` could be called with a wallet-only challenge even when a member already had a PIN. The endpoint now locks both challenge and app user rows and returns 409 if a PIN hash exists. Integration coverage confirms the old hash remains unchanged. No existing PIN can be overwritten through this wallet-only route.
+- Returning-member contract: wallet signature creates challenge only; PIN verify creates session. First-time no-PIN setup is allowed only for a valid, unused, unexpired challenge. Passkeys/biometrics remain optional.
+- Do not merge/deploy until explicitly authorized because Render auto-deploys `main`.
+- Remaining manual/infrastructure gates: operator phone test of wallet → PIN → dashboard; browser permission and real push receipt; iOS Home Screen acceptance; mobile/tablet/desktop visual QA; Render `/health` setting (currently blank, repo expects `/health`); dependency vulnerability remediation; financial/membership integrity audit.
+- Push source exists for package purchase/activation and withdrawal lifecycle notifications. Web Push VAPID configuration/actual delivery not verified. Browser/OS permission cannot be silently granted by application code.
+- Resend domain `zenitprotocol.com` currently reports `failed` with DKIM, SPF MX/TXT and return-path CNAME records failing. Confirm domain ownership before modifying DNS; do not assume `ZinetProtocol.com` or any domain is controlled by the operator.
+- Supabase project ref `fukvhfrqafudqwnnuimq` appears `INACTIVE`; read-only tables/advisors could not be retrieved (`Database is possibly not accessible at the moment`). Do not make integrity claims until authorized DB access is restored and queries succeed.
+- Direct HTTP smoke tests failed at environment DNS resolution; no production HTTP success claim. Render connector confirms service live on `d290b18`, no setting changes made. No production records/secrets/settings were modified.
+
+---
+
 ## 2026-10-29 continuation update — PIN gate merged and deployed
 
 PR #43 (`https://github.com/RoyalFinTech/Zenith-protocol-/pull/43`) was squash-merged as `d290b18be0523b48056184e764bc66a1f2367bcb`. Render deployment `dep-dbhrkj7avr4c73and4vg` is **LIVE**. Build succeeded at 21:28:57 UTC; Render reported the service live at 21:29:49 UTC and logged `Zenit API listening on 0.0.0.0:10000`.
