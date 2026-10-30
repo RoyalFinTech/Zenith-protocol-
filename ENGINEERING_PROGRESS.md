@@ -6,7 +6,8 @@
 - Unknown wallets without a valid registration handoff are rejected; no silent member creation. PIN challenge expiry, one-time use, lockout and session creation are handled server-side.
 - Splash readiness is persisted and handled idempotently; wallet signing retries pause while the required PIN challenge is pending. A restart action obtains a fresh wallet challenge without making PIN optional.
 - Local onboarding asset `frontend/public/zenit-financial-workspace.svg` replaces the old woman-focused remote image; star badge uses the existing ZENIT logo. Automated asset checks passed on the pre-hardening commit; visual acceptance on real devices remains outstanding.
-- Not yet verified: latest follow-up CI, live Render SHA, production login, actual registered-wallet PIN flow on phone. Do not merge/deploy until latest CI is green and code review is complete.
+- **CI update (2026-10-30):** follow-up source/security commit `fbd236ee44838cf2bd49ce90a9e2b4d27838df13` passed CI run #1158; subsequent engineering-document commits also passed runs #1159–#1161. Latest run #1161 is green. PR #45 remains a draft and GitHub currently reports the branch as diverged from `main` (50 ahead / 2 behind); mergeability is false. Reconcile the two new `main` commits and re-run CI before asking for review or merge.
+- Not yet verified: production login, actual registered-wallet PIN flow on phone, visual device acceptance, and post-merge Render SHA. Do not merge/deploy until latest CI is green and code review is complete.
 - No production database rows, accounts, sessions, wallet bindings, financial records, admin state, provider secrets, or Render settings were intentionally changed.
 
 ---
