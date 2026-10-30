@@ -1,3 +1,18 @@
+## PIN setup bypass hardening — implementation complete, review pending — 2026-10-30
+
+- PR #46: https://github.com/RoyalFinTech/Zenith-protocol-/pull/46. Clean branch from current `main`; 2 source/test commits, 2 files changed. CI runs #1167 and #1168 passed (backend + frontend); run #1168: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/41007462715.
+- Security change: `/api/auth/pin/setup` locks both the unused challenge row and member row (`FOR UPDATE OF c,u`), rejects with HTTP 409 when `app_users.pin_hash` is already populated, and therefore cannot reset a returning member's PIN from wallet signature alone. The integration test verifies HTTP 409 and unchanged PIN hash.
+- Review confirmed returning-member `/api/auth/verify` returns a challenge without a token/profile; `/api/auth/pin/verify` issues session only after PIN; PIN setup is for accounts with no existing PIN. PIN modal restart obtains a fresh challenge. Biometrics/passkeys remain optional.
+- PR #46 remains draft, open, unmerged and undeployed. Latest observed CI is green and GitHub reports mergeable. Do not merge/deploy until operator authorizes release because Render auto-deploys commits to `main`.
+- Push infrastructure is present: service worker, authenticated subscription endpoints, VAPID-based Web Push, and delivery calls for package purchase/activation and withdrawal request/status/completion. Actual delivery on the operator's phone remains unverified; device permission must be granted by the browser/OS, and iOS requires Home Screen installation.
+- Render service remains live on `d290b18` in Royal Workspace; `/health` setting is blank while repo `render.yaml` expects `/health`. Available Render tools can inspect but not update this service field. No Render settings were changed.
+- Resend currently lists `zenitprotocol.com` as `failed`; DKIM, SPF MX/TXT and return-path CNAME records are all reported failed. Do not assume the operator controls this domain or change DNS. A domain the operator controls must be confirmed before sender-domain remediation.
+- Supabase project ref `fukvhfrqafudqwnnuimq` is listed as `INACTIVE`; read-only table/advisor retrieval failed with `Database is possibly not accessible at the moment`. No production financial/member integrity findings can be claimed from this session.
+- Direct public HTTP smoke checks could not be run from this environment (DNS resolution unavailable). Real-device wallet → PIN → dashboard, push delivery, and responsive visual acceptance remain manual gates.
+- No production database rows, member accounts, wallet bindings, financial records, admin state, provider secrets, or Render settings were modified.
+
+---
+
 ## Returning-member PIN gate and splash repair — merged and deployed — 2026-10-29
 
 - **PR #43:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 — squash-merged.
