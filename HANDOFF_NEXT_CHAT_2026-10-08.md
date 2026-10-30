@@ -1,4 +1,17 @@
-## 2026-10-29 continuation update — required PIN security gate under review
+## 2026-10-30 continuation — PR #45 / mandatory PIN gate
+
+Continue from draft PR #45: https://github.com/RoyalFinTech/Zenith-protocol-/pull/45 on `fix/required-pin-returning-login-oct-2026`. Do not restart the project or merge/deploy automatically.
+
+The prior CI run #1149 passed frontend build, login-wiring, trust UI, backend typecheck, migrations, unit tests and PostgreSQL integration tests. A final security review then found that `/api/auth/pin/setup` needed to reject setup if an existing PIN was already configured. That guard now locks the challenge and user row and returns 409 when `pin_hash` exists. A regression integration test confirms the PIN hash is unchanged after a wallet-only setup attempt. Latest commit: `fbd236ee44838cf2bd49ce90a9e2b4d27838df13`; CI for this commit is not yet visible and must be checked first.
+
+Policy: returning-member login requires wallet signature plus PIN before an app session is created. A valid first-time registration handoff already includes a PIN supplied during registration and can establish the initial session. Passkeys and biometrics remain optional. Unknown wallets without a valid handoff are rejected.
+
+The branch also contains the idempotent splash-ready handler, retry pause during PIN challenge, restart-wallet-sign-in affordance, local finance-workspace SVG and real logo badge. The illustration has automated asset checks but still needs visual mobile/desktop acceptance. No production records, financial data, admin state, provider secrets or Render settings were intentionally changed.
+
+Next: verify CI for the latest commit; inspect the entire PR diff and review session/PIN transaction logic; only then request review/merge authorization. After an authorized merge, verify Render workspace/service, deployed SHA, `/health`, and actual wallet+PIN login with the operator's already-registered account on a real phone. Never reset or rewrite production accounts/financial history for QA. Remaining separate gates include real-phone push acceptance, shared branded status UI, Render health-check drift, and read-only financial/membership integrity audit.
+
+---
+
 
 The changes are tracked in PR #43: https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 (open, ready for review). CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin guard, build syntax, migrations, unit and integration tests. The earlier trust-UI failure was caused by stale expectations for the replaced remote hero image URLs; those assertions now verify the local finance SVG and official logo. A small follow-up assertion commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is awaiting its own CI run; do not merge until it passes.
 
