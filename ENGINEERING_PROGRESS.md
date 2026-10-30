@@ -1,4 +1,16 @@
-## Returning-member PIN gate and splash readiness — implementation in review — 2026-10-29
+## Required PIN gate — CI passed; additional PIN-reset hardening awaiting CI — 2026-10-30
+
+- **PR #45:** https://github.com/RoyalFinTech/Zenith-protocol-/pull/45 — open draft, not merged or deployed. Earlier CI run #1149 passed frontend and backend jobs, including frontend build/login/trust tests, backend typecheck, migrations, unit tests and PostgreSQL integration tests.
+- **Additional security finding fixed after that green run:** a valid wallet challenge could have been submitted directly to `/api/auth/pin/setup` even when the account already had a PIN. The endpoint now locks the challenge and user row together and rejects setup with HTTP 409 if `pin_hash` is already present. A regression integration test confirms wallet-only challenge cannot replace an existing PIN and that the stored hash remains unchanged. Follow-up commit `fbd236ee44838cf2bd49ce90a9e2b4d27838df13` is awaiting CI; it must pass before review/merge.
+- Returning members must complete wallet signature + four-digit PIN before a session token is issued. A first-time account created through a valid registration handoff already supplied a PIN during registration; that initial handoff may establish the initial session. Passkeys/biometrics remain optional.
+- Unknown wallets without a valid registration handoff are rejected; no silent member creation. PIN challenge expiry, one-time use, lockout and session creation are handled server-side.
+- Splash readiness is persisted and handled idempotently; wallet signing retries pause while the required PIN challenge is pending. A restart action obtains a fresh wallet challenge without making PIN optional.
+- Local onboarding asset `frontend/public/zenit-financial-workspace.svg` replaces the old woman-focused remote image; star badge uses the existing ZENIT logo. Automated asset checks passed on the pre-hardening commit; visual acceptance on real devices remains outstanding.
+- Not yet verified: latest follow-up CI, live Render SHA, production login, actual registered-wallet PIN flow on phone. Do not merge/deploy until latest CI is green and code review is complete.
+- No production database rows, accounts, sessions, wallet bindings, financial records, admin state, provider secrets, or Render settings were intentionally changed.
+
+---
+
 
 - **Review vehicle:** PR #43 — https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 (open, ready for review). CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin-provision guard, bundle syntax, migrations, unit tests and integration tests. The earlier run #1129 had failed only because the trust-UI test still expected the old Unsplash hero URLs; those assertions now check the local SVG and official logo. A follow-up assertion-only commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is queued for another CI run; do not treat it as green until that run completes.
 
