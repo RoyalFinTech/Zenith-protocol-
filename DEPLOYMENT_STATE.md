@@ -1,8 +1,9 @@
 ## PR #45 — required PIN authentication — NOT DEPLOYED — 2026-10-30
 
 - Draft PR: https://github.com/RoyalFinTech/Zenith-protocol-/pull/45; branch `fix/required-pin-returning-login-oct-2026`.
-- CI run #1149 passed frontend and backend jobs, including build, login wiring, trust UI, backend typecheck, migrations, unit tests and PostgreSQL integration suite.
-- After that green run, review found that `/api/auth/pin/setup` needed to reject attempts to replace an existing PIN. It now locks the challenge and user row and returns 409 when `pin_hash` exists. A regression integration test verifies HTTP 409 and unchanged PIN hash. Latest commit `fbd236ee44838cf2bd49ce90a9e2b4d27838df13` is awaiting CI; do not merge/deploy before it passes.
+- CI run #1149 passed frontend and backend jobs, including build, login wiring, trust UI, backend typecheck, migrations, unit tests and PostgreSQL integration suite. Follow-up security code commit `fbd236ee44838cf2bd49ce90a9e2b4d27838df13` passed CI run #1158; docs follow-ups passed #1159–#1161.
+- `/api/auth/pin/setup` rejects attempts to replace an existing PIN, locks the challenge and user row, and returns 409 when `pin_hash` exists. A regression integration test verifies HTTP 409 and unchanged PIN hash.
+- PR #45 remains draft. GitHub reports the feature branch diverged from `main` (50 ahead / 2 behind) and mergeability false. Inspect/reconcile the two newer `main` commits and rerun CI before review or merge.
 - Returning-member session tokens are issued only after PIN verification; a registration handoff includes PIN setup at registration. Passkeys/biometrics remain optional. Unknown wallets without valid registration handoff are rejected.
 - This branch has not been merged or deployed. Render production deployment SHA and health-check configuration have not been re-verified in this continuation.
 - No production database, member/session records, wallet bindings, financial records, provider secrets, or Render settings were intentionally modified.
