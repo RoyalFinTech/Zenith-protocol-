@@ -1,3 +1,15 @@
+## PIN setup bypass hardening PR #46 — NOT DEPLOYED — 2026-10-30
+
+- Draft PR #46: https://github.com/RoyalFinTech/Zenith-protocol-/pull/46; branch `fix/pin-setup-bypass-guard-2026-10-30` based on current `main`.
+- CI runs #1167 and #1168 passed both backend and frontend jobs. Latest run #1168: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/41007462715.
+- `/api/auth/pin/setup` now locks challenge + user rows and returns HTTP 409 if a PIN already exists; regression integration test confirms stored hash remains unchanged.
+- PR remains draft/open/unmerged/undeployed. Do not merge until release is explicitly authorized; Render auto-deploy is enabled for `main`.
+- Current Render production deployment remains `d290b18be0523b48056184e764bc66a1f2367bcb` (`dep-dbhrkj7avr4c73and4vg`, live). Health-check setting remains blank despite repository `/health` expectation.
+- Push implementation exists, but real phone delivery is not accepted yet. Resend domain `zenitprotocol.com` reports failed DNS records; ownership must be confirmed before DNS changes. Supabase project is reported inactive and read-only DB inspection failed. Public HTTP smoke check unavailable due DNS resolution failure from this environment.
+- No production data, secrets, or service settings were modified.
+
+---
+
 ## Required PIN authentication and splash repair — LIVE — 2026-10-29
 
 - **PR:** #43 merged: https://github.com/RoyalFinTech/Zenith-protocol-/pull/43.
