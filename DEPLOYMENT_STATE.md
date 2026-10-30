@@ -1,4 +1,14 @@
-## Returning-member PIN gate / splash readiness branch — NOT DEPLOYED — 2026-10-29
+## PR #45 — required PIN authentication — NOT DEPLOYED — 2026-10-30
+
+- Draft PR: https://github.com/RoyalFinTech/Zenith-protocol-/pull/45; branch `fix/required-pin-returning-login-oct-2026`.
+- CI run #1149 passed frontend and backend jobs, including build, login wiring, trust UI, backend typecheck, migrations, unit tests and PostgreSQL integration suite.
+- After that green run, review found that `/api/auth/pin/setup` needed to reject attempts to replace an existing PIN. It now locks the challenge and user row and returns 409 when `pin_hash` exists. A regression integration test verifies HTTP 409 and unchanged PIN hash. Latest commit `fbd236ee44838cf2bd49ce90a9e2b4d27838df13` is awaiting CI; do not merge/deploy before it passes.
+- Returning-member session tokens are issued only after PIN verification; a registration handoff includes PIN setup at registration. Passkeys/biometrics remain optional. Unknown wallets without valid registration handoff are rejected.
+- This branch has not been merged or deployed. Render production deployment SHA and health-check configuration have not been re-verified in this continuation.
+- No production database, member/session records, wallet bindings, financial records, provider secrets, or Render settings were intentionally modified.
+
+---
+
 
 - **PR / CI checkpoint (2026-10-29):** PR #43 https://github.com/RoyalFinTech/Zenith-protocol-/pull/43 is open and ready for review. CI run #1136 passed frontend build, login-wiring and trust-UI tests plus backend lint, admin guard, build syntax, migrations, unit tests and integration tests. The prior trust-UI failure was due to stale image URL expectations, now corrected. A small follow-up assertion commit `1b9c4c8c58bfd69862a3d34bec3245b4790e8119` is awaiting its own CI run. No merge/deploy is authorized until that run passes.
 
