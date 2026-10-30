@@ -210,6 +210,20 @@ describeProduction('production API against a real PostgreSQL test database', () 
       expect(dashboard.status).toBe(200);
       const afterPin = await database.pool.query<{count:number}>('select count(*)::int as count from user_sessions where user_id=$1', [userId]);
       expect(afterPin.rows[0]?.count).toBe((before.rows[0]?.count ?? 0) + 1);
+
+      // A wallet signature must not let a returning member replace an existing PIN.
+      const secondLogin = await signedWalletVerification(testAddress as `0x${string}`, testPrivateKey);
+      const secondChallenge = await secondLogin.json() as { challengeId: string; pinSetupRequired?: boolean };
+      expect(secondLogin.status).toBe(200);
+      expect(secondChallenge.pinSetupRequired).toBe(false);
+      const attemptedReset = await request('/api/auth/pin/setup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ challengeId: secondChallenge.challengeId, pin: '9371' })
+      });
+      expect(attemptedReset.status).toBe(409);
+      const unchanged = await database.pool.query<{pin_hash:string}>('select pin_hash from app_users where id=$1', [userId]);
+      expect(unchanged.rows[0]?.pin_hash).toBe(pinHash);
     } finally {
       await database.pool.query('update app_users set pin_hash=null where id=$1', [userId]);
       await database.pool.query('delete from pin_challenges where user_id=$1', [userId]);
