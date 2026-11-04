@@ -43,8 +43,6 @@ console.log('✓ onboarding login wiring regression checks passed');
 const walletBridge = readFileSync(resolve(process.cwd(), 'src/wallet-bridge.ts'), 'utf8');
 assert.match(html, /id="onboardExistingLogin"[^>]*data-action="existing-wallet-login"/);
 assert.match(html, /if\(action==="existing-wallet-login"\)\{localStorage\.setItem\("zenitAuthMode","existing"\);const openReturning=window\.zenitOpenReturningLogin/);
-assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/options/);
-assert.match(html, /backendBase\(\)\+["']\/api\/auth\/webauthn\/login\/verify/);
 assert.match(html, /requestAnimationFrame\(\(\)=>backdrop\.classList\.add\(["']open["']\)\)/);
 assert.match(walletBridge, /await kit\.open\(\)/);
 assert.match(walletBridge, /zenit:wallet-ready/);
@@ -93,7 +91,7 @@ assert.match(html, /CREATE PIN & OPEN DASHBOARD/);
 assert.match(html, /Dashboard access is released only after your PIN is accepted/);
 assert.match(html, /REQUIRED SIGN-IN SECURITY/);
 assert.doesNotMatch(html, /optional sign-in protection|dashboard access do not depend on it|wallet login will still open your dashboard without requiring it/i);
-assert.doesNotMatch(html, /biometric|passkey|navigator\.credentials|PublicKeyCredential|webauthn|zenitEnrollBiometric/i);
+assert.doesNotMatch(html, /biometric|passkey|PublicKeyCredential|webauthn|zenitEnrollBiometric/i); assert.ok(!html.includes("navigator.credentials"));
 
 assert.match(html, /data-action="profile-pin-save"/);
 assert.match(html, /id="profilePinConfirm"/);
