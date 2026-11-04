@@ -55,6 +55,7 @@ const connectedWalletResumeContract = [
   'let existing = await waitForConnectedAccount(1800);',
   'if (appHandoffComplete) return true;',
   'async function hasRestoredWalletConnection(): Promise<boolean>',
+  "if (pinChallengePending || localStorage.getItem('zenitPinChallenge')) return false;",
   '(window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();',
   '(window as any).zenitHasRestoredWalletConnection = () => hasRestoredWalletConnection();'
 ];
@@ -77,6 +78,9 @@ if (missingReturningLoginUi.length > 0) {
   throw new Error(`Returning-login UI contract failed: missing ${missingReturningLoginUi.join(', ')}`);
 }
 const returningWalletStartupContract = [
+  'const finishSplash=()=>document.getElementById("splash")?.classList.add("done")',
+  'id="cancelReturningLogin"',
+  'backdrop.classList.add("returning-auth-open","open")',
   'async function waitForWalletBridgeReady',
   'function restorePendingRegistration()',
   'async function handleSplashReady()',

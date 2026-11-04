@@ -568,6 +568,9 @@ async function openWallet(onNeedWalletSelector?: () => void) {
         }
         const authenticated = await completeWalletLogin(Math.max(1000, deadline - Date.now()));
         if (authenticated) return true;
+        // PIN verification is a separate required step. Stop wallet polling as soon
+        // as the server issues the challenge; the PIN screen already owns the modal.
+        if (pinChallengePending || localStorage.getItem('zenitPinChallenge')) return false;
         if (Date.now() < authRetryAt) return false;
       }
       await new Promise(resolve => setTimeout(resolve, 300));
