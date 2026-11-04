@@ -1,5 +1,16 @@
 # ZENIT Protocol — Build Concept
 
+## Current authentication operating mode — 2026-11-04
+
+- Returning-member access is wallet ownership signature followed by a mandatory four-digit PIN. The API must not create an authenticated session for a returning user until `/api/auth/pin/verify` succeeds.
+- A user without a PIN may set one only through a fresh, unexpired wallet challenge. An existing PIN cannot be replaced using the ordinary wallet-only PIN setup route; use an authenticated PIN change or the supported recovery route.
+- New registration stores a one-way PIN hash in a pending registration record and requires a short-lived handoff token to bind that registration to the wallet. Unknown wallets without a valid handoff must not be auto-provisioned.
+- Biometric/passkey sign-in is temporarily frozen: the frontend login/profile/enrollment/prompt paths are removed, and backend `/api/auth/webauthn/*` requests return HTTP 410. Related storage/handlers are retained for possible future reactivation, not available for current authentication.
+- These changes are being reviewed on PR #46 and are not in production yet. Supabase project access is currently inactive; individual account eligibility must be verified read-only after access is restored.
+
+---
+
+
 ## System shape
 
 ZENIT is a production-oriented web application split into four responsibilities:
