@@ -136,3 +136,11 @@ assert.match(authSource, /PIN verification before any application session exists
 assert.match(html, /data-action="test-push"/);
 assert.match(html, /backendFetch\(['"]\/api\/me\/push\/test['"]/);
 console.log('✓ branded PIN-only login, registration, dashboard handoff and WebAuthn freeze checks passed');
+
+assert.doesNotMatch(html, /if\(!hasSession\) document\.getElementById\("onboarding"\)/);
+assert.match(html, /const finishSplash=\(\)=>document\.getElementById\("splash"\)\?\.classList\.add\("done"\)/);
+assert.match(html, /id="cancelReturningLogin"/);
+assert.match(html, /document\.getElementById\(returnTarget\)\?\.classList\.remove\("hidden-screen"\)/);
+assert.match(html, /backdrop\.classList\.add\("returning-auth-open","open"\)/);
+assert.match(walletBridge, /if \(pinChallengePending \|\| localStorage\.getItem\('zenitPinChallenge'\)\) return false/);
+console.log('✓ returning-wallet route, PIN handoff and modal cancel regressions passed');
