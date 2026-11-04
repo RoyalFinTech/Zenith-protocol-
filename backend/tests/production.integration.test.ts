@@ -64,7 +64,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
     return fetch(`${baseUrl}${path}`, init);
   }
 
-  async function signedWalletVerification(address: `0x${string}`, privateKey: `0x${string}`) {
+  async function signedWalletVerification(address: `0x${string}`, privateKey: `0x${string}`, walletHandoffToken?: string) {
     const account = privateKeyToAccount(privateKey);
     const nonceResponse = await request('/api/auth/nonce', {
       method: 'POST',
@@ -77,7 +77,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
     return request('/api/auth/verify', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ address, nonce: nonceData.nonce, signature })
+      body: JSON.stringify({ address, nonce: nonceData.nonce, signature, walletHandoffToken })
     });
   }
 
@@ -93,6 +93,14 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect((await enrollment.json() as { error: string }).error).toMatch(/temporarily disabled/i);
   });
 
+  it('exposes the WhatsApp PIN-recovery capability as a boolean only', async () => {
+    const response = await request('/config/public');
+    expect(response.status).toBe(200);
+    const config = await response.json() as { whatsappPinRecoveryEnabled?: unknown };
+    expect(typeof config.whatsappPinRecoveryEnabled).toBe('boolean');
+    expect(JSON.stringify(config)).not.toMatch(/MAILERSEND_API_KEY|MAILERSEND_WHATSAPP_FROM|template_id/i);
+  });
+
   it('does not seed a default administrator account', async () => {
     const result = await database.pool.query<{count:number}>(
       `select count(*)::int as count from admin_users where email='admin@zenitprotocol.com'`
@@ -100,7 +108,7 @@ describeProduction('production API against a real PostgreSQL test database', () 
     expect(result.rows[0]?.count ?? 0).toBe(0);
   });
 
-  it('stores email wallet handoffs as short-lived one-time secrets', async () => {
+  it('stores registration wallet handoffs as short-lived one-time secrets without email verification', async () => {
     const id = randomUUID();
     const handoff = randomBytes(32).toString('base64url');
     const hash = (await import('node:crypto')).createHash('sha256').update(handoff).digest('hex');
@@ -115,7 +123,6 @@ describeProduction('production API against a real PostgreSQL test database', () 
       const first = await database.pool.query(
         `select id from pending_registrations
          where wallet_handoff_token_hash=$1
-           and verified_at is not null
            and wallet_handoff_expires_at > now()
            and consumed_at is null
          for update`,
@@ -126,7 +133,6 @@ describeProduction('production API against a real PostgreSQL test database', () 
       const second = await database.pool.query(
         `select id from pending_registrations
          where wallet_handoff_token_hash=$1
-           and verified_at is not null
            and wallet_handoff_expires_at > now()
            and consumed_at is null`,
         [hash]
@@ -141,6 +147,8 @@ describeProduction('production API against a real PostgreSQL test database', () 
     const suffix = randomUUID().replaceAll('-', '').slice(0, 16);
     const username = `ci_reg_${suffix}`;
     const email = `ci-registration-${suffix}@example.test`;
+    const registrationPrivateKey = `0x${'3'.repeat(64)}` as `0x${string}`;
+    const registrationWallet = privateKeyToAccount(registrationPrivateKey).address;
     let registrationId = '';
 
     try {
@@ -185,7 +193,31 @@ describeProduction('production API against a real PostgreSQL test database', () 
       });
       expect(pending.rows[0]?.pin_hash).toMatch(/^scrypt\$/);
       expect(pending.rows[0]?.wallet_handoff_token_hash).not.toBe(data.walletHandoffToken);
+      const pendingStatus = await database.pool.query<{verified_at:Date|null}>(
+        'select verified_at from pending_registrations where id=$1',[registrationId]
+      );
+      expect(pendingStatus.rows[0]?.verified_at).toBeNull();
+
+      const completed = await signedWalletVerification(registrationWallet, registrationPrivateKey, data.walletHandoffToken);
+      expect(completed.status).toBe(200);
+      const completedData = await completed.json() as { token?: string; user?: { username: string; walletAddress: string } };
+      expect(completedData.token).toBeTruthy();
+      expect(completedData.user?.username).toBe(username);
+      expect(completedData.user?.walletAddress.toLowerCase()).toBe(registrationWallet.toLowerCase());
+
+      const memberSession = await request('/api/me', { headers: { authorization: 'Bearer ' + completedData.token } });
+      expect(memberSession.status).toBe(200);
+      const memberData = await memberSession.json() as { user: { username: string } };
+      expect(memberData.user.username).toBe(username);
     } finally {
+      const createdUser = await database.pool.query<{id:string}>(
+        'select id from app_users where lower(wallet_address)=lower($1)',[registrationWallet]
+      );
+      if(createdUser.rows[0]){
+        await database.pool.query('delete from user_sessions where user_id=$1',[createdUser.rows[0].id]);
+        await database.pool.query('delete from app_users where id=$1',[createdUser.rows[0].id]);
+      }
+      await database.pool.query('delete from auth_nonces where lower(address)=lower($1)',[registrationWallet]);
       if (registrationId) {
         await database.pool.query('delete from pending_registrations where id=$1', [registrationId]);
       }

@@ -78,6 +78,14 @@ console.log('✓ cross-device onboarding, splash, and wallet-open regression che
 assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin;/);
 assert.match(html, /window\.zenitOpenExistingLogin=\(\)=>openReturningLogin\(\);/);
 assert.match(html, /id="connectReturningWallet"/);
+assert.match(html, /async function waitForWalletBridgeReady/);
+assert.match(html, /async function handleSplashReady\(\)/);
+assert.match(html, /window\.zenitHasRestoredWalletConnection\(\)/);
+assert.match(html, /window\.zenitOpenReturningLogin\?\.\(\)/);
+assert.match(html, /function restorePendingRegistration\(\)/);
+assert.match(html, /zenitWalletHandoffIssuedAt/);
+assert.match(walletBridge, /async function hasRestoredWalletConnection\(\): Promise<boolean>/);
+assert.match(walletBridge, /zenitHasRestoredWalletConnection = \(\) => hasRestoredWalletConnection\(\)/);
 assert.match(html, /class="returning-auth-panel"/);
 assert.ok(html.includes('img src="/zenit-logo.png" alt="ZENIT Protocol logo"'));
 assert.match(html, /POWERED BY ROYAL FINTECH/);
