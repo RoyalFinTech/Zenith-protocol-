@@ -1,3 +1,13 @@
+## 2026-11-04 PIN validator defect corrected — CI green
+
+- Root cause found in the new branded PIN challenge page: the client-side four-digit PIN regex had been double-escaped during the UI insertion. The browser therefore rejected a normal four-digit PIN before sending `POST /api/auth/pin/verify`. Corrected `frontend/index.html` to use `/^\\d{4}$/` and added an exact-source regression assertion in `frontend/tests/login-wiring.test.mjs`.
+- Updated stale legacy assertions in `frontend/tests/trust-ui.test.mjs` that still required the old PIN recovery wording and passkey enrollment configuration. The current test suite now asserts the branded PIN-only UI instead.
+- Source/test checkpoint `69dab1bcfde41d1a8d94d132394314dc83c4bfba` passed GitHub Actions run #1221: frontend build, login wiring, and trust/UI tests passed; backend lint, migrations, unit tests, and integration tests passed. Run: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/41845445798.
+- The corrected flow now validates a normal four-digit PIN client-side before calling the existing backend verifier. This fixes a confirmed frontend blocker; actual user's PIN correctness remains untested because the PIN itself is secret and must not be disclosed. Database stored-hash format and account lock state have been checked read-only.
+- PR #46 remains draft/open/unmerged and is not deployed. Production still runs SHA `d290b18be0523b48056184e764bc66a1f2367bcb`. User must authorize merging to `main` before the fix reaches the live app.
+
+---
+
 ## 2026-11-04 read-only account and live-path findings
 
 - Supabase project `fukvhfrqafudqwnnuimq` now reports `ACTIVE_HEALTHY` (eu-west-1, PostgreSQL 17.6). Read-only table and account queries succeeded.
