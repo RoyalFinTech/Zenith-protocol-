@@ -86,6 +86,7 @@ assert.match(html, /Checking whether your registered wallet is already connected
 assert.match(html, /void checkExisting\(\)/);
 assert.match(html, /RETRY WALLET SIGN-IN/);
 assert.match(html, /id="loginPinSubmit"/);
+assert.ok(html.includes(String.raw`if(!/^\d{4}$/.test(pin))`), "A normal four-digit PIN must pass the returning-login front-end validation.");
 assert.match(html, /VERIFY PIN & OPEN DASHBOARD/);
 assert.match(html, /CREATE PIN & OPEN DASHBOARD/);
 assert.match(html, /Dashboard access is released only after your PIN is accepted/);
