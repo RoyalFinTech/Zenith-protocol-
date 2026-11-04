@@ -96,7 +96,7 @@ assert.doesNotMatch(html, /response\.getPublicKey\?\(\)/);
 assert.doesNotMatch(html, /showVerificationSentModal/);
 assert.doesNotMatch(html, /modalVerificationTimer/);
 assert.doesNotMatch(html, /api\/auth\/register\/resend/);
-assert.match(html, /FORGOT PIN \/ ACCESS HELP/);
+assert.match(html, /FORGOT YOUR PIN\? GET ACCESS HELP/);
 assert.match(html, /api\/auth\/pin\/reset\/request/);
 assert.match(html, /api\/auth\/pin\/reset\/verify/);
 assert.doesNotMatch(html, /SEND VERIFICATION EMAIL/);
