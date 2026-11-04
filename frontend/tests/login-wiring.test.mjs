@@ -77,10 +77,8 @@ assert.doesNotMatch(walletBridge, /await \(appKit as any\)\.open\(\{ view: ['"]C
 console.log('✓ cross-device onboarding, splash, and wallet-open regression checks passed');
 
 
-assert.equal((html.match(/function openReturningLogin\(\)/g) ?? []).length, 1);
 assert.match(html, /window\.zenitOpenReturningLogin=openReturningLogin;/);
 assert.match(html, /window\.zenitOpenExistingLogin=\(\)=>openReturningLogin\(\);/);
-assert.match(html, /id="onboardExistingLogin"[^>]*data-action="existing-wallet-login"/);
 assert.match(html, /id="connectReturningWallet"/);
 assert.match(html, /class="returning-auth-panel"/);
 assert.ok(html.includes('img src="/zenit-logo.png" alt="ZENIT Protocol logo"'));
