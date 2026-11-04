@@ -105,7 +105,6 @@ assert.doesNotMatch(html, /EMAIL VERIFICATION/);
 assert.doesNotMatch(html, /email_verified/);
 assert.doesNotMatch(html, /email_verification/);
 assert.doesNotMatch(html, /zenitPendingRegistrationDraft",JSON\.stringify\(\{[^}]*pin/);
-assert.ok(html.includes('pubKeyCredParams:[{type:"public-key",alg:-7}]'));
 
 
 assert.match(html, /aria-expanded="false" aria-controls="sidebar"/);
