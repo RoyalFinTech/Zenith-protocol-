@@ -218,8 +218,23 @@ async function authenticate(address: `0x${string}`) {
   if (!connectorReady) throw new Error('Wallet provider is still initializing; please try again');
 
   const signature = await signMessage(adapter.wagmiConfig, { message });
-  const authMode = localStorage.getItem('zenitAuthMode') || (localStorage.getItem('zenitWalletHandoffToken') ? 'onboarding' : 'existing');
-  const walletHandoffToken = authMode === 'onboarding' ? (localStorage.getItem('zenitWalletHandoffToken') || '') : '';
+  let authMode = localStorage.getItem('zenitAuthMode') || 'existing';
+  let walletHandoffToken = '';
+  if (authMode === 'onboarding') {
+    const issuedAt = Number(localStorage.getItem('zenitWalletHandoffIssuedAt') || 0);
+    const age = Date.now() - issuedAt;
+    const storedHandoff = localStorage.getItem('zenitWalletHandoffToken') || '';
+    if (storedHandoff && issuedAt > 0 && age >= 0 && age < 10 * 60 * 1000) {
+      walletHandoffToken = storedHandoff;
+    } else {
+      localStorage.removeItem('zenitWalletHandoffToken');
+      localStorage.removeItem('zenitWalletHandoffIssuedAt');
+      localStorage.removeItem('zenitPendingRegistrationDraft');
+      localStorage.removeItem('zenitPendingRegistrationEmail');
+      localStorage.setItem('zenitAuthMode', 'existing');
+      authMode = 'existing';
+    }
+  }
 
   const verifyR = await fetch(`${base}/api/auth/verify`, {
     method: 'POST',
@@ -240,6 +255,7 @@ async function authenticate(address: `0x${string}`) {
   authToken = data.token;
   localStorage.setItem('zenitToken', authToken);
   localStorage.removeItem('zenitWalletHandoffToken');
+  localStorage.removeItem('zenitWalletHandoffIssuedAt');
   localStorage.removeItem('zenitRegistrationVerified');
   localStorage.removeItem('zenitAuthMode');
 
@@ -486,6 +502,15 @@ async function tryExistingWalletLogin(): Promise<'authenticated' | 'connected' |
   return authenticated ? 'authenticated' : 'connected';
 }
 
+async function hasRestoredWalletConnection(): Promise<boolean> {
+  await init();
+  let account = await waitForConnectedAccount(2200);
+  if ((!account?.isConnected || !account.address) && hasAppKitConnection()) {
+    account = await waitForConnectedAccount(5000);
+  }
+  return Boolean(account?.isConnected && account.address);
+}
+
 async function openWallet(onNeedWalletSelector?: () => void) {
   if (walletOpenInFlight) return appHandoffComplete;
   walletOpenInFlight = true;
@@ -673,6 +698,7 @@ async function buyPackage(packageCode: string, referralCode = '') {
 (window as any).zenitBuyPackage = (packageCode: string, referralCode = '') => buyPackage(packageCode, referralCode);
 
 (window as any).zenitOpenWallet = (onNeedWalletSelector?: () => void) => openWallet(onNeedWalletSelector);
+(window as any).zenitHasRestoredWalletConnection = () => hasRestoredWalletConnection();
 (window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();
 (window as any).zenitResetPinChallenge = () => { pinChallengePending = false; authRetryAt = 0; localStorage.removeItem('zenitPinChallenge'); };
 (window as any).zenitDisconnectWallet = () => disconnect();

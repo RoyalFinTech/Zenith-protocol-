@@ -1,4 +1,40 @@
+## 2026-11-04 PIN validator defect corrected — CI green
+
+- During development of this branch, the new branded PIN form's four-digit regex was initially double-escaped, which would have rejected normal PINs before calling `POST /api/auth/pin/verify`. This branch-only regression was caught and corrected before deployment; comparison confirms production `main` at SHA `d290b18be0523b48056184e764bc66a1f2367bcb` has the correctly escaped validator. An exact-source regression assertion now guards the new branch.
+- Updated stale legacy assertions in `frontend/tests/trust-ui.test.mjs` that still required the old PIN recovery wording and passkey enrollment configuration. The current test suite now asserts the branded PIN-only UI instead.
+- Source/test checkpoint `69dab1bcfde41d1a8d94d132394314dc83c4bfba` passed GitHub Actions run #1221: frontend build, login wiring, and trust/UI tests passed; backend lint, migrations, unit tests, and integration tests passed. Run: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/41845445798.
+- The branch PIN form now validates a normal four-digit PIN client-side before calling the existing backend verifier. This corrects a branch-only regression, not a proven explanation for the earlier production symptom. The actual user's PIN cannot be tested without the secret, which must not be disclosed. Database stored-hash format and account lock state were checked read-only; the missing recent PIN challenge means the earlier production failure still needs device-level tracing.
+- PR #46 remains draft/open/unmerged and is not deployed. Production still runs SHA `d290b18be0523b48056184e764bc66a1f2367bcb`. User must authorize merging to `main` before the fix reaches the live app.
+
+---
+
+## 2026-11-04 read-only account and live-path findings
+
+- Supabase project `fukvhfrqafudqwnnuimq` now reports `ACTIVE_HEALTHY` (eu-west-1, PostgreSQL 17.6). Read-only table and account queries succeeded.
+- The only row in `public.app_users` is username `royalfintech`, role `Member`, wallet label `0xeDFe…aAe5`. It has a verified primary `wallet_accounts` row on chain ID 56 (BNB Smart Chain), a non-null PIN hash in the expected application scrypt format, zero PIN failures, and no current PIN lock. We did not read the hash itself or attempt to infer the PIN.
+- There are two historical session rows but no currently active session. This is consistent with needing a new wallet-signature + PIN login, not with an already-authenticated dashboard session.
+- There are zero unexpired/unused PIN challenges for this account. Its latest challenge was created 2026-10-14 21:34 UTC; none was created in the last 24 hours and failed-attempt count remains zero. The recent login attempt therefore has not been observed reaching challenge creation in this database. Possible causes include the production frontend/build/API path or wallet signature step not reaching this backend; a device-level trace is still required to isolate which.
+- The matching `pending_registrations` record is consumed and expired, including its 10-minute wallet handoff. It is old registration history and does not block returning-user authentication.
+- The member is eligible for the standard authenticated member dashboard after a fresh valid wallet signature and successful PIN verification. The database row has no separate suspended/disabled status field. However, the account has zero `matrix_memberships` and zero `package_purchases`, so matrix/program/package sections will remain empty until the member separately activates a package. Dashboard account existence is distinct from program participation.
+- Supabase security advisor currently reports 27 public tables with RLS enabled but no policies (INFO-level `rls_enabled_no_policy` findings). No RLS or schema changes were made; the application currently uses the backend service/database path. Review this against the intended server-only access model before altering policies.
+- Render service `srv-dajmafdg1s2s73ba8k5g` is still on branch `main`, deployment SHA `d290b18be0523b48056184e764bc66a1f2367bcb`. Its health-check path remains blank (expected repository endpoint: `/health`). Latest accessible app logs show startup on 2026-11-03; the queried request-log page returned no request rows, so logs did not provide a trace of the user's PIN attempts. No Render settings or production records were changed.
+- PIN-only frontend/backend changes remain on draft PR #46 and are not live. Latest source/test commit before this documentation update was `3cbe6bd2203a4b9c70e5e1413c12d9e921948619`; CI runs #41844604276 and #41844617548 were still in progress when the account findings were recorded. Previous CI failures were caused by stale frontend assertions in `trust-ui.test.mjs`; they were updated to the new branded PIN-only UI. Do not mark CI green until the next run completes.
+- Operator confirmed they do not own/control `zenitprotocol.com`; no DNS, Resend domain, or sender settings were touched. No PIN reset, wallet rebinding, session creation, account changes, or financial-data changes were performed.
+
+---
+
 # ZENIT Protocol — Build Concept
+
+## Current authentication operating mode — 2026-11-04
+
+- Returning-member access is wallet ownership signature followed by a mandatory four-digit PIN. The API must not create an authenticated session for a returning user until `/api/auth/pin/verify` succeeds.
+- A user without a PIN may set one only through a fresh, unexpired wallet challenge. An existing PIN cannot be replaced using the ordinary wallet-only PIN setup route; use an authenticated PIN change or the supported recovery route.
+- New registration stores a one-way PIN hash in a pending registration record and requires a short-lived handoff token to bind that registration to the wallet. Unknown wallets without a valid handoff must not be auto-provisioned.
+- Biometric/passkey sign-in is temporarily frozen: the frontend login/profile/enrollment/prompt paths are removed, and backend `/api/auth/webauthn/*` requests return HTTP 410. Related storage/handlers are retained for possible future reactivation, not available for current authentication.
+- These changes are being reviewed on PR #46 and are not in production yet. Supabase project access is currently inactive; individual account eligibility must be verified read-only after access is restored.
+
+---
+
 
 ## System shape
 

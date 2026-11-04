@@ -1,3 +1,54 @@
+## 2026-11-04 PIN validator defect corrected — CI green
+
+- During development of this branch, the new branded PIN form's four-digit regex was initially double-escaped, which would have rejected normal PINs before calling `POST /api/auth/pin/verify`. This branch-only regression was caught and corrected before deployment; comparison confirms production `main` at SHA `d290b18be0523b48056184e764bc66a1f2367bcb` has the correctly escaped validator. An exact-source regression assertion now guards the new branch.
+- Updated stale legacy assertions in `frontend/tests/trust-ui.test.mjs` that still required the old PIN recovery wording and passkey enrollment configuration. The current test suite now asserts the branded PIN-only UI instead.
+- Source/test checkpoint `69dab1bcfde41d1a8d94d132394314dc83c4bfba` passed GitHub Actions run #1221: frontend build, login wiring, and trust/UI tests passed; backend lint, migrations, unit tests, and integration tests passed. Run: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/41845445798.
+- The branch PIN form now validates a normal four-digit PIN client-side before calling the existing backend verifier. This corrects a branch-only regression, not a proven explanation for the earlier production symptom. The actual user's PIN cannot be tested without the secret, which must not be disclosed. Database stored-hash format and account lock state were checked read-only; the missing recent PIN challenge means the earlier production failure still needs device-level tracing.
+- PR #46 remains draft/open/unmerged and is not deployed. Production still runs SHA `d290b18be0523b48056184e764bc66a1f2367bcb`. User must authorize merging to `main` before the fix reaches the live app.
+
+---
+
+## 2026-11-04 read-only account and live-path findings
+
+- Supabase project `fukvhfrqafudqwnnuimq` now reports `ACTIVE_HEALTHY` (eu-west-1, PostgreSQL 17.6). Read-only table and account queries succeeded.
+- The only row in `public.app_users` is username `royalfintech`, role `Member`, wallet label `0xeDFe…aAe5`. It has a verified primary `wallet_accounts` row on chain ID 56 (BNB Smart Chain), a non-null PIN hash in the expected application scrypt format, zero PIN failures, and no current PIN lock. We did not read the hash itself or attempt to infer the PIN.
+- There are two historical session rows but no currently active session. This is consistent with needing a new wallet-signature + PIN login, not with an already-authenticated dashboard session.
+- There are zero unexpired/unused PIN challenges for this account. Its latest challenge was created 2026-10-14 21:34 UTC; none was created in the last 24 hours and failed-attempt count remains zero. The recent login attempt therefore has not been observed reaching challenge creation in this database. Possible causes include the production frontend/build/API path or wallet signature step not reaching this backend; a device-level trace is still required to isolate which.
+- The matching `pending_registrations` record is consumed and expired, including its 10-minute wallet handoff. It is old registration history and does not block returning-user authentication.
+- The member is eligible for the standard authenticated member dashboard after a fresh valid wallet signature and successful PIN verification. The database row has no separate suspended/disabled status field. However, the account has zero `matrix_memberships` and zero `package_purchases`, so matrix/program/package sections will remain empty until the member separately activates a package. Dashboard account existence is distinct from program participation.
+- Supabase security advisor currently reports 27 public tables with RLS enabled but no policies (INFO-level `rls_enabled_no_policy` findings). No RLS or schema changes were made; the application currently uses the backend service/database path. Review this against the intended server-only access model before altering policies.
+- Render service `srv-dajmafdg1s2s73ba8k5g` is still on branch `main`, deployment SHA `d290b18be0523b48056184e764bc66a1f2367bcb`. Its health-check path remains blank (expected repository endpoint: `/health`). Latest accessible app logs show startup on 2026-11-03; the queried request-log page returned no request rows, so logs did not provide a trace of the user's PIN attempts. No Render settings or production records were changed.
+- PIN-only frontend/backend changes remain on draft PR #46 and are not live. Latest source/test commit before this documentation update was `3cbe6bd2203a4b9c70e5e1413c12d9e921948619`; CI runs #41844604276 and #41844617548 were still in progress when the account findings were recorded. Previous CI failures were caused by stale frontend assertions in `trust-ui.test.mjs`; they were updated to the new branded PIN-only UI. Do not mark CI green until the next run completes.
+- Operator confirmed they do not own/control `zenitprotocol.com`; no DNS, Resend domain, or sender settings were touched. No PIN reset, wallet rebinding, session creation, account changes, or financial-data changes were performed.
+
+---
+
+## 2026-11-04 authentication release state — PIN-only branch changes NOT DEPLOYED
+
+- Work continues on PR #46: https://github.com/RoyalFinTech/Zenith-protocol-/pull/46, branch `fix/pin-setup-bypass-guard-2026-10-30`. The branch remains draft/open/unmerged. The latest source/test commit at this update is `f6326422da940f9a86454466cb3363940c0f944f`; frontend/backend CI reruns #41843038668 and #41843047105 were still running/queued when recorded. Earlier test attempts failed in the frontend test step due to a malformed regex in the new test file; the latest test file was simplified and rerun. Do not record the new CI as green until these current runs complete.
+- Returning-member UI now has a dedicated full-screen branded access page using the existing official asset `/zenit-logo.png`, with “ZENIT PROTOCOL · POWERED BY ROYAL FINTECH” branding. It probes the already-connected wallet first and avoids opening a second wallet selector when a connection is restored. The successful wallet signature opens the required PIN screen; it does not issue a returning-member session.
+- PIN is now the only active sign-in verification method. The front end no longer contains biometric/passkey UI, WebAuthn calls, enrollment code, or post-login biometric prompts. The backend intercepts every `/api/auth/webauthn/*` request and returns HTTP 410 Gone. WebAuthn handlers, schema, and stored credentials are retained but unreachable so they can be deliberately restored later.
+- A misleading Profile PIN panel was corrected: it previously described PIN as optional and said dashboard access did not depend on it, contradicting the backend. The panel, PIN-save confirmation, and return-user page now state that wallet ownership plus the four-digit PIN is required. Profile PIN change still uses an authenticated session and `POST /api/auth/pin/change`.
+- Authentication contract reviewed in source: `/api/auth/verify` validates the wallet signature; a returning member receives a `pin_challenges` row and no token; `POST /api/auth/pin/verify` (or `/pin/setup` only when the account has no PIN) creates the session. New registration saves a PIN hash with a short-lived wallet handoff; a valid registration handoff creates the member account and initial session. Unrecognized wallets without a valid registration handoff remain rejected.
+- Existing PIN setup hardening remains in place: `/api/auth/pin/setup` locks the challenge and user rows and returns 409 if a PIN already exists, preventing a wallet-only challenge from replacing an existing PIN.
+- Supabase project `fukvhfrqafudqwnnuimq` remains `INACTIVE`. Database/table access has not been restored, so the specific account's wallet binding, PIN hash presence, role/status, package/membership prerequisites, and dashboard eligibility cannot yet be verified. No account reset, PIN reset, or data modification was attempted. Operator confirmed they do not own/control `zenitprotocol.com`; no DNS/Resend changes were made.
+- Production remains on Render deployment SHA `d290b18be0523b48056184e764bc66a1f2367bcb`. PR #46 changes are not live. No database rows, sessions, wallet bindings, financial records, provider secrets, or Render settings were modified.
+- Remaining acceptance gates: latest CI green; real-device returning-wallet → signature → PIN → dashboard test; new registration → wallet handoff → account/dashboard test; verify the user's specific Supabase account after DB reactivation; inspect any PIN hash mismatch or account state read-only before changing anything; responsive visual QA. Keep passkeys frozen until deliberately reopened.
+
+---
+
+## PIN setup bypass hardening PR #46 — NOT DEPLOYED — 2026-10-30
+
+- Draft PR #46: https://github.com/RoyalFinTech/Zenith-protocol-/pull/46; branch `fix/pin-setup-bypass-guard-2026-10-30` based on current `main`.
+- CI runs #1167 and #1168 passed both backend and frontend jobs. Latest run #1168: https://github.com/RoyalFinTech/Zenith-protocol-/actions/runs/41007462715.
+- `/api/auth/pin/setup` now locks challenge + user rows and returns HTTP 409 if a PIN already exists; regression integration test confirms stored hash remains unchanged.
+- PR remains draft/open/unmerged/undeployed. Do not merge until release is explicitly authorized; Render auto-deploy is enabled for `main`.
+- Current Render production deployment remains `d290b18be0523b48056184e764bc66a1f2367bcb` (`dep-dbhrkj7avr4c73and4vg`, live). Health-check setting remains blank despite repository `/health` expectation.
+- Push implementation exists, but real phone delivery is not accepted yet. Resend domain `zenitprotocol.com` reports failed DNS records; ownership must be confirmed before DNS changes. Supabase project is reported inactive and read-only DB inspection failed. Public HTTP smoke check unavailable due DNS resolution failure from this environment.
+- No production data, secrets, or service settings were modified.
+
+---
+
 ## Required PIN authentication and splash repair — LIVE — 2026-10-29
 
 - **PR:** #43 merged: https://github.com/RoyalFinTech/Zenith-protocol-/pull/43.

@@ -8,14 +8,6 @@ type WelcomeEmailInput = {
   appOrigin: string;
 };
 
-type VerificationEmailInput = {
-  to: string;
-  username: string;
-  verifyUrl: string;
-  registrationId: string;
-  appOrigin: string;
-};
-
 type TransactionalEmailInput = {
   to: string;
   subject: string;
@@ -187,48 +179,6 @@ This is a transactional account email from ZENIT Protocol.`;
     text,
     idempotencyKey: `zenit-welcome#${to.toLowerCase()}#${username.toLowerCase()}`,
     tags: ['zenit', 'welcome']
-  });
-
-  return { sent: true, skipped: false };
-}
-
-export async function sendVerificationEmail({ to, username, verifyUrl, registrationId, appOrigin }: VerificationEmailInput) {
-  if (!to) throw new Error('Verification recipient is missing');
-  assertProviderConfigured();
-
-  const safeUsername = escapeHtml(username);
-  const safeUrl = escapeHtml(verifyUrl);
-  const logoUrl = escapeHtml(officialLogoUrl(appOrigin));
-  const logoMarkup = '<div style="margin:0 0 18px"><img src="' + logoUrl + '" alt="ZENIT Protocol" width="210" style="display:block;width:210px;max-width:100%;height:auto;border:0"></div>';
-  const html = `
-    <div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:28px;color:#111827">
-      <div style="max-width:620px;margin:auto;background:#fff;border-radius:18px;padding:34px;box-shadow:0 8px 30px rgba(15,23,42,.08)">
-        ${logoMarkup}
-        <p style="color:#64748b;margin-top:6px">Decentralized Wealth Network</p>
-        <h1 style="font-size:26px;margin-top:30px">Verify your ZENIT email</h1>
-        <p>Hi @${safeUsername}, confirm that this email address belongs to you before connecting your wallet.</p>
-        <a href="${safeUrl}" style="display:inline-block;margin-top:18px;background:#111827;color:#fff;text-decoration:none;padding:14px 22px;border-radius:10px;font-weight:700">Confirm email address</a>
-        <p style="font-size:12px;color:#64748b;margin-top:22px">This verification link expires in 30 minutes and can be used once.</p>
-        <p style="font-size:12px;color:#94a3b8;margin-top:28px">If you did not request a ZENIT Protocol account, you can ignore this email.</p>
-      </div>
-    </div>`;
-  const text = `Hi @${username},
-
-Confirm that this email address belongs to you before connecting your wallet:
-
-${verifyUrl}
-
-This verification link expires in 30 minutes and can be used once.
-
-If you did not request a ZENIT Protocol account, you can ignore this email.`;
-
-  await sendTransactionalEmail({
-    to,
-    subject: 'Verify your email for ZENIT Protocol',
-    html,
-    text,
-    idempotencyKey: `zenit-email-verification#${registrationId}`,
-    tags: ['zenit', 'verification']
   });
 
   return { sent: true, skipped: false };
