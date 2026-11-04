@@ -13,6 +13,12 @@ import { normalizeWhatsAppNumber } from '../utils/phone.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+// WebAuthn is intentionally frozen while ZENIT uses wallet + PIN authentication only.
+// Keep the routes and stored credentials intact so passkeys can be re-enabled deliberately later.
+router.use('/webauthn', (_req, res) => {
+  res.status(410).json({ error: 'Passkey and biometric sign-in are temporarily disabled. Use your wallet and security PIN.' });
+});
 const PIN_PATTERN = /^\d{4}$/;
 async function derivePin(pin:string,salt:string){ return await new Promise<Buffer>((resolve,reject)=>scryptCb(pin,salt,64,(error,key)=>error?reject(error):resolve(key as Buffer))); }
 async function hashPin(pin:string){ const salt=randomBytes(16).toString('hex'); const derived=await derivePin(pin,salt); return 'scrypt$'+salt+'$'+derived.toString('hex'); }
