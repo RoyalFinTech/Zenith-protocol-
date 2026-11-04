@@ -40,8 +40,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm run check:admin-provision
-      - name: Check production frontend bundle script syntax
-        run: node --check scripts/build.mjs
+      - name: Build the complete production backend and frontend bundle
+        run: npm run build
       - name: Prepare Supabase-compatible roles
         working-directory: .
         run: |

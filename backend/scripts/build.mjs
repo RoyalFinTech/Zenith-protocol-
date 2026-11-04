@@ -54,7 +54,9 @@ const connectedWalletResumeContract = [
   'async function tryExistingWalletLogin()',
   'let existing = await waitForConnectedAccount(1800);',
   'if (appHandoffComplete) return true;',
-  '(window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();'
+  'async function hasRestoredWalletConnection(): Promise<boolean>',
+  '(window as any).zenitTryExistingWalletLogin = () => tryExistingWalletLogin();',
+  '(window as any).zenitHasRestoredWalletConnection = () => hasRestoredWalletConnection();'
 ];
 const missingWalletResumeContract = connectedWalletResumeContract.filter(fragment => !walletBridgeSource.includes(fragment));
 if (missingWalletResumeContract.length > 0) {
@@ -65,13 +67,45 @@ if (/if \(account\?\.isConnected && account\.address\) break;/.test(walletBridge
 }
 const returningLoginUiContract = [
   'id="returningLoginStatus"',
-  'Checking whether your wallet is already connected',
-  'without reopening the wallet selector',
-  'RETRY WALLET SIGN-IN'
+  'Checking this device for your registered wallet',
+  'Wallet detected. Approve the ownership signature; then enter your PIN on the next screen.',
+  'RETRY WALLET SIGN-IN',
+  'Your PIN is the only active sign-in verification step'
 ];
 const missingReturningLoginUi = returningLoginUiContract.filter(fragment => !indexHtml.includes(fragment));
 if (missingReturningLoginUi.length > 0) {
   throw new Error(`Returning-login UI contract failed: missing ${missingReturningLoginUi.join(', ')}`);
+}
+const returningWalletStartupContract = [
+  'async function waitForWalletBridgeReady',
+  'function restorePendingRegistration()',
+  'async function handleSplashReady()',
+  'window.zenitHasRestoredWalletConnection()',
+  'window.zenitOpenReturningLogin?.()',
+  'zenitWalletHandoffIssuedAt'
+];
+const missingReturningWalletStartup = returningWalletStartupContract.filter(fragment => !indexHtml.includes(fragment));
+if (missingReturningWalletStartup.length > 0) {
+  throw new Error(`Returning-wallet startup contract failed: missing ${missingReturningWalletStartup.join(', ')}`);
+}
+const pinOnlyAuthContract = [
+  'id="loginPinSubmit"',
+  'id="restartPinLogin"',
+  'VERIFY PIN & OPEN DASHBOARD',
+  'CREATE PIN & OPEN DASHBOARD',
+  'data-action="profile-pin-save"',
+  'id="profilePinConfirm"',
+  '/api/auth/pin/change'
+];
+const missingPinOnlyAuth = pinOnlyAuthContract.filter(fragment => !indexHtml.includes(fragment));
+if (missingPinOnlyAuth.length > 0) {
+  throw new Error(`PIN-only authentication contract failed: missing ${missingPinOnlyAuth.join(', ')}`);
+}
+if (/biometric|passkey|PublicKeyCredential|webauthn|navigator\.credentials/i.test(indexHtml)) {
+  throw new Error('PIN-only authentication contract failed: paused biometric/passkey frontend code remains');
+}
+if (/verify (your )?email|email verification/i.test(indexHtml)) {
+  throw new Error('Email-free registration contract failed: email verification language remains in the frontend');
 }
 
 // The Render service's rootDir is backend, but this build intentionally bundles the
@@ -122,24 +156,25 @@ if (missingRegistrationHandoffContract.length > 0) {
 if (/showRegistrationWhatsAppReminder|registrationWhatsappReminderShown/.test(indexHtml)) {
   throw new Error('Frontend registration-to-wallet handoff contract failed: optional WhatsApp reminder must not block submission');
 }
-const optionalAuthContract = [
-  'id="loginPinSubmit"',
-  'id="restartPinLogin"',
-  'id="skipBiometric"',
-  'data-action="enable-biometric"',
-  'data-action="profile-pin-save"',
-  'id="profilePinConfirm"',
-  '/api/auth/pin/change',
-  'window.zenitEnrollBiometric=async',
-  'PIN is required for returning-member login'
-];
-const missingOptionalAuthContract = optionalAuthContract.filter(fragment => !indexHtml.includes(fragment));
-if (indexHtml.includes('id="skipOptionalPin"') || indexHtml.includes('SKIP FOR NOW · OPEN DASHBOARD')) {
+if (/id="skipOptionalPin"|SKIP FOR NOW · OPEN DASHBOARD/i.test(indexHtml)) {
   throw new Error('Frontend wallet-auth contract failed: returning-member PIN verification must not be skippable');
 }
-if (missingOptionalAuthContract.length > 0) {
-  throw new Error(`Frontend wallet-auth contract failed: missing ${missingOptionalAuthContract.join(', ')}`);
+const authSource = readFileSync(path.join(backendDir, 'src', 'routes', 'auth.ts'), 'utf8');
+const serverSource = readFileSync(path.join(backendDir, 'src', 'server.ts'), 'utf8');
+const emailServiceSource = readFileSync(path.join(backendDir, 'src', 'services', 'email.ts'), 'utf8');
+if (/sendVerificationEmail|VerificationEmailInput/.test(emailServiceSource)) {
+  throw new Error('Email-free registration contract failed: obsolete verification-email sender remains');
 }
+if (/\/api\/auth\/register\/resend/.test(serverSource) || /router\.(get|post)\(['"]\/register\/(verify|resend)/.test(authSource)) {
+  throw new Error('Email-free registration contract failed: email-verification or resend route remains active');
+}
+if (/verified_at\s+is\s+not\s+null/i.test(authSource)) {
+  throw new Error('Email-free registration contract failed: wallet handoff still requires email verification');
+}
+if (!authSource.includes("router.use('/webauthn'") || !authSource.includes('status(410)')) {
+  throw new Error('PIN-only authentication contract failed: WebAuthn endpoints are not frozen');
+}
+
 const bundledWhatsAppSvg = readFileSync(path.join(frontendDist, 'whatsapp.svg'), 'utf8');
 if (!bundledWhatsAppSvg.includes('<title>WhatsApp</title>') || !bundledWhatsAppSvg.includes('<path fill="#ffffff" d="')) {
   throw new Error('Frontend country picker contract failed: official WhatsApp glyph asset is missing or malformed');
