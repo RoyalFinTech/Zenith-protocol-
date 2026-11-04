@@ -81,6 +81,18 @@ describeProduction('production API against a real PostgreSQL test database', () 
     });
   }
 
+  it('returns 410 for all temporarily disabled WebAuthn authentication routes', async () => {
+    const login = await request('/api/auth/webauthn/login/options', { method: 'POST' });
+    const enrollment = await request('/api/auth/webauthn/register/options', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    expect(login.status).toBe(410);
+    expect(enrollment.status).toBe(410);
+    expect((await login.json() as { error: string }).error).toMatch(/temporarily disabled/i);
+    expect((await enrollment.json() as { error: string }).error).toMatch(/temporarily disabled/i);
+  });
+
   it('does not seed a default administrator account', async () => {
     const result = await database.pool.query<{count:number}>(
       `select count(*)::int as count from admin_users where email='admin@zenitprotocol.com'`
