@@ -531,7 +531,9 @@
     .returning-auth-open { padding:0; place-items:stretch; background:radial-gradient(circle at 50% 12%,rgba(202,166,82,.16),transparent 38%),linear-gradient(145deg,#070d16,#101923 58%,#090d13); backdrop-filter:none; }
     .returning-auth-open .modal { width:100%; max-width:none; height:100%; min-height:100vh; min-height:100dvh; max-height:none; overflow:auto; border:0; border-radius:0; background:transparent; box-shadow:none; }
     .returning-auth-page { min-height:100vh; min-height:100dvh; width:100%; display:grid; place-items:center; padding:clamp(22px,5vw,64px); }
-    .returning-auth-panel { width:min(100%,510px); padding:clamp(24px,4vw,42px); border:1px solid rgba(240,207,114,.22); border-radius:22px; background:linear-gradient(155deg,rgba(18,31,47,.98),rgba(8,14,23,.98)); box-shadow:0 34px 110px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.04); }
+    .returning-auth-panel { position:relative; width:min(100%,510px); padding:clamp(24px,4vw,42px); border:1px solid rgba(240,207,114,.22); border-radius:22px; background:linear-gradient(155deg,rgba(18,31,47,.98),rgba(8,14,23,.98)); box-shadow:0 34px 110px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.04); }
+    .returning-auth-close { position:absolute; top:12px; right:12px; z-index:2; width:34px; height:34px; display:grid; place-items:center; border:1px solid rgba(240,207,114,.24); border-radius:10px; color:#e9dfc2; background:rgba(5,9,15,.58); font-size:21px; line-height:1; }
+    .returning-auth-close:hover { border-color:rgba(240,207,114,.6); background:rgba(202,166,82,.13); }
     .returning-auth-brand { display:flex; align-items:center; gap:13px; margin-bottom:34px; }
     .returning-auth-brand img { display:block; width:82px; height:54px; object-fit:contain; }
     .returning-auth-brand strong { display:block; color:#f2f7fd; font-size:12px; letter-spacing:.17em; }
@@ -921,7 +923,9 @@ html.theme-light .site-footer { background:#eee9dc; color:#6d6a62; }
         window.__zenitSplashReady=true;
         document.getElementById("splash")?.classList.add("done");
         const hasSession=Boolean(localStorage.getItem("zenitToken"));
-        if(!hasSession) document.getElementById("onboarding")?.classList.remove("hidden-screen");
+        // Routing is asynchronous: let handleSplashReady decide between session,
+        // in-progress registration, returning-wallet access, and first-time onboarding.
+        void hasSession;
         window.dispatchEvent(new CustomEvent("zenit:splash-ready"));
       }
       function tick(){
@@ -1731,6 +1735,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     async function handleSplashReady(){
       if(window.__zenitSplashHandled)return;
       window.__zenitSplashHandled=true;
+      const finishSplash=()=>document.getElementById("splash")?.classList.add("done");
       const token=localStorage.getItem("zenitToken");
       if(token){
         try{
@@ -1746,7 +1751,7 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
         localStorage.removeItem("zenitRegistrationVerified");
         localStorage.removeItem("zenitAuthMode");
       }
-      if(restorePendingRegistration())return;
+      if(restorePendingRegistration()){finishSplash();return;}
       // Legacy or expired handoffs must not make a returning member appear to be a new signup.
       if(localStorage.getItem("zenitWalletHandoffToken")){
         localStorage.removeItem("zenitWalletHandoffToken");
@@ -1756,15 +1761,17 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
         localStorage.setItem("zenitAuthMode","existing");
       }
       // A PIN challenge may have opened before splash readiness. Never replace it with onboarding.
-      if(localStorage.getItem("zenitPinChallenge"))return;
+      if(localStorage.getItem("zenitPinChallenge")){finishSplash();return;}
       try{
         if(await waitForWalletBridgeReady()&&await window.zenitHasRestoredWalletConnection()){
           localStorage.setItem("zenitAuthMode","existing");
           if(!localStorage.getItem("zenitPinChallenge"))window.zenitOpenReturningLogin?.();
+          finishSplash();
           return;
         }
       }catch(error){console.warn("Returning-wallet detection deferred:",error);}
       document.getElementById("onboarding")?.classList.remove("hidden-screen");
+      finishSplash();
     }
         window.addEventListener("zenit:splash-ready", handleSplashReady, { once: true });
     if(window.__zenitSplashReady) void handleSplashReady();
@@ -1872,8 +1879,9 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
     localStorage.removeItem("zenitPendingRegistrationDraft");
     localStorage.removeItem("zenitPendingRegistrationEmail");
     const backdrop=$("#modalBackdrop"),modal=$("#modal");if(!backdrop||!modal)return;
+    const returnTarget=$("#registrationScreen")?.classList.contains("hidden-screen")?"onboarding":"registrationScreen";
     backdrop.classList.add("returning-auth-open");
-    modal.innerHTML='<div class="returning-auth-page"><section class="returning-auth-panel"><header class="returning-auth-brand"><img src="/zenit-logo.png" alt="ZENIT Protocol logo"><div><strong>ZENIT <span>PROTOCOL</span></strong><small>POWERED BY ROYAL FINTECH</small></div></header><div class="returning-auth-eyebrow">RETURNING MEMBER ACCESS</div><h1 class="returning-auth-title">Welcome back.</h1><p class="returning-auth-copy">Connect your registered wallet to verify ownership, then enter your 4-digit security PIN to open your ZENIT dashboard.</p><div class="returning-auth-wallet"><span class="returning-auth-wallet-mark" aria-hidden="true">◈</span><div><strong>Secure wallet connection</strong><small id="returningLoginStatus">Checking whether your registered wallet is already connected…</small></div></div><button class="returning-auth-action" type="button" id="connectReturningWallet">CHECKING WALLET…</button><p class="returning-auth-note">Your wallet confirms account ownership. Your PIN is the only active sign-in verification step.</p><button class="returning-auth-link" type="button" id="forgotPinAccess">FORGOT YOUR PIN? GET ACCESS HELP</button><button class="returning-auth-link" type="button" id="closeReturningLogin">BACK TO WELCOME</button><footer class="returning-auth-footer">ZENIT PROTOCOL · POWERED BY ROYAL FINTECH</footer></section></div>';
+    modal.innerHTML='<div class="returning-auth-page"><section class="returning-auth-panel"><button class="returning-auth-close" type="button" id="cancelReturningLogin" aria-label="Cancel wallet login" title="Cancel">×</button><header class="returning-auth-brand"><img src="/zenit-logo.png" alt="ZENIT Protocol logo"><div><strong>ZENIT <span>PROTOCOL</span></strong><small>POWERED BY ROYAL FINTECH</small></div></header><div class="returning-auth-eyebrow">RETURNING MEMBER ACCESS</div><h1 class="returning-auth-title">Welcome back.</h1><p class="returning-auth-copy">Connect your registered wallet to verify ownership, then enter your 4-digit security PIN to open your ZENIT dashboard.</p><div class="returning-auth-wallet"><span class="returning-auth-wallet-mark" aria-hidden="true">◈</span><div><strong>Secure wallet connection</strong><small id="returningLoginStatus">Checking whether your registered wallet is already connected…</small></div></div><button class="returning-auth-action" type="button" id="connectReturningWallet">CHECKING WALLET…</button><p class="returning-auth-note">Your wallet confirms account ownership. Your PIN is the only active sign-in verification step.</p><button class="returning-auth-link" type="button" id="forgotPinAccess">FORGOT YOUR PIN? GET ACCESS HELP</button><button class="returning-auth-link" type="button" id="closeReturningLogin">BACK TO WELCOME</button><footer class="returning-auth-footer">ZENIT PROTOCOL · POWERED BY ROYAL FINTECH</footer></section></div>';
     backdrop.classList.remove("open");requestAnimationFrame(()=>backdrop.classList.add("open"));
     const button=$("#connectReturningWallet"),status=$("#returningLoginStatus");
     let probeInFlight=false;
@@ -1903,10 +1911,13 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
         toast("Wallet check incomplete",error?.message||"Use the wallet button to try again.","info");
       }finally{probeInFlight=false;}
     };
-    $("#closeReturningLogin")?.addEventListener("click",()=>{
+    const cancelReturningLogin=()=>{
       if(localStorage.getItem("zenitPinChallenge")){toast("PIN verification required","Complete your PIN verification to access your dashboard.","warning");return;}
       backdrop.classList.remove("open","returning-auth-open");
-    });
+      document.getElementById(returnTarget)?.classList.remove("hidden-screen");
+    };
+    $("#cancelReturningLogin")?.addEventListener("click",cancelReturningLogin);
+    $("#closeReturningLogin")?.addEventListener("click",cancelReturningLogin);
     button?.addEventListener("click",async()=>{
       if(probeInFlight)return;
       const walletLogin=window.zenitOpenWallet;
@@ -1914,9 +1925,20 @@ window.addEventListener("zenit:authenticated",async()=>{ localStorage.setItem("z
       if(button){button.disabled=true;button.setAttribute("aria-busy","true");button.textContent="CONTINUING…";}
       if(status)status.textContent="Verifying your wallet ownership before requesting your security PIN…";
       try{
-        await walletLogin(()=>backdrop.classList.remove("open","returning-auth-open"));
+        await walletLogin(()=>{
+          // The provider selector may temporarily cover this screen, but onboarding
+          // must not become the fallback behind it for an existing member.
+          document.getElementById("onboarding")?.classList.add("hidden-screen");
+          document.getElementById("registrationScreen")?.classList.add("hidden-screen");
+          backdrop.classList.remove("open","returning-auth-open");
+        });
+        if(localStorage.getItem("zenitPinChallenge")||document.getElementById("loginPin"))return;
         if(!$("#appShell")?.classList.contains("hidden")){backdrop.classList.remove("open","returning-auth-open");return;}
         setState(appState.wallet.connected?"connected":"disconnected");
+        if(status)status.textContent=appState.wallet.connected
+          ?"Wallet connected. Complete the ownership signature to receive your PIN verification step."
+          :"Wallet connection was not completed. You can cancel or retry with your registered wallet.";
+        backdrop.classList.add("returning-auth-open","open");
       }catch(error){
         setState(appState.wallet.connected?"connected":"disconnected");
         toast("Wallet login failed",error?.message||String(error),"error");
